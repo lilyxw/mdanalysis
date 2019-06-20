@@ -41,17 +41,17 @@ class TestChainReader(object):
 
     @pytest.fixture()
     def universe(self):
-        return mda.Universe(PSF,
+        return mda.Universe.from_files(PSF,
                             [DCD, CRD, DCD, CRD, DCD, CRD, CRD])
 
     @pytest.fixture()
     def transformed(ref):
-        return mda.Universe(PSF,
+        return mda.Universe.from_files(PSF,
                             [DCD, CRD, DCD, CRD, DCD, CRD, CRD],
                             transformations=[translate([10,10,10])])
                             
     def test_regular_repr(self):
-        u = mda.Universe(PSF, [DCD, CRD, DCD])
+        u = mda.Universe.from_files(PSF, [DCD, CRD, DCD])
         assert_equal("<ChainReader containing adk_dims.dcd, adk_open.crd, adk_dims.dcd with 197 frames of 3341 atoms>", u.trajectory.__repr__())
         
                                 
@@ -120,7 +120,7 @@ class TestChainReader(object):
             for ts in universe.trajectory:
                 W.write(universe)
         universe.trajectory.rewind()
-        u = mda.Universe(PSF, outfile)
+        u = mda.Universe.from_files(PSF, outfile)
         for (ts_orig, ts_new) in zip(universe.trajectory, u.trajectory):
             assert_almost_equal(
                 ts_orig._pos,
@@ -200,11 +200,11 @@ class TestChainReaderFormats(object):
         assert_equal(universe.trajectory.filenames, [PDB, XTC, TRR])
 
     def test_set_one_format_tuple(self):
-        universe = mda.Universe(PSF, [(PDB_small, 'pdb'), DCD])
+        universe = mda.Universe.from_files(PSF, [(PDB_small, 'pdb'), DCD])
         assert universe.trajectory.n_frames == 99
 
     def test_set_all_formats(self):
-        universe = mda.Universe(PSF, [PDB_small, PDB_closed], format='pdb')
+        universe = mda.Universe.from_files(PSF, [PDB_small, PDB_closed], format='pdb')
         assert universe.trajectory.n_frames == 2
 
 
@@ -341,7 +341,7 @@ class TestChainReaderContinuous(object):
 
     def test_unsupported_filetypes(self):
         with pytest.raises(NotImplementedError):
-            mda.Universe(PSF, [DCD, DCD], continuous=True)
+            mda.Universe.from_files(PSF, [DCD, DCD], continuous=True)
 
 
 @pytest.mark.parametrize('l, ref', ([((0, 3), (3, 3), (4, 7)), (0, 1, 2)],

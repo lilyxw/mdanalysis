@@ -34,7 +34,7 @@ from MDAnalysisTests.datafiles import PSF, DCD
 
 @pytest.fixture
 def universe():
-    u = mda.Universe(PSF, DCD)
+    u = mda.Universe.from_files(PSF, DCD)
     u.atoms.translate([100, 100, 100])
     u.atoms.dimensions = [200, 200, 200, 90, 90, 90]
     return u

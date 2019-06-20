@@ -34,7 +34,7 @@ from MDAnalysisTests.datafiles import PSF, DCD
 # Legacy tests from before 363
 @pytest.fixture()
 def universe():
-    return mda.Universe(PSF, DCD)
+    return mda.Universe.from_files(PSF, DCD)
 
 
 @pytest.fixture()

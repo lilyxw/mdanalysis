@@ -284,7 +284,7 @@ class TestDistanceArray(object):
 
 @pytest.fixture()
 def DCD_Universe():
-    universe = MDAnalysis.Universe(PSF, DCD)
+    universe = MDAnalysis.Universe.from_files(PSF, DCD)
     trajectory = universe.trajectory
 
     return universe, trajectory
@@ -786,7 +786,7 @@ class Test_apply_PBC(object):
     prec = 6
 
     def test_ortho_PBC(self, backend):
-        U = MDAnalysis.Universe(PSF, DCD)
+        U = MDAnalysis.Universe.from_files(PSF, DCD)
         atoms = U.atoms.positions
         box = np.array([2.5, 2.5, 3.5, 90., 90., 90.], dtype=np.float32)
         with pytest.raises(ValueError):

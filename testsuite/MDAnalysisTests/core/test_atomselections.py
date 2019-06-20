@@ -56,11 +56,11 @@ class TestSelectionsCHARMM(object):
         """Set up the standard AdK system in implicit solvent.
         Geometry here is orthogonal
         """
-        return MDAnalysis.Universe(PSF, DCD)
+        return MDAnalysis.Universe.from_files(PSF, DCD)
 
     @pytest.fixture()
     def universe_copy(self, universe):
-        return MDAnalysis.Universe(PSF, DCD)
+        return MDAnalysis.Universe.from_files(PSF, DCD)
 
     def test_segid(self, universe):
         sel = universe.select_atoms('segid 4AKE')
@@ -347,7 +347,7 @@ class TestSelectionsAMBER(object):
 class TestSelectionsNAMD(object):
     @pytest.fixture()
     def universe(self):
-        return MDAnalysis.Universe(PSF_NAMD, PDB_NAMD)
+        return MDAnalysis.Universe.from_files(PSF_NAMD, PDB_NAMD)
 
     def test_protein(self, universe):
         # must include non-standard residues
@@ -807,7 +807,7 @@ class TestPropSelection(object):
 class TestBondedSelection(object):
     @pytest.fixture()
     def u(self):
-        return mda.Universe(PSF, DCD)
+        return mda.Universe.from_files(PSF, DCD)
 
     def test_bonded_1(self, u):
         ag = u.select_atoms('type 2 and bonded name N')

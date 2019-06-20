@@ -835,7 +835,7 @@ class TestGroupBy(object):
 class TestReprs(object):
     @pytest.fixture()
     def u(self):
-        return mda.Universe(PSF, DCD)
+        return mda.Universe.from_files(PSF, DCD)
 
     def test_atom_repr(self, u):
         at = u.atoms[0]

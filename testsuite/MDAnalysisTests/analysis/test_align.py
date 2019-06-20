@@ -75,12 +75,12 @@ class TestGetMatchingAtoms(object):
     @staticmethod
     @pytest.fixture()
     def universe():
-        return mda.Universe(PSF, DCD)
+        return mda.Universe.from_files(PSF, DCD)
 
     @staticmethod
     @pytest.fixture()
     def reference():
-        return mda.Universe(PSF, DCD)
+        return mda.Universe.from_files(PSF, DCD)
 
     @staticmethod
     @pytest.fixture()
@@ -133,12 +133,12 @@ class TestAlign(object):
     @staticmethod
     @pytest.fixture()
     def universe():
-        return mda.Universe(PSF, DCD)
+        return mda.Universe.from_files(PSF, DCD)
 
     @staticmethod
     @pytest.fixture()
     def reference():
-        return mda.Universe(PSF, DCD)
+        return mda.Universe.from_files(PSF, DCD)
 
     def test_rmsd(self, universe, reference):
         universe.trajectory[0]  # ensure first frame
@@ -200,7 +200,7 @@ class TestAlign(object):
         reference.trajectory[-1]
         outfile = str(tmpdir.join('align_test.dcd'))
         align.AlignTraj(universe, reference, filename=outfile).run()
-        fitted = mda.Universe(PSF, outfile)
+        fitted = mda.Universe.from_files(PSF, outfile)
 
         # ensure default file exists
         with mda.Writer(str(tmpdir.join('rmsfit_align_test.dcd')),
@@ -222,7 +222,7 @@ class TestAlign(object):
         reference.trajectory[-1]
         outfile = str(tmpdir.join('align_test.dcd'))
         x = align.AlignTraj(universe, reference, filename=outfile).run()
-        fitted = mda.Universe(PSF, outfile)
+        fitted = mda.Universe.from_files(PSF, outfile)
 
         rmsd_outfile = str(tmpdir.join('rmsd'))
         x.save(rmsd_outfile)
@@ -245,7 +245,7 @@ class TestAlign(object):
         outfile = str(tmpdir.join('align_test.dcd'))
         x = align.AlignTraj(universe, reference,
                             filename=outfile, weights='mass').run()
-        fitted = mda.Universe(PSF, outfile)
+        fitted = mda.Universe.from_files(PSF, outfile)
         assert_almost_equal(x.rmsd[0], 0, decimal=3)
         assert_almost_equal(x.rmsd[-1], 6.9033, decimal=3)
 
@@ -273,7 +273,7 @@ class TestAlign(object):
         x = align.AlignTraj(universe, reference,
                             filename=outfile,
                             weights=reference.atoms.masses).run()
-        fitted = mda.Universe(PSF, outfile)
+        fitted = mda.Universe.from_files(PSF, outfile)
         assert_almost_equal(x.rmsd[0], 0, decimal=3)
         assert_almost_equal(x.rmsd[-1], 6.9033, decimal=3)
 
@@ -287,7 +287,7 @@ class TestAlign(object):
         # fitting on a partial selection should still write the whole topology
         align.AlignTraj(universe, reference, select='resid 1-20',
                         filename=outfile, weights='mass').run()
-        mda.Universe(PSF, outfile)
+        mda.Universe.from_files(PSF, outfile)
 
     def test_AlignTraj_in_memory(self, universe, reference, tmpdir):
         outfile = str(tmpdir.join('align_test.dcd'))
@@ -332,8 +332,8 @@ class TestAlign(object):
             different_atoms()
 
     def test_alignto_partial_universe(self, universe, reference):
-        u_bound = mda.Universe(ALIGN_BOUND)
-        u_free = mda.Universe(ALIGN_UNBOUND)
+        u_bound = mda.Universe.from_files(ALIGN_BOUND)
+        u_free = mda.Universe.from_files(ALIGN_UNBOUND)
         selection = 'segid B'
 
         segB_bound = u_bound.select_atoms(selection)
@@ -375,7 +375,7 @@ class TestAlignmentProcessing(object):
 
 
 def test_sequence_alignment():
-    u = mda.Universe(PSF)
+    u = mda.Universe.from_files(PSF)
     reference = u.atoms
     mobile = u.select_atoms("resid 122-159")
     aln = align.sequence_alignment(mobile, reference)

@@ -62,7 +62,7 @@ class TestDCDReader(MultiframeReaderTest):
 
     def test_empty_dcd(self):
         with pytest.raises(IOError):
-            mda.Universe(PSF, DCD_empty)
+            mda.Universe.from_files(PSF, DCD_empty)
 
     def test_with_statement(self):
 
@@ -82,7 +82,7 @@ class TestDCDReader(MultiframeReaderTest):
             err_msg="with_statement: DCDReader does not read all frames")
 
     def test_set_time(self):
-        u = mda.Universe(PSF, DCD)
+        u = mda.Universe.from_files(PSF, DCD)
         assert_almost_equal(u.trajectory.time, 1.0,
                             decimal=5)
 
@@ -96,7 +96,7 @@ def test_write_istart(universe_dcd, tmpdir, fstart):
                     nsavc=nsavc, istart=istart) as w:
         for ts in universe_dcd.trajectory:
             w.write(universe_dcd.atoms)
-    u = mda.Universe(PSF, outfile)
+    u = mda.Universe.from_files(PSF, outfile)
     assert_almost_equal(u.trajectory._file.header['istart'],
                         istart if istart is not None else u.trajectory._file.header['nsavc'])
     # issue #1819
@@ -121,13 +121,13 @@ def test_write_random_unitcell(tmpdir):
     random_unitcells = rstate.uniform(
         high=80, size=(98, 6)).astype(np.float64)
 
-    u = mda.Universe(PSF, DCD)
+    u = mda.Universe.from_files(PSF, DCD)
     with mda.Writer(testname, n_atoms=u.atoms.n_atoms) as w:
         for index, ts in enumerate(u.trajectory):
             u.atoms.dimensions = random_unitcells[index]
             w.write(u.atoms)
 
-    u2 = mda.Universe(PSF, testname)
+    u2 = mda.Universe.from_files(PSF, testname)
     for index, ts in enumerate(u2.trajectory):
         assert_array_almost_equal(u2.trajectory.dimensions,
                                   random_unitcells[index],
@@ -141,7 +141,7 @@ def test_write_random_unitcell(tmpdir):
 
 @pytest.fixture(scope='module')
 def universe_dcd():
-    return mda.Universe(PSF, DCD)
+    return mda.Universe.from_files(PSF, DCD)
 
 
 def test_rewind(universe_dcd):
@@ -240,7 +240,7 @@ def test_timeseries_skip(universe_dcd):
 def test_reader_set_dt():
     dt = 100
     frame = 3
-    u = mda.Universe(PSF, DCD, dt=dt)
+    u = mda.Universe.from_files(PSF, DCD, dt=dt)
     dcdheader = u.trajectory._file.header
     fstart = dcdheader['istart'] / dcdheader['nsavc']
     assert_almost_equal(u.trajectory[frame].time, (frame + fstart)*dt,
@@ -255,7 +255,7 @@ def test_reader_set_dt():
                                           ("xtc", 3)))
 def test_writer_dt(tmpdir, ext, decimal):
     dt = 5.0  # set time step to 5 ps
-    universe_dcd = mda.Universe(PSF, DCD, dt=dt)
+    universe_dcd = mda.Universe.from_files(PSF, DCD, dt=dt)
     t = universe_dcd.trajectory
     outfile = str(tmpdir.join("test.{}".format(ext)))
     # use istart=None explicitly so that both dcd and xtc start with time 1*dt
@@ -264,7 +264,7 @@ def test_writer_dt(tmpdir, ext, decimal):
         for ts in universe_dcd.trajectory:
             W.write(universe_dcd.atoms)
 
-    uw = mda.Universe(PSF, outfile)
+    uw = mda.Universe.from_files(PSF, outfile)
     assert_almost_equal(uw.trajectory.totaltime,
                         (uw.trajectory.n_frames - 1) * dt, decimal=decimal,
                         err_msg="Total time  mismatch for ext={}".format(ext))
@@ -292,7 +292,7 @@ def test_other_writer(universe_dcd, tmpdir, ext, decimal):
         for ts in universe_dcd.trajectory:
             W.write_next_timestep(ts)
 
-    uw = mda.Universe(PSF, outfile)
+    uw = mda.Universe.from_files(PSF, outfile)
     # check that the coordinates are identical for each time step
     for orig_ts, written_ts in zip(universe_dcd.trajectory,
                                    uw.trajectory):
@@ -309,7 +309,7 @@ def test_single_frame(universe_dcd, tmpdir):
     outfile = str(tmpdir.join("test.dcd"))
     with mda.Writer(outfile, u.atoms.n_atoms) as W:
         W.write(u.atoms)
-    w = mda.Universe(PSF, outfile)
+    w = mda.Universe.from_files(PSF, outfile)
     assert w.trajectory.n_frames == 1
     assert_almost_equal(w.atoms.positions,
                         u.atoms.positions,

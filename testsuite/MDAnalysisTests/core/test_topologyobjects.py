@@ -42,7 +42,7 @@ from MDAnalysisTests.datafiles import PSF, DCD, TRZ_psf, TRZ
 
 @pytest.fixture(scope='module')
 def PSFDCD():
-    return mda.Universe(PSF, DCD)
+    return mda.Universe.from_files(PSF, DCD)
 
 class TestTopologyObjects(object):
     """Test the base TopologyObject funtionality
@@ -112,13 +112,13 @@ class TestTopologyObjects(object):
         assert hash(TO1) != hash(TO2)
 
         # Different universe should yield different hash
-        u = mda.Universe(PSF, DCD)
+        u = mda.Universe.from_files(PSF, DCD)
         ag = u.atoms[1:3]
         TO3 = TopologyObject(ag.indices, u)
         assert hash(TO1) != hash(TO3)
 
         # Different order should yield different hash
-        u = mda.Universe(PSF, DCD)
+        u = mda.Universe.from_files(PSF, DCD)
         ag = u.atoms[[2, 1]]
         TO3 = TopologyObject(ag.indices, u)
         assert hash(TO1) != hash(TO3)
@@ -161,7 +161,7 @@ class TestTopologyObjects(object):
 
     def test_angle_180(self):
         # we edit the coordinates, so make our own universe
-        u = mda.Universe(PSF, DCD)
+        u = mda.Universe.from_files(PSF, DCD)
         angle = u.atoms[210].angles[0]
         coords = np.array([[1, 1, 1],
                            [2, 1, 1],
@@ -716,8 +716,8 @@ def test_bond_length_pbc():
     assert_almost_equal(ref, u.bonds[0].length(pbc=True), decimal=6)
 
 def test_cross_universe_eq():
-    u1 = mda.Universe(PSF)
-    u2 = mda.Universe(PSF)
+    u1 = mda.Universe.from_files(PSF)
+    u2 = mda.Universe.from_files(PSF)
 
     assert not (u1.bonds[0] == u2.bonds[0])
 

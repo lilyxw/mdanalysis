@@ -217,7 +217,7 @@ class TestMergeTopology(object):
     @staticmethod
     @pytest.fixture()
     def u():
-        return MDAnalysis.Universe(PSF, DCD)
+        return MDAnalysis.Universe.from_files(PSF, DCD)
 
     def test_merge_with_topology(self, u):
         ag1 = u.atoms[:20]

@@ -43,7 +43,7 @@ class TestSequence(object):
 
     @pytest.fixture()
     def u(self):
-        return mda.Universe(PSF, DCD)
+        return mda.Universe.from_files(PSF, DCD)
 
     def test_string(self, u):
         p = u.select_atoms("protein")
@@ -92,7 +92,7 @@ class TestResidueGroup(object):
     # Legacy tests from before 363
     @pytest.fixture()
     def universe(self):
-        return mda.Universe(PSF, DCD)
+        return mda.Universe.from_files(PSF, DCD)
 
     @pytest.fixture()
     def rg(self, universe):

@@ -38,7 +38,7 @@ class MemoryReference(BaseReference):
 
         self.topology = PSF
         self.trajectory = DCD
-        self.universe = mda.Universe(PSF, DCD)
+        self.universe = mda.Universe.from_files(PSF, DCD)
 
         self.n_atoms = self.universe.trajectory.n_atoms
         self.n_frames = self.universe.trajectory.n_frames
@@ -88,20 +88,20 @@ class TestMemoryReader(MultiframeReaderTest):
 
     def test_filename_transefer_to_memory(self):
         # MemoryReader should have a filename attribute set to the trajaectory filename
-        universe = mda.Universe(PSF, DCD)
+        universe = mda.Universe.from_files(PSF, DCD)
         universe.transfer_to_memory()
         assert_equal(universe.trajectory.filename, DCD)
 
     def test_filename_array(self):
         # filename attribute of MemoryReader should be None when generated from an array
-        universe = mda.Universe(PSF, DCD)
+        universe = mda.Universe.from_files(PSF, DCD)
         coordinates = universe.trajectory.timeseries(universe.atoms)
-        universe2 = mda.Universe(PSF, coordinates, format=MemoryReader, order='afc')
+        universe2 = mda.Universe.from_files(PSF, coordinates, format=MemoryReader, order='afc')
         assert universe2.trajectory.filename is None
 
     def test_default_memory_layout(self):
-        universe1 = mda.Universe(PSF, DCD, in_memory=True)
-        universe2 = mda.Universe(PSF, DCD, in_memory=True, order='fac')
+        universe1 = mda.Universe.from_files(PSF, DCD, in_memory=True)
+        universe2 = mda.Universe.from_files(PSF, DCD, in_memory=True, order='fac')
         assert_equal(universe1.trajectory.get_array().shape,
                      universe2.trajectory.get_array().shape)
 

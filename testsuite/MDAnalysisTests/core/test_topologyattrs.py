@@ -154,7 +154,7 @@ class TestAtomids(TestAtomAttr):
 class TestIndicesClasses(object):
     @pytest.fixture()
     def u(self):
-        return mda.Universe(PSF, DCD)
+        return mda.Universe.from_files(PSF, DCD)
 
     def test_cant_set_atom_indices(self, u):
         with pytest.raises(AttributeError):
@@ -373,7 +373,7 @@ class TestSegmentAttr(TopologyAttrMixin):
 class TestAttr(object):
     @pytest.fixture()
     def ag(self):
-        universe = mda.Universe(PSF, DCD)
+        universe = mda.Universe.from_files(PSF, DCD)
         return universe.atoms  # prototypical AtomGroup
 
     def test_principal_axes(self, ag):
@@ -462,7 +462,7 @@ class TestInstantSelectorDeprecation(object):
     @staticmethod
     @pytest.fixture()
     def universe():
-        return mda.Universe(PSF, DCD)
+        return mda.Universe.from_files(PSF, DCD)
 
     @pytest.mark.parametrize('instruction', (
         'universe.atoms.CA',

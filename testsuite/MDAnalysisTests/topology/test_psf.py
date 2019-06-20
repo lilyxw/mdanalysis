@@ -130,7 +130,7 @@ class TestPSFParser2(ParserBase):
 
 def test_psf_nosegid():
     """Issue #121"""
-    u = mda.Universe(PSF_nosegid)
+    u = mda.Universe.from_files(PSF_nosegid)
     assert isinstance(u, mda.Universe)
     assert u.atoms.n_atoms == 98
     assert_equal(u.segments.segids, ["SYSTEM"])

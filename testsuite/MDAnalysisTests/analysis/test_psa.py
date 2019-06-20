@@ -42,9 +42,9 @@ class TestPSAnalysis(object):
 
     @pytest.fixture()
     def psa(self, tmpdir):
-        universe1 = mda.Universe(PSF, DCD)
-        universe2 = mda.Universe(PSF, DCD2)
-        universe_rev = mda.Universe(PSF, DCD)
+        universe1 = mda.Universe.from_files(PSF, DCD)
+        universe2 = mda.Universe.from_files(PSF, DCD2)
+        universe_rev = mda.Universe.from_files(PSF, DCD)
 
         psa = PSA.PSAnalysis([universe1, universe2, universe_rev],
                              path_select='name CA',

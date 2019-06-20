@@ -53,12 +53,12 @@ class Testrmsd(object):
 
     @pytest.fixture()
     def u(self):
-        u = mda.Universe(PSF, DCD)
+        u = mda.Universe.from_files(PSF, DCD)
         return u
 
     @pytest.fixture()
     def u2(self):
-        u = mda.Universe(PSF, DCD)
+        u = mda.Universe.from_files(PSF, DCD)
         return u
 
     @pytest.fixture()
@@ -157,7 +157,7 @@ class Testrmsd(object):
 class TestRMSD(object):
     @pytest.fixture()
     def universe(self):
-        return MDAnalysis.Universe(PSF, DCD)
+        return MDAnalysis.Universe.from_files(PSF, DCD)
 
     @pytest.fixture()
     def outfile(self, tmpdir):
@@ -301,21 +301,21 @@ class TestRMSD(object):
             err_msg="error: rmsd profile should match test values")
 
     def test_ref_length_unequal_len(self, universe):
-        reference = MDAnalysis.Universe(PSF, DCD)
+        reference = MDAnalysis.Universe.from_files(PSF, DCD)
         reference.atoms = reference.atoms[:-1]
         with pytest.raises(SelectionError):
             RMSD = MDAnalysis.analysis.rms.RMSD(universe,
                                                 reference=reference)
 
     def test_mass_mismatches(self, universe):
-        reference = MDAnalysis.Universe(PSF, DCD)
+        reference = MDAnalysis.Universe.from_files(PSF, DCD)
         reference.atoms.masses = 10
         with pytest.raises(SelectionError):
             RMSD = MDAnalysis.analysis.rms.RMSD(universe,
                                                 reference=reference)
 
     def test_group_selections_unequal_len(self, universe):
-        reference = MDAnalysis.Universe(PSF, DCD)
+        reference = MDAnalysis.Universe.from_files(PSF, DCD)
         reference.atoms[0].residue.resname='NOTMET'
         with pytest.raises(SelectionError):
             RMSD = MDAnalysis.analysis.rms.RMSD(universe,

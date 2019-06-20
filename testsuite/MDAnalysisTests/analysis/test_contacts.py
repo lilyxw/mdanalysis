@@ -125,7 +125,7 @@ def test_contact_matrix():
 
 
 def test_new_selection():
-    u = mda.Universe(PSF, DCD)
+    u = mda.Universe.from_files(PSF, DCD)
     selections = ('all', )
     sel = contacts._new_selections(u, selections, -1)[0]
     u.trajectory[-1]
@@ -168,7 +168,7 @@ class TestContacts(object):
     @staticmethod
     @pytest.fixture()
     def universe():
-        return mda.Universe(PSF, DCD)
+        return mda.Universe.from_files(PSF, DCD)
 
     def _run_Contacts(self, universe, start=None, stop=None, step=None, **kwargs):
         acidic = universe.select_atoms(self.sel_acidic)
@@ -301,7 +301,7 @@ class TestContacts(object):
 
 
 def test_q1q2():
-    u = mda.Universe(PSF, DCD)
+    u = mda.Universe.from_files(PSF, DCD)
     q1q2 = contacts.q1q2(u, 'name CA', radius=8)
     q1q2.run()
 

@@ -166,7 +166,7 @@ def test_topology_copy_unique_attrs(refTop, attr):
 
 @pytest.fixture(scope='module')
 def refUniverse():
-    return mda.Universe(PSF, DCD)
+    return mda.Universe.from_files(PSF, DCD)
 
 class TestCopyUniverse(object):
     def test_universe_copy(self, refUniverse):

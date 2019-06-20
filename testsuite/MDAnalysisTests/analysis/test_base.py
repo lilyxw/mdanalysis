@@ -62,7 +62,7 @@ class OldAPIAnalysis(base.AnalysisBase):
 
 @pytest.fixture()
 def u():
-    return mda.Universe(PSF, DCD)
+    return mda.Universe.from_files(PSF, DCD)
 
 
 def test_default(u):
@@ -133,7 +133,7 @@ def simple_function(mobile):
 
 
 def test_AnalysisFromFunction():
-    u = mda.Universe(PSF, DCD)
+    u = mda.Universe.from_files(PSF, DCD)
     step = 2
     ana1 = base.AnalysisFromFunction(
         simple_function, mobile=u.atoms).run(step=step)
@@ -155,7 +155,7 @@ def test_analysis_class():
     assert issubclass(ana_class, base.AnalysisBase)
     assert issubclass(ana_class, base.AnalysisFromFunction)
 
-    u = mda.Universe(PSF, DCD)
+    u = mda.Universe.from_files(PSF, DCD)
     step = 2
     ana = ana_class(u.atoms).run(step=step)
 
@@ -173,7 +173,7 @@ def test_analysis_class_decorator():
     # Issue #1511
     # analysis_class should not raise
     # a DeprecationWarning
-    u = mda.Universe(PSF, DCD)
+    u = mda.Universe.from_files(PSF, DCD)
 
     def distance(a, b):
         return np.linalg.norm((a.centroid() - b.centroid()))
@@ -185,7 +185,7 @@ def test_analysis_class_decorator():
 
 @pytest.mark.parametrize('param', ['start', 'stop', 'step'])
 def test_runargs_deprecation(param):
-    u = mda.Universe(PSF, DCD)
+    u = mda.Universe.from_files(PSF, DCD)
 
     class NothingAnalysis(base.AnalysisBase):
         def _single_frame(self):

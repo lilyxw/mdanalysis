@@ -130,7 +130,7 @@ class TestUpdatingSelection(object):
 class TestUpdatingSelectionNotraj(object):
     @pytest.fixture()
     def u(self):
-        return mda.Universe(PSF)
+        return mda.Universe.from_files(PSF)
 
     @pytest.fixture()
     def ag(self, u):

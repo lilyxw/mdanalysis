@@ -56,14 +56,14 @@ import pytest
 class TestDeprecationWarnings(object):
     def test_AtomGroupUniverse_usage_warning(self):
         with pytest.deprecated_call():
-            mda.core.AtomGroup.Universe(PSF, DCD)
+            mda.core.AtomGroup.Universe.from_files(PSF, DCD)
 
 
 class TestAtomGroupToTopology(object):
     """Test the conversion of AtomGroup to TopologyObjects"""
     @pytest.fixture()
     def u(self):
-        return mda.Universe(PSF, DCD)
+        return mda.Universe.from_files(PSF, DCD)
 
     def test_bond(self, u):
         ag = u.atoms[:2]
@@ -101,7 +101,7 @@ class TestAtomGroupWriting(object):
 
     @pytest.fixture()
     def u(self):
-        return mda.Universe(PSF, DCD)
+        return mda.Universe.from_files(PSF, DCD)
 
     def test_write_no_args(self, u, tmpdir):
         with tmpdir.as_cwd():
@@ -217,7 +217,7 @@ class _WriteAtoms(object):
 
     @pytest.fixture()
     def universe(self):
-        return mda.Universe(PSF, DCD)
+        return mda.Universe.from_files(PSF, DCD)
 
     @pytest.fixture()
     def outfile(self, tmpdir):
@@ -319,7 +319,7 @@ class TestAtomGroupTransformations(object):
 
     @pytest.fixture()
     def u(self):
-        return mda.Universe(PSF, DCD)
+        return mda.Universe.from_files(PSF, DCD)
 
     @pytest.fixture()
     def coords(self, u):
@@ -490,7 +490,7 @@ class TestSplit(object):
 
     @pytest.fixture()
     def universe(self):
-        return mda.Universe(PSF, DCD)
+        return mda.Universe.from_files(PSF, DCD)
 
     def test_split_atoms(self, universe):
         ag = universe.select_atoms("resid 1:50 and not resname LYS and "
@@ -761,7 +761,7 @@ class TestDihedralSelections(object):
     @staticmethod
     @pytest.fixture(scope='module')
     def PSFDCD():
-        return mda.Universe(PSF, DCD)
+        return mda.Universe.from_files(PSF, DCD)
 
     def test_phi_selection(self, PSFDCD):
         phisel = PSFDCD.segments[0].residues[9].phi_selection()
@@ -915,7 +915,7 @@ class TestPBCFlag(object):
 
 def test_instantselection_termini():
     """Test that instant selections work, even for residues that are also termini (Issue 70)"""
-    universe = mda.Universe(PSF, DCD)
+    universe = mda.Universe.from_files(PSF, DCD)
     assert_equal(universe.residues[20].CA.name, 'CA', "CA of MET21 is not selected correctly")
     del universe
 
@@ -930,7 +930,7 @@ class TestAtomGroup(object):
 
     @pytest.fixture()
     def universe(self):
-        return mda.Universe(PSF, DCD)
+        return mda.Universe.from_files(PSF, DCD)
 
     @pytest.fixture()
     def ag(self, universe):

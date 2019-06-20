@@ -155,7 +155,7 @@ def test_single_conect():
 def test_new_chainid_new_res():
     # parser must start new residue when chainid starts
 
-    u = mda.Universe(PDB_chainidnewres)
+    u = mda.Universe.from_files(PDB_chainidnewres)
 
     assert len(u.residues) == 4
     assert_equal(u.residues.resids, [1, 2, 3, 3])
@@ -178,7 +178,7 @@ def test_sameresid_diffresname():
 
 
 def test_PDB_record_types():
-    u = mda.Universe(PDB_HOLE)
+    u = mda.Universe.from_files(PDB_HOLE)
 
     assert u.atoms[0].record_type == 'ATOM'
     assert u.atoms[132].record_type == 'HETATM'
@@ -200,7 +200,7 @@ ENDMDL
 """
 
 def test_PDB_no_resid():
-    u = mda.Universe(StringIO(PDB_noresid), format='PDB')
+    u = mda.Universe.from_files(StringIO(PDB_noresid), format='PDB')
 
     assert len(u.atoms) == 4
     assert len(u.residues) == 1
@@ -221,7 +221,7 @@ END
 """
 
 def test_PDB_hex():
-    u = mda.Universe(StringIO(PDB_hex), format='PDB')
+    u = mda.Universe.from_files(StringIO(PDB_hex), format='PDB')
     assert len(u.atoms) == 5
     assert u.atoms[0].id == 1
     assert u.atoms[1].id == 100000

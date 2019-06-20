@@ -45,13 +45,13 @@ import MDAnalysis.analysis.encore.confdistmatrix as confdistmatrix
 class TestEncore(object):
     @pytest.fixture(scope='class')
     def ens1_template(self):
-        template = mda.Universe(PSF, DCD)
+        template = mda.Universe.from_files(PSF, DCD)
         template.transfer_to_memory(step=5)
         return template
 
     @pytest.fixture(scope='class')
     def ens2_template(self):
-        template = mda.Universe(PSF, DCD2)
+        template = mda.Universe.from_files(PSF, DCD2)
         template.transfer_to_memory(step=5)
         return template
 
@@ -191,11 +191,11 @@ inconsistent results")
                             err_msg="calculated RMSD values differ from reference")
 
     def test_ensemble_superimposition(self):
-        aligned_ensemble1 = mda.Universe(PSF, DCD)
+        aligned_ensemble1 = mda.Universe.from_files(PSF, DCD)
         align.AlignTraj(aligned_ensemble1, aligned_ensemble1,
                         select="name CA",
                         in_memory=True).run()
-        aligned_ensemble2 = mda.Universe(PSF, DCD)
+        aligned_ensemble2 = mda.Universe.from_files(PSF, DCD)
         align.AlignTraj(aligned_ensemble2, aligned_ensemble2,
                         select="name *",
                         in_memory=True).run()
@@ -210,11 +210,11 @@ inconsistent results")
                                                    "atoms should have lower full-atom RMSF than ensemble aligned on only CAs."
 
     def test_ensemble_superimposition_to_reference_non_weighted(self):
-        aligned_ensemble1 = mda.Universe(PSF, DCD)
+        aligned_ensemble1 = mda.Universe.from_files(PSF, DCD)
         align.AlignTraj(aligned_ensemble1, aligned_ensemble1,
                         select="name CA",
                         in_memory=True).run()
-        aligned_ensemble2 = mda.Universe(PSF, DCD)
+        aligned_ensemble2 = mda.Universe.from_files(PSF, DCD)
         align.AlignTraj(aligned_ensemble2, aligned_ensemble2,
                         select="name *",
                         in_memory=True).run()
@@ -399,13 +399,13 @@ inconsistent results")
 class TestEncoreClustering(object):
     @pytest.fixture(scope='class')
     def ens1_template(self):
-        template = mda.Universe(PSF, DCD)
+        template = mda.Universe.from_files(PSF, DCD)
         template.transfer_to_memory(step=5)
         return template
 
     @pytest.fixture(scope='class')
     def ens2_template(self):
-        template = mda.Universe(PSF, DCD2)
+        template = mda.Universe.from_files(PSF, DCD2)
         template.transfer_to_memory(step=5)
         return template
 
@@ -626,13 +626,13 @@ class TestEncoreClusteringSklearn(object):
 class TestEncoreDimensionalityReduction(object):
     @pytest.fixture(scope='class')
     def ens1_template(self):
-        template = mda.Universe(PSF, DCD)
+        template = mda.Universe.from_files(PSF, DCD)
         template.transfer_to_memory(step=5)
         return template
 
     @pytest.fixture(scope='class')
     def ens2_template(self):
-        template = mda.Universe(PSF, DCD2)
+        template = mda.Universe.from_files(PSF, DCD2)
         template.transfer_to_memory(step=5)
         return template
 

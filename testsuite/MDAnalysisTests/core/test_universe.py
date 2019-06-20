@@ -84,7 +84,7 @@ class TestUniverseCreation(object):
     # tests concerning Universe creation and errors encountered
     def test_load(self):
         # Universe(top, trj)
-        u = mda.Universe(PSF, PDB_small)
+        u = mda.Universe.from_files(PSF, PDB_small)
         assert_equal(len(u.atoms), 3341, "Loading universe failed somehow")
 
     def test_load_topology_stringio(self):
@@ -207,7 +207,7 @@ class TestUniverseCreation(object):
             load()
 
     def test_universe_kwargs(self):
-        u = mda.Universe(PSF, PDB_small, fake_kwarg=True)
+        u = mda.Universe.from_files(PSF, PDB_small, fake_kwarg=True)
         assert_equal(len(u.atoms), 3341, "Loading universe failed somehow")
 
         assert u.kwargs['fake_kwarg']
@@ -220,7 +220,7 @@ class TestUniverseCreation(object):
         assert_equal(u.kwargs, u2.kwargs)
 
     def test_universe_topology_class_with_coords(self):
-        u = mda.Universe(PSF, PDB_small)
+        u = mda.Universe.from_files(PSF, PDB_small)
         u2 = mda.Universe(u._topology, PDB_small)
         assert isinstance(u2.trajectory, type(u.trajectory))
         assert_equal(u.trajectory.n_frames, u2.trajectory.n_frames)
@@ -232,28 +232,28 @@ class TestUniverse(object):
     def test_load_bad_topology(self):
         # tests that Universe builds produce the right error message
         def bad_load():
-            return mda.Universe(PSF_BAD, DCD)
+            return mda.Universe.from_files(PSF_BAD, DCD)
 
         with pytest.raises(ValueError):
             bad_load()
 
     def test_load_new(self):
-        u = mda.Universe(PSF, DCD)
+        u = mda.Universe.from_files(PSF, DCD)
         u.load_new(PDB_small)
         assert_equal(len(u.trajectory), 1, "Failed to load_new(PDB)")
 
     def test_load_new_returns_Universe(self):
-        u = mda.Universe(PSF)
+        u = mda.Universe.from_files(PSF)
         result = u.load_new(PDB_small)
         assert result is u
 
     def test_load_new_None_returns_Universe(self):
-        u = mda.Universe(PSF)
+        u = mda.Universe.from_files(PSF)
         result = u.load_new(None)
         assert result is u
 
     def test_load_new_TypeError(self):
-        u = mda.Universe(PSF, DCD)
+        u = mda.Universe.from_files(PSF, DCD)
 
         def bad_load(uni):
             return uni.load_new('filename.notarealextension')
@@ -263,32 +263,32 @@ class TestUniverse(object):
 
     def test_load_structure(self):
         # Universe(struct)
-        ref = mda.Universe(PSF, PDB_small)
+        ref = mda.Universe.from_files(PSF, PDB_small)
         u = mda.Universe(PDB_small)
         assert_equal(len(u.atoms), 3341, "Loading universe failed somehow")
         assert_almost_equal(u.atoms.positions, ref.atoms.positions)
 
     def test_load_multiple_list(self):
         # Universe(top, [trj, trj, ...])
-        ref = mda.Universe(PSF, DCD)
-        u = mda.Universe(PSF, [DCD, DCD])
+        ref = mda.Universe.from_files(PSF, DCD)
+        u = mda.Universe.from_files(PSF, [DCD, DCD])
         assert_equal(len(u.atoms), 3341, "Loading universe failed somehow")
         assert_equal(u.trajectory.n_frames, 2 * ref.trajectory.n_frames)
 
     def test_load_multiple_args(self):
         # Universe(top, trj, trj, ...)
-        ref = mda.Universe(PSF, DCD)
-        u = mda.Universe(PSF, DCD, DCD)
+        ref = mda.Universe.from_files(PSF, DCD)
+        u = mda.Universe.from_files(PSF, DCD, DCD)
         assert_equal(len(u.atoms), 3341, "Loading universe failed somehow")
         assert_equal(u.trajectory.n_frames, 2 * ref.trajectory.n_frames)
 
     def test_pickle_raises_NotImplementedError(self):
-        u = mda.Universe(PSF, DCD)
+        u = mda.Universe.from_files(PSF, DCD)
         with pytest.raises(NotImplementedError):
             cPickle.dumps(u, protocol = cPickle.HIGHEST_PROTOCOL)
 
     def test_set_dimensions(self):
-        u = mda.Universe(PSF, DCD)
+        u = mda.Universe.from_files(PSF, DCD)
         box = np.array([10, 11, 12, 90, 90, 90])
         u.dimensions = np.array([10, 11, 12, 90, 90, 90])
         assert_allclose(u.dimensions, box)
@@ -314,15 +314,15 @@ class TestTransformations(object):
     """Tests the transformations keyword
     """
     def test_callable(self):
-        u = mda.Universe(PSF,DCD, transformations=translate([10,10,10]))
-        uref = mda.Universe(PSF,DCD)
+        u = mda.Universe.from_files(PSF,DCD, transformations=translate([10,10,10]))
+        uref = mda.Universe.from_files(PSF,DCD)
         ref = translate([10,10,10])(uref.trajectory.ts)
         assert_almost_equal(u.trajectory.ts.positions, ref, decimal=6)
 
     def test_list(self):
         workflow = [translate([10,10,0]), translate([0,0,10])]
-        u = mda.Universe(PSF,DCD, transformations=workflow)
-        uref = mda.Universe(PSF,DCD)
+        u = mda.Universe.from_files(PSF,DCD, transformations=workflow)
+        uref = mda.Universe.from_files(PSF,DCD)
         ref = translate([10,10,10])(uref.trajectory.ts)
         assert_almost_equal(u.trajectory.ts.positions, ref, decimal=6)
 
@@ -428,7 +428,7 @@ class TestGuessBonds(object):
 
 class TestInMemoryUniverse(object):
     def test_reader_w_timeseries(self):
-        universe = mda.Universe(PSF, DCD, in_memory=True)
+        universe = mda.Universe.from_files(PSF, DCD, in_memory=True)
         assert_equal(universe.trajectory.timeseries(universe.atoms).shape,
                      (3341, 98, 3),
                      err_msg="Unexpected shape of trajectory timeseries")
@@ -440,7 +440,7 @@ class TestInMemoryUniverse(object):
                      err_msg="Unexpected shape of trajectory timeseries")
 
     def test_reader_w_timeseries_frame_interval(self):
-        universe = mda.Universe(PSF, DCD, in_memory=True,
+        universe = mda.Universe.from_files(PSF, DCD, in_memory=True,
                                        in_memory_step=10)
         assert_equal(universe.trajectory.timeseries(universe.atoms).shape,
                      (3341, 10, 3),
@@ -461,9 +461,9 @@ class TestInMemoryUniverse(object):
                      err_msg="Unexpected shape of trajectory timeseries")
 
     def test_frame_interval_convention(self):
-        universe1 = mda.Universe(PSF, DCD)
+        universe1 = mda.Universe.from_files(PSF, DCD)
         array1 = universe1.trajectory.timeseries(step=10)
-        universe2 = mda.Universe(PSF, DCD, in_memory=True,
+        universe2 = mda.Universe.from_files(PSF, DCD, in_memory=True,
                                  in_memory_step=10)
         array2 = universe2.trajectory.timeseries()
         assert_equal(array1, array2,

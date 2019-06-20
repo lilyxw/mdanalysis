@@ -37,7 +37,7 @@ SELECTION = 'backbone and name CA and resid 1-10'
 
 @pytest.fixture(scope='module')
 def u():
-    return mda.Universe(PSF, DCD)
+    return mda.Universe.from_files(PSF, DCD)
 
 
 @pytest.fixture(scope='module')

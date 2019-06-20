@@ -111,7 +111,7 @@ def read_bending_matrix(fn):
 
 def test_helanal_trajectory(tmpdir, reference=HELANAL_BENDING_MATRIX,
                             outfile="helanal_bending_matrix.dat"):
-    u = mda.Universe(PSF, DCD)
+    u = mda.Universe.from_files(PSF, DCD)
     with tmpdir.as_cwd():
         # Helix 8: 161 - 187 http://www.rcsb.org/pdb/explore.do?structureId=4AKE
         MDAnalysis.analysis.helanal.helanal_trajectory(

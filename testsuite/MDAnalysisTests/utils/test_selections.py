@@ -45,7 +45,7 @@ class _SelectionWriter(object):
     @staticmethod
     @pytest.fixture()
     def universe():
-        return MDAnalysis.Universe(PSF, DCD)
+        return MDAnalysis.Universe.from_files(PSF, DCD)
 
     @pytest.fixture()
     def namedfile(self):

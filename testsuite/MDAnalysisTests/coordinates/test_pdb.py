@@ -157,11 +157,11 @@ class TestPDBWriter(object):
 
     @pytest.fixture
     def universe(self):
-        return mda.Universe(PSF, PDB_small)
+        return mda.Universe.from_files(PSF, PDB_small)
 
     @pytest.fixture
     def universe2(self):
-        return mda.Universe(PSF, DCD)
+        return mda.Universe.from_files(PSF, DCD)
 
     @pytest.fixture
     def outfile(self, tmpdir):
@@ -183,7 +183,7 @@ class TestPDBWriter(object):
     def test_writer(self, universe, outfile):
         "Test writing from a single frame PDB file to a PDB file." ""
         universe.atoms.write(outfile)
-        u = mda.Universe(PSF, outfile)
+        u = mda.Universe.from_files(PSF, outfile)
         assert_almost_equal(u.atoms.positions,
                             universe.atoms.positions, self.prec,
                             err_msg="Writing PDB file with PDBWriter "
@@ -255,7 +255,7 @@ class TestPDBWriter(object):
         u = universe2
         u.trajectory[50]
         u.atoms.write(outfile)
-        u2 = mda.Universe(PSF, outfile)
+        u2 = mda.Universe.from_files(PSF, outfile)
         assert_equal(u2.trajectory.n_frames,
                      1,
                      err_msg="Output PDB should only contain a single frame")
@@ -477,9 +477,9 @@ def test_conect_bonds_all(tmpdir):
 
 class TestMultiPDBWriter(TestCase):
     def setUp(self):
-        self.universe = mda.Universe(PSF, PDB_small)
+        self.universe = mda.Universe.from_files(PSF, PDB_small)
         self.multiverse = mda.Universe(PDB_multiframe)
-        self.universe2 = mda.Universe(PSF, DCD)
+        self.universe2 = mda.Universe.from_files(PSF, DCD)
         # 3 decimals in PDB spec
         # http://www.wwpdb.org/documentation/format32/sect9.html#ATOM
         self.prec = 3
@@ -730,13 +730,13 @@ class TestPDBXLSerial(TestCase):
 class TestPSF_CRDReader(_SingleFrameReader):
     __test__ = True
     def setUp(self):
-        self.universe = mda.Universe(PSF, CRD)
+        self.universe = mda.Universe.from_files(PSF, CRD)
         self.prec = 5  # precision in CRD (at least we are writing %9.5f)
 
 
 class TestPSF_PDBReader(TestPDBReader):
     def setUp(self):
-        self.universe = mda.Universe(PSF, PDB_small)
+        self.universe = mda.Universe.from_files(PSF, PDB_small)
         # 3 decimals in PDB spec
         # http://www.wwpdb.org/documentation/format32/sect9.html#ATOM
         self.prec = 3

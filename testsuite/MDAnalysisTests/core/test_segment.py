@@ -69,7 +69,7 @@ class TestSegment(object):
 def test_generated_residueselection():
     """Test that a generated residue group always returns a ResidueGroup (Issue 47)
     unless there is a single residue (Issue 363 change)"""
-    universe = mda.Universe(PSF, DCD)
+    universe = mda.Universe.from_files(PSF, DCD)
     with pytest.warns(DeprecationWarning):
         # only a single Cys in AdK
         cys = universe.s4AKE.CYS
