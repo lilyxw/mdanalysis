@@ -130,6 +130,82 @@ from .topologyattrs import AtomAttr, ResidueAttr, SegmentAttr
 
 logger = logging.getLogger("MDAnalysis.core.universe")
 
+def load_new(filename, format=None, n_atoms=None, **kwargs):
+    """Load coordinates from `filename`.
+
+    The file format of `filename` is autodetected from the file name suffix
+    or can be explicitly set with the `format` keyword. A sequence of files
+    can be read as a single virtual trajectory by providing a list of
+    filenames.
+
+
+    Parameters
+    ----------
+    filename : str or list
+        the coordinate file (single frame or trajectory) *or* a list of
+        filenames, which are read one after another.
+    format : str or list or object (optional)
+        provide the file format of the coordinate or trajectory file;
+        ``None`` guesses it from the file extension. Note that this
+        keyword has no effect if a list of file names is supplied because
+        the "chained" reader has to guess the file format for each
+        individual list member [``None``]. Can also pass a subclass of
+        :class:`MDAnalysis.coordinates.base.ProtoReader` to define a custom
+        reader to be used on the trajectory file.
+    in_memory : bool (optional)
+        Directly load trajectory into memory with the
+        :class:`~MDAnalysis.coordinates.memory.MemoryReader`
+
+        .. versionadded:: 0.16.0
+
+    **kwargs : dict
+        Other kwargs are passed to the trajectory reader (only for
+        advanced use)
+
+    Returns
+    -------
+    universe : Universe
+
+    Raises
+    ------
+    TypeError if trajectory format can not be
+                determined or no appropriate trajectory reader found
+
+
+    .. versionchanged:: 0.8
+        If a list or sequence that is provided for `filename` only contains
+        a single entry then it is treated as single coordinate file. This
+        has the consequence that it is not read by the
+        :class:`~MDAnalysis.coordinates.chain.ChainReader` but directly by
+        its specialized file format reader, which typically has more
+        features than the
+        :class:`~MDAnalysis.coordinates.chain.ChainReader`.
+
+    .. versionchanged:: 0.17.0
+        Now returns a :class:`Universe` instead of the tuple of file/array
+        and detected file type.
+    """
+    # filename==None happens when only a topology is provided
+    if not filename:
+        return
+
+    if len(util.asiterable(filename)) == 1:
+        # make sure a single filename is not handed to the ChainReader
+        filename = util.asiterable(filename)[0]
+    logger.debug("Universe.load_new(): loading {0}...".format(filename))
+
+    try:
+        reader = get_reader_for(filename, format=format)
+    except ValueError as err:
+        raise TypeError(
+            "Cannot find an appropriate coordinate reader for file '{0}'.\n"
+            "           {1}".format(filename, err))
+
+    # supply number of atoms for readers that cannot do it for themselves
+    trajectory = reader(filename, n_atoms=n_atoms, **kwargs)
+
+    return trajectory
+
 class Universe(object):
     """The MDAnalysis Universe contains all the information describing the system.
 
@@ -310,17 +386,18 @@ class Universe(object):
             else:
                 coordinates = (topology_file,) + coordinates
         
-        obj = cls(topology, topology_file=topology_file, format=format,
+        # trajectory = load_new(coordinates, format=format, n_atoms=topology.n_atoms)
+
+        obj = cls(topology, *coordinates, topology_file=topology_file, format=format,
                   topology_format=topology_format,
                   all_coordinates=all_coordinates, **kwargs)
-        obj.load_new(coordinates, format=format, **kwargs)
         return obj
 
 
     
-    def __init__(self, topology=None, topology_file=None,
+    def __init__(self, topology, *coordinates, topology_file=None,
                  transformations=None, guess_bonds=False, vdwradii=None,
-                 anchor_name=None, is_anchor=False, **kwargs):
+                 anchor_name=None, is_anchor=False,  **kwargs):
         """
         Parameters
         ----------
@@ -347,17 +424,18 @@ class Universe(object):
         self.residues = None
         self.segments = None
         self._topology = topology
-        self.trajectory = None
         self.filename = topology_file
 
 
         if topology:
             self._generate_from_topology()  # make real atoms, res, segments
         
+        self.load_new(coordinates, **kwargs)
+
         if transformations:
             if callable(transformations):
                 transformations = [transformations]
-            self.trajectory.add_transformations(*transformations)
+            self._trajectory.add_transformations(*transformations)
         
         if guess_bonds:
             self.atoms.guess_bonds(vdwradii=vdwradii)
