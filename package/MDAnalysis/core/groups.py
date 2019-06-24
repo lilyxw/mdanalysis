@@ -76,7 +76,7 @@ Levels
 Each of the above classes has a *level* attribute.  This can be used to verify
 that two objects are of the same level, or to access a particular class::
 
-   u = mda.Universe()
+   u = mda.Universe.from_files()
 
    ag = u.atoms[:10]
    at = u.atoms[11]
@@ -3508,7 +3508,7 @@ class UpdatingAtomGroup(AtomGroup):
         frames. For example, track water molecules that move in and out of a
         solvation shell of a protein::
 
-          u = mda.Universe(TPR, XTC)
+          u = mda.Universe.from_files(TPR, XTC)
           water_shell = u.select_atoms("name OW and around 3.5 protein", updating=True)
           water_shell_prev = water_shell.atoms
 

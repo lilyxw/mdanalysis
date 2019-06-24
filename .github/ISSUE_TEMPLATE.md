@@ -37,7 +37,7 @@ The MDAnalysis Development Team
 ``` python
 import MDAnalysis as mda
 
-u = mda.Universe(top, trj)
+u = mda.Universe.from_files(top, trj)
 
 ....
 

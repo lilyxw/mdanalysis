@@ -61,7 +61,7 @@ For example::
    import MDAnalysis as mda
    from MDAnalysisTests.datafiles import PSF, DCD
 
-   u = mda.Universe.from_files(PSF, DCD)
+   u = mda.Universe(PSF, DCD)
    u.select_atoms('segid 4AKE')  # selects all segments with segid 4AKE
 
 If only a single segment has that segid then a Segment object will
@@ -245,7 +245,7 @@ class Universe(object):
     """
 
     @classmethod
-    def from_streams(cls, topology, **kwargs):
+    def from_streams(cls, topology, *args, **kwargs):
         if isinstance(topology, NamedStream):
             filename = topology
         elif isstream(topology):
@@ -256,7 +256,7 @@ class Universe(object):
             filename = NamedStream(topology, _name)
         else:
             raise ValueError('topology parameter must be a stream')
-        return cls.from_files(filename, **kwargs)
+        return cls.from_files(filename, *args, **kwargs)
 
     @classmethod
     def from_files(cls, topology_file, *coordinates, topology_format=None,
@@ -272,10 +272,11 @@ class Universe(object):
             topology) is always required.
         """
         
-        if format is None:
-            format = topology_format
-        elif coordinates is None:
-            topology_format = format
+        if not coordinates:
+            if format is None:
+                format = topology_format
+            elif topology_format is None:
+                topology_format = format
         
         parser = get_parser_for(topology_file, format=topology_format)
         try:
@@ -333,8 +334,9 @@ class Universe(object):
         if type(topology) is not Topology:
             raise ValueError('The new API only supports passing'
                              'MDAnalysis.Topology objects through __init__. '
-                             'Please use Universe.from_files or '
-                             'Universe.from_streams')
+                             'Invalid type: {}. '
+                             'Please use Universe( or '
+                             'Universe.from_streams'.format(type(Topology)))
 
         self._instant_selectors = {}  # for storing segments. Deprecated?
         self._trajectory = None  # managed attribute holding Reader
@@ -345,6 +347,7 @@ class Universe(object):
         self.residues = None
         self.segments = None
         self._topology = topology
+        self.trajectory = None
         self.filename = topology_file
 
 
@@ -1052,8 +1055,8 @@ def as_Universe(*args, **kwargs):
     2. Otherwise try to build a universe from the first or the first
        and second argument::
 
-         as_Universe.from_files(PDB, **kwargs) --> Universe.from_files(PDB, **kwargs)
-         as_Universe.from_files(PSF, DCD, **kwargs) --> Universe.from_files(PSF, DCD, **kwargs)
+         as_Universe(PDB, **kwargs) --> Universe(PDB, **kwargs)
+         as_Universe(PSF, DCD, **kwargs) --> Universe(PSF, DCD, **kwargs)
          as_Universe(*args, **kwargs) --> Universe(*args, **kwargs)
 
     Returns

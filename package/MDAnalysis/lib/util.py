@@ -65,7 +65,7 @@ In the following example, we use a PDB stored as a string ``pdb_s``::
    import cStringIO
 
    pdb_s = "TITLE     Lonely Ion\\nATOM      1  NA  NA+     1      81.260  64.982  10.926  1.00  0.00\\n"
-   u = MDAnalysis.Universe(NamedStream(cStringIO.StringIO(pdb_s), "ion.pdb"))
+   u = MDAnalysis.Universe.from_files(NamedStream(cStringIO.StringIO(pdb_s), "ion.pdb"))
    print(u)
    #  <Universe with 1 atoms>
    print(u.atoms.positions)
@@ -94,7 +94,7 @@ remain in memory via e.g. :mod:`cStringIO` buffers.
 ..   import urllib2
 ..   URI = "https://mdanalysis.googlecode.com/git-history/develop/testsuite/MDAnalysisTests/data/mini.data"
 ..   urldata = NamedStream(urllib2.urlopen(URI), "mini.data")
-..   u = MDAnalysis.Universe(urldata)
+..   u = MDAnalysis.Universe.from_files(urldata)
 
 .. Note::  A remote connection created by :func:`urllib2.urlopen` is not seekable
            and therefore will often not work as an input. But try it...

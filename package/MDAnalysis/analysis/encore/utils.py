@@ -401,7 +401,7 @@ def merge_universes(universes):
     for universe in universes:
         universe.transfer_to_memory()
 
-    return mda.Universe(
+    return mda.Universe.from_files(
         universes[0].filename,
         np.concatenate(tuple([e.trajectory.timeseries(order='fac') for e in universes]),
                        axis=0),

@@ -152,7 +152,7 @@ def make_whole(atomgroup, reference_atom=None):
         from MDAnalysis.lib.mdamath import make_whole
 
         # This algorithm requires bonds, these can be guessed!
-        u = mda.Universe(......, guess_bonds=True)
+        u = mda.Universe.from_files(......, guess_bonds=True)
 
         # MDAnalysis can split molecules into their fragments
         # based on bonding information.

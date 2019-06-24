@@ -159,7 +159,7 @@ def per_core_work(topology_file_path, trajectory_file_path, list_square_vertex_a
     The code to perform on a given core given the list of square vertices assigned to it.
     """
     # obtain the relevant coordinates for particles of interest
-    universe_object = MDAnalysis.Universe(topology_file_path, trajectory_file_path)
+    universe_object = MDAnalysis.Universe.from_files(topology_file_path, trajectory_file_path)
     list_previous_frame_centroids = []
     list_previous_frame_indices = []
     #define some utility functions for trajectory iteration:

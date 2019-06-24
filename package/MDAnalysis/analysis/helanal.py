@@ -534,7 +534,7 @@ def helanal_main(pdbfile, selection="name CA", ref_axis=None):
 
     """
 
-    universe = MDAnalysis.Universe(pdbfile)
+    universe = MDAnalysis.Universe.from_files(pdbfile)
     ca = universe.select_atoms(selection)
 
     logger.info("Analysing %d/%d residues", ca.n_atoms, universe.atoms.n_residues)

@@ -17,7 +17,7 @@ called by the user for any given :class:`Timestep` of the trajectory,
 
 .. code-block:: python
 
-    u = MDAnalysis.Universe(topology, trajectory)
+    u = MDAnalysis.Universe.from_files(topology, trajectory)
 
     for ts in u.trajectory:
        ts = transformation_2(transformation_1(ts))
@@ -40,7 +40,7 @@ creation using the keyword argument `transformations`:
 
 .. code-block:: python
     
-    u = MDAnalysis.Universe(topology, trajectory, transformations=workflow)
+    u = MDAnalysis.Universe.from_files(topology, trajectory, transformations=workflow)
 
 Note that in the two latter cases, the workflow cannot be changed after having
 being added.
@@ -98,14 +98,14 @@ Translating the coordinates of a frame:
 
 .. code-block:: python
 
-    u = MDAnalysis.Universe(topology, trajectory)
+    u = MDAnalysis.Universe.from_files(topology, trajectory)
     new_ts = MDAnalysis.transformations.translate([1,1,1])(u.trajectory.ts)
 
 e.g. create a workflow and adding it to the trajectory:
 
 .. code-block:: python
 
-    u = MDAnalysis.Universe(topology, trajectory)
+    u = MDAnalysis.Universe.from_files(topology, trajectory)
     workflow = [MDAnalysis.transformations.translate([1,1,1]), 
                 MDAnalysis.transformations.translate([1,2,3])]
     u.trajectory.add_transformations(*workflow)
@@ -116,7 +116,7 @@ e.g. giving a workflow as a keyword argument when defining the universe:
     
     workflow = [MDAnalysis.transformations.translate([1,1,1]), 
                 MDAnalysis.transformations.translate([1,2,3])]
-    u = MDAnalysis.Universe(topology, trajectory, transformations=workflow)
+    u = MDAnalysis.Universe.from_files(topology, trajectory, transformations=workflow)
     
     
 .. rubric:: Currently implemented transformations

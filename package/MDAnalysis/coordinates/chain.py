@@ -604,7 +604,7 @@ class ChainReader(base.ProtoReader):
 
         .. code-block:: python
 
-          u = MDAnalysis.Universe(topology, coordinates)
+          u = MDAnalysis.Universe.from_files(topology, coordinates)
           workflow = [some_transform, another_transform, this_transform]
           u.trajectory.add_transformations(*workflow)
 

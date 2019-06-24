@@ -409,7 +409,7 @@ def hausdorff(P, Q):
     Calculate the Hausdorff distance between two halves of a trajectory:
 
      >>> from MDAnalysis.tests.datafiles import PSF, DCD
-     >>> u = Universe.from_files(PSF,DCD)
+     >>> u = Universe(PSF,DCD)
      >>> mid = len(u.trajectory)/2
      >>> ca = u.select_atoms('name CA')
      >>> P = numpy.array([
@@ -480,7 +480,7 @@ def hausdorff_wavg(P, Q):
 
      >>> from MDAnalysis import Universe
      >>> from MDAnalysis.tests.datafiles import PSF, DCD
-     >>> u = Universe.from_files(PSF,DCD)
+     >>> u = Universe(PSF,DCD)
      >>> mid = len(u.trajectory)/2
      >>> ca = u.select_atoms('name CA')
      >>> P = numpy.array([
@@ -535,7 +535,7 @@ def hausdorff_avg(P, Q):
     -------
 
      >>> from MDAnalysis.tests.datafiles import PSF, DCD
-     >>> u = Universe.from_files(PSF,DCD)
+     >>> u = Universe(PSF,DCD)
      >>> mid = len(u.trajectory)/2
      >>> ca = u.select_atoms('name CA')
      >>> P = numpy.array([
@@ -629,7 +629,7 @@ def discrete_frechet(P, Q):
     Calculate the discrete Fréchet distance between two halves of a
     trajectory.
 
-     >>> u = Universe.from_files(PSF,DCD)
+     >>> u = Universe(PSF,DCD)
      >>> mid = len(u.trajectory)/2
      >>> ca = u.select_atoms('name CA')
      >>> P = np.array([
@@ -892,7 +892,7 @@ class Path(object):
                                                        tol_mass=tol_mass).run()
         if rmsdfile is not None:
             aligntrj.save(rmsdfile)
-        return MDAnalysis.Universe(self.top_name, self.newtrj_name)
+        return MDAnalysis.Universe.from_files(self.top_name, self.newtrj_name)
 
 
     def to_path(self, fitted=False, select=None, flat=False):
@@ -966,7 +966,7 @@ class Path(object):
         and new trajectory name, which can be fed directly into an
         :class:`MDAnalysis.Universe` object after unpacking the tuple using the
         ``*`` operator, as in
-        ``MDAnalysis.Universe(*(top_name, newtraj_name))``.
+        ``MDAnalysis.Universe.from_files(*(top_name, newtraj_name))``.
 
         Parameters
         ----------

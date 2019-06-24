@@ -127,8 +127,8 @@ everything is working properly::
 
   from MDAnalysis import *
   from MDAnalysis.tests.datafiles import PSF,DCD, PDB,XTC
-  u_dims_adk = Universe.from_files(PSF,DCD)
-  u_eq_adk = Universe.from_files(PDB, XTC)
+  u_dims_adk = Universe(PSF,DCD)
+  u_eq_adk = Universe(PDB, XTC)
 
 The PSF and DCD file are a closed-form-to-open-form transition of
 Adenylate Kinase (from [Beckstein2009]_) and the PDB+XTC file are ten

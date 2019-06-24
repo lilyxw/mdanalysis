@@ -39,7 +39,7 @@ identities of atoms.
 
 For example::
 
-   >>> u = mda.Universe()`
+   >>> u = mda.Universe.from_files()`
 
    >>> u.atoms.write('out.gro', reindex=False)
 
@@ -313,7 +313,7 @@ class GROWriter(base.WriterBase):
         To use the reindex keyword, user can follow the two examples given
         below.::
 
-           u = mda.Universe()
+           u = mda.Universe.from_files()
 
         Usage 1::
 

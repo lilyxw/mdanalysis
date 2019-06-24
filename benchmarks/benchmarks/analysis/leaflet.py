@@ -25,7 +25,7 @@ class LeafletBench(object):
     param_names = ['cutoff', 'sparse', 'pbc']
 
     def setup(self, cutoff, sparse, pbc):
-        self.u = MDAnalysis.Universe(Martini_membrane_gro)
+        self.u = MDAnalysis.Universe.from_files(Martini_membrane_gro)
         self.headgroup_sel = 'name PO4'
 
     def time_leafletfinder(self, cutoff, sparse, pbc):
@@ -49,7 +49,7 @@ class LeafletOptimizeBench(object):
     param_names = ['sparse', 'pbc']
 
     def setup(self, sparse, pbc):
-        self.u = MDAnalysis.Universe(Martini_membrane_gro)
+        self.u = MDAnalysis.Universe.from_files(Martini_membrane_gro)
         self.headgroup_sel = 'name PO4'
 
     def time_optimize_cutoff(self, sparse, pbc):

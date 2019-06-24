@@ -79,8 +79,8 @@ examples first execute: ::
 To calculate the Harmonic Ensemble Similarity (:func:`hes`)
 two ensemble objects are first created and then used for calculation: ::
 
-    >>> ens1 = Universe.from_files(PSF, DCD)
-    >>> ens2 = Universe.from_files(PSF, DCD2)
+    >>> ens1 = Universe(PSF, DCD)
+    >>> ens2 = Universe(PSF, DCD2)
     >>> print encore.hes([ens1, ens2])
     (array([[        0.        ,  38279683.95892926],
             [ 38279683.95892926,         0.        ]]), None)
@@ -96,8 +96,8 @@ of. The similarity matrix is derived from a distance matrix (By default a RMSD
 matrix; a full RMSD matrix between each pairs of elements needs to be computed).
 The RMSD matrix is automatically calculated. ::
 
-    >>> ens1 = Universe.from_files(PSF, DCD)
-    >>> ens2 = Universe.from_files(PSF, DCD2)
+    >>> ens1 = Universe(PSF, DCD)
+    >>> ens2 = Universe(PSF, DCD2)
     >>> CES, details = encore.ces([ens1, ens2])
     >>> print CES
     [[ 0.          0.68070702]
@@ -706,7 +706,7 @@ def prepare_ensembles_for_convergence_increasing_window(ensemble,
     slices_n.append(slices_n[-1] + residuals + window_size)
 
     for s,sl in enumerate(slices_n[:-1]):
-        tmp_ensembles.append(mda.Universe(
+        tmp_ensembles.append(mda.Universe.from_files(
             ensemble.filename,
             ensemble.trajectory.timeseries(order='fac')
             [slices_n[s]:slices_n[s + 1], :, :],
@@ -800,8 +800,8 @@ def hes(ensembles,
     test suite for two different simulations of the protein AdK. To run the
     examples see the module `Examples`_ for how to import the files: ::
 
-        >>> ens1 = Universe.from_files(PSF, DCD)
-        >>> ens2 = Universe.from_files(PSF, DCD2)
+        >>> ens1 = Universe(PSF, DCD)
+        >>> ens2 = Universe(PSF, DCD2)
         >>> HES, details = encore.hes([ens1, ens2])
         >>> print HES
         [[        0.          38279683.95892926]
@@ -1057,8 +1057,8 @@ def ces(ensembles,
     examples see the module `Examples`_ for how to import the files.
     Here the simplest case of just two instances of :class:`Universe` is illustrated: ::
 
-        >>> ens1 = Universe.from_files(PSF, DCD)
-        >>> ens2 = Universe.from_files(PSF, DCD2)
+        >>> ens1 = Universe(PSF, DCD)
+        >>> ens2 = Universe(PSF, DCD2)
         >>> CES,details = encore.ces([ens1,ens2])
         >>> print CES
         [[ 0.          0.68070702]
@@ -1332,8 +1332,8 @@ def dres(ensembles,
     Here the simplest case of comparing just two instances of :class:`Universe` is
     illustrated: ::
 
-        >>> ens1 = Universe.from_files(PSF,DCD)
-        >>> ens2 = Universe.from_files(PSF,DCD2)
+        >>> ens1 = Universe(PSF,DCD)
+        >>> ens2 = Universe(PSF,DCD2)
         >>> DRES, details = encore.dres([ens1,ens2])
         >>> print DRES
         [[ 0.          0.67996043]
@@ -1546,7 +1546,7 @@ def ces_convergence(original_ensemble,
     splitting the trajectory into a window_size of 10 frames : ::
 
 
-        >>> ens1 = Universe.from_files(PSF,DCD)
+        >>> ens1 = Universe(PSF,DCD)
         >>> ces_conv = encore.ces_convergence(ens1, 10)
         >>> print ces_conv
         [[ 0.48194205]
@@ -1655,7 +1655,7 @@ def dres_convergence(original_ensemble,
     splitting the trajectory into a window_size of 10 frames : ::
 
 
-        >>> ens1 = Universe.from_files(PSF,DCD)
+        >>> ens1 = Universe(PSF,DCD)
         >>> dres_conv = encore.dres_convergence(ens1, 10)
         >>> print dres_conv
         [[ 0.5295528 ]

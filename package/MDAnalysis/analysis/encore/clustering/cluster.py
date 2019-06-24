@@ -110,8 +110,8 @@ def cluster(ensembles,
         >>> from MDAnalysis import Universe
         >>> import MDAnalysis.analysis.encore as encore
         >>> from MDAnalysis.tests.datafiles import PSF, DCD, DCD2
-        >>> ens1 = Universe.from_files(PSF, DCD)
-        >>> ens2 = Universe.from_files(PSF, DCD2)
+        >>> ens1 = Universe(PSF, DCD)
+        >>> ens2 = Universe(PSF, DCD2)
         >>> cluster_collection = encore.cluster([ens1,ens2])
         >>> print cluster_collection
 

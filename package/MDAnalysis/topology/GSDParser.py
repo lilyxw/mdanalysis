@@ -39,7 +39,7 @@ the :class:`~MDAnalysis.coordinates.GSD.GSDReader` class.
 To load a GSD HOOMD file::
 
    import MDAnalysis as mda
-   u = mda.Universe("example.gsd")
+   u = mda.Universe.from_files("example.gsd")
 
 
 Classes

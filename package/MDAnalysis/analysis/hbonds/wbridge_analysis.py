@@ -169,7 +169,7 @@ All water bridges between arginine and aspartic acid can be analysed with ::
   import MDAnalysis
   import MDAnalysis.analysis.hbonds
 
-  u = MDAnalysis.Universe('topology', 'trajectory')
+  u = MDAnalysis.Universe.from_files('topology', 'trajectory')
   w = MDAnalysis.analysis.hbonds.WaterBridgeAnalysis(u, 'resname ARG', 'resname ASP')
   w.run()
 

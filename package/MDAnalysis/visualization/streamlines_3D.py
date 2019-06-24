@@ -71,7 +71,7 @@ def determine_container_limits(topology_file_path, trajectory_file_path, buffer_
     buffer_value : float
         buffer value (padding) in +/- {x, y, z}
     """
-    universe_object = MDAnalysis.Universe(topology_file_path, trajectory_file_path)
+    universe_object = MDAnalysis.Universe.from_files(topology_file_path, trajectory_file_path)
     all_atom_selection = universe_object.select_atoms('all')  # select all particles
     all_atom_coordinate_array = all_atom_selection.positions
     x_min, x_max, y_min, y_max, z_min, z_max = [
@@ -319,7 +319,7 @@ def produce_coordinate_arrays_single_process(topology_file_path, trajectory_file
     waste memory.
 
     """
-    universe_object = MDAnalysis.Universe(topology_file_path, trajectory_file_path)
+    universe_object = MDAnalysis.Universe.from_files(topology_file_path, trajectory_file_path)
     relevant_particles = universe_object.select_atoms(MDA_selection)
     # pull out coordinate arrays from desired frames:
     for ts in universe_object.trajectory:

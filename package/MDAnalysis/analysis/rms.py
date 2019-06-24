@@ -212,7 +212,7 @@ def rmsd(a, b, weights=None, center=False, superposition=False):
 
     Example
     -------
-    >>> u = Universe.from_files(PSF,DCD)
+    >>> u = Universe(PSF,DCD)
     >>> bb = u.select_atoms('backbone')
     >>> A = bb.positions.copy()  # coordinates of first frame
     >>> u.trajectory[-1]         # forward to last frame
@@ -741,7 +741,7 @@ class RMSF(AnalysisBase):
 
            from MDAnalysis.tests.datafiles import TPR, XTC
 
-           u = mda.Universe(TPR, XTC, in_memory=True)
+           u = mda.Universe.from_files(TPR, XTC, in_memory=True)
            protein = u.select_atoms("protein")
 
            # 1) need a step to center and make whole: this trajectory

@@ -82,7 +82,7 @@ One can also run :program:`hole` on frames in a trajectory with
    from MDAnalysis.analysis.hole import HOLEtraj
    from MDAnalysis.tests.datafiles import MULTIPDB_HOLE
 
-   u = mda.Universe(MULTIPDB_HOLE)
+   u = mda.Universe.from_files(MULTIPDB_HOLE)
    H = HOLEtraj(u, executable="~/hole2/exe/hole")
    H.run()
    H.plot3D()
@@ -110,7 +110,7 @@ order parameter :math:`\rho`. ::
 
    mda.start_logging()
    ref = mda.Universe.from_files(PDB_HOLE)    # reference structure
-   u = mda.Universe(MULTIPDB_HOLE) # trajectory
+   u = mda.Universe.from_files(MULTIPDB_HOLE) # trajectory
 
    # calculate RMSD
    R = RMSD(u, reference=ref, select="protein", weights='mass')

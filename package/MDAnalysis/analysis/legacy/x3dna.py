@@ -79,7 +79,7 @@ Trajectory
 
 Analyzing a trajectory::
 
-  u = MDAnalysis.Universe(psf, trajectory)
+  u = MDAnalysis.Universe.from_files(psf, trajectory)
   H = X3DNAtraj(u, ...)
   H.run()
   H.plot()

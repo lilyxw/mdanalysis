@@ -67,14 +67,14 @@ e.g. translate the coordinates of a frame:
 
 .. code-block:: python
 
-    u = MDAnalysis.Universe(topology, trajectory)
+    u = MDAnalysis.Universe.from_files(topology, trajectory)
     new_ts = MDAnalysis.transformations.translate([1,1,1])(u.trajectory.ts)
 
 e.g. create a workflow and adding it to the trajectory:
 
 .. code-block:: python
 
-    u = MDAnalysis.Universe(topology, trajectory)
+    u = MDAnalysis.Universe.from_files(topology, trajectory)
     workflow = [MDAnalysis.transformations.translate([1,1,1]), 
                 MDAnalysis.transformations.translate([1,2,3])]
     u.trajetory.add_transformations(*workflow)
@@ -85,7 +85,7 @@ e.g. giving a workflow as a keyword argument when defining the universe:
     
     workflow = [MDAnalysis.transformations.translate([1,1,1]), 
                 MDAnalysis.transformations.translate([1,2,3])]
-    u = MDAnalysis.Universe(topology, trajectory, transformations = *workflow)
+    u = MDAnalysis.Universe.from_files(topology, trajectory, transformations = *workflow)
     
     
 """

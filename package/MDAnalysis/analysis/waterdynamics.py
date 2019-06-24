@@ -90,7 +90,7 @@ unstable, we can assume that residue 38 is hydrophobic::
   import MDAnalysis
   from MDAnalysis.analysis.waterdynamics import HydrogenBondLifetimes as HBL
 
-  u = MDAnalysis.Universe(pdb, trajectory)
+  u = MDAnalysis.Universe.from_files(pdb, trajectory)
   selection1 = "byres name OH2 and sphzone 6.0 protein and resid 42"
   selection2 = "resid 38"
   HBL_analysis = HBL(universe, selection1, selection2, 0, 2000, 30)
@@ -141,7 +141,7 @@ rotating/changing direction very fast::
   import MDAnalysis
   from MDAnalysis.analysis.waterdynamics import WaterOrientationalRelaxation as WOR
 
-  u = MDAnalysis.Universe(pdb, trajectory)
+  u = MDAnalysis.Universe.from_files(pdb, trajectory)
   selection = "byres name OH2 and sphzone 6.0 protein and resid 42"
   WOR_analysis = WOR(universe, selection, 0, 1000, 20)
   WOR_analysis.run()
@@ -198,7 +198,7 @@ something (residue, protein, etc)::
   import MDAnalysis
   from MDAnalysis.analysis.waterdynamics import AngularDistribution as AD
 
-  u = MDAnalysis.Universe(pdb, trajectory)
+  u = MDAnalysis.Universe.from_files(pdb, trajectory)
   selection = "byres name OH2 and sphzone 6.0 (protein and (resid 42 or resid 26) )"
   bins = 30
   AD_analysis = AD(universe,selection,bins)
@@ -251,7 +251,7 @@ water molecules, a weak rise mean slow movement of particles::
   import MDAnalysis
   from MDAnalysis.analysis.waterdynamics import MeanSquareDisplacement as MSD
 
-  u = MDAnalysis.Universe(pdb, trajectory)
+  u = MDAnalysis.Universe.from_files(pdb, trajectory)
   selection = "byres name OH2 and cyzone 11.0 4.0 -8.0 protein"
   MSD_analysis = MSD(universe, selection, 0, 1000, 20)
   MSD_analysis.run()
@@ -285,7 +285,7 @@ the zone, on the other hand, a fast decay means a short permanence time::
   from MDAnalysis.analysis.waterdynamics import SurvivalProbability as SP
   import matplotlib.pyplot as plt
 
-  universe = MDAnalysis.Universe(pdb, trajectory)
+  universe = MDAnalysis.Universe.from_files(pdb, trajectory)
   selection = "byres name OH2 and sphzone 12.3 (resid 42 or resid 26 or resid 34 or resid 80) "
   sp = SP(universe, selection, verbose=True)
   sp.run(start=0, stop=100, tau_max=20)

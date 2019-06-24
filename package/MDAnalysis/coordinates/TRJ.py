@@ -105,7 +105,7 @@ AMBER ASCII trajectories are recognised by the suffix '.trj',
    trajectories*. Instead, explicitly provide the ``format="TRJ"``
    argument to :class:`~MDAnalysis.core.universe.Universe`::
 
-     u = MDAnalysis.Universe("top.prmtop", "traj.crd", format="TRJ")
+     u = MDAnalysis.Universe.from_files("top.prmtop", "traj.crd", format="TRJ")
 
    In this way, the AMBER :class:`TRJReader` is used.
 

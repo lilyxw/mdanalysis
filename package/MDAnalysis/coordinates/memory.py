@@ -63,7 +63,7 @@ automatically transfers a trajectory to memory::
  import MDAnalysis as mda
  from MDAnalysisTests.datafiles import TPR, XTC
 
- universe = mda.Universe(TPR, XTC, in_memory=True)
+ universe = mda.Universe.from_files(TPR, XTC, in_memory=True)
 
 Of course, sufficient memory has to be available to hold the whole
 trajectory.
@@ -77,7 +77,7 @@ time with the
 :meth:`~MDAnalysis.core.universe.Universe.transfer_to_memory` method
 of a :class:`~MDAnalysis.core.universe.Universe`::
 
-    universe = mda.Universe(TPR, XTC)
+    universe = mda.Universe.from_files(TPR, XTC)
     universe.transfer_to_memory()
 
 This operation may take a while (with `verbose=True` a progress bar is
@@ -599,7 +599,7 @@ class MemoryReader(base.ProtoReader):
 
         .. code-block:: python
 
-          u = MDAnalysis.Universe(topology, coordinates)
+          u = MDAnalysis.Universe.from_files(topology, coordinates)
           workflow = [some_transform, another_transform, this_transform]
           u.trajectory.add_transformations(*workflow)
 

@@ -17,7 +17,7 @@ lists of  supported `trajectory formats`_ and `topology formats`_.)
    import MDAnalysis as mda
 
    # Load simulation results with a single line
-   u = mda.Universe('topol.tpr','traj.trr')
+   u = mda.Universe.from_files('topol.tpr','traj.trr')
 
    # Select atoms
    ag = u.select_atoms('name OH')

@@ -28,7 +28,7 @@ class SimpleRdfBench(object):
         
         self.sel_str = 'name OW'
 
-        self.u = MDAnalysis.Universe(TPR, XTC)
+        self.u = MDAnalysis.Universe.from_files(TPR, XTC)
 
         try:
             self.sel = self.u.select_atoms(self.sel_str)[:natoms]

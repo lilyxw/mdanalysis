@@ -1981,7 +1981,7 @@ class ProtoReader(six.with_metaclass(_Readermeta, IOBase)):
 
         .. code-block:: python
 
-          u = MDAnalysis.Universe(topology, coordinates)
+          u = MDAnalysis.Universe.from_files(topology, coordinates)
           workflow = [some_transform, another_transform, this_transform]
           u.trajectory.add_transformations(*workflow)
 
@@ -2316,7 +2316,7 @@ class SingleFrameReaderBase(ProtoReader):
 
         .. code-block:: python
 
-          u = MDAnalysis.Universe(topology, coordinates)
+          u = MDAnalysis.Universe.from_files(topology, coordinates)
           workflow = [some_transform, another_transform, this_transform]
           u.trajectory.add_transformations(*workflow)
 

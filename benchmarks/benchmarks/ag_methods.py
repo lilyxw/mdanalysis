@@ -332,7 +332,7 @@ class FragmentFinding(object):
     param_names = ['universe']
 
     def setup(self, universe):
-        self.u = MDAnalysis.Universe(*universe)
+        self.u = MDAnalysis.Universe.from_files(*universe)
 
     def test_find_fragments(self, universe):
         frags = self.u.atoms.fragments

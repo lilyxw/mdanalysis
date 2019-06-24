@@ -209,7 +209,7 @@ All protein-water hydrogen bonds can be analysed with ::
   import MDAnalysis
   import MDAnalysis.analysis.hbonds
 
-  u = MDAnalysis.Universe('topology', 'trajectory')
+  u = MDAnalysis.Universe.from_files('topology', 'trajectory')
   h = MDAnalysis.analysis.hbonds.HydrogenBondAnalysis(u, 'protein', 'resname HOH', distance=3.0, angle=120.0)
   h.run()
 

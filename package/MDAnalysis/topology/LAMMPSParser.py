@@ -54,7 +54,7 @@ The following code could be used::
 
   >>> import MDAnalysis as mda
   >>>
-  >>> u = mda.Universe('myfile.data', atom_style='id type x y z')
+  >>> u = mda.Universe.from_files('myfile.data', atom_style='id type x y z')
 
 
 .. _`atom_style`: http://lammps.sandia.gov/doc/atom_style.html
@@ -288,7 +288,7 @@ class DATAParser(TopologyReaderBase):
             raise ValueError(
                 "Failed to parse atoms section.  You can supply a description "
                 "of the atom_style as a keyword argument, "
-                "eg mda.Universe(..., atom_style='id resid x y z')"
+                "eg mda.Universe.from_files(..., atom_style='id resid x y z')"
             )
 
         # create mapping of id to index (ie atom id 10 might be the 0th atom)
