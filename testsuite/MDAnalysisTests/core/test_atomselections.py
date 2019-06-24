@@ -373,7 +373,7 @@ class TestSelectionsNAMD(object):
 class TestSelectionsGRO(object):
     @pytest.fixture()
     def universe(self):
-        return MDAnalysis.Universe(GRO)
+        return MDAnalysis.Universe.from_files(GRO)
 
     def test_protein(self, universe):
         sel = universe.select_atoms('protein')
@@ -610,7 +610,7 @@ class TestOrthogonalDistanceSelections(BaseDistanceSelection):
 class TestTriclinicDistanceSelections(BaseDistanceSelection):
     @pytest.fixture()
     def u(self):
-        return mda.Universe(GRO)
+        return mda.Universe.from_files(GRO)
 
 
 class TestTriclinicSelections(object):
@@ -621,7 +621,7 @@ class TestTriclinicSelections(object):
 
     @pytest.fixture()
     def u(self):
-        return mda.Universe(GRO)
+        return mda.Universe.from_files(GRO)
 
     def test_around(self, u):
         r1 = u.select_atoms('resid 1')
@@ -910,7 +910,7 @@ class TestImplicitOr(object):
 class TestICodeSelection(object):
     @pytest.fixture()
     def u(self):
-        return mda.Universe(PDB_icodes)
+        return mda.Universe.from_files(PDB_icodes)
 
     def test_select_icode(self, u):
         ag = u.select_atoms('resid 163A')

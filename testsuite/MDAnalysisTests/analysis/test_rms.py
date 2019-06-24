@@ -332,7 +332,7 @@ class TestRMSD(object):
 class TestRMSF(object):
     @pytest.fixture()
     def universe(self):
-        return mda.Universe(GRO, XTC)
+        return mda.Universe.from_files(GRO, XTC)
 
     def test_rmsf(self, universe):
         rmsfs = rms.RMSF(universe.select_atoms('name CA'))
@@ -358,7 +358,7 @@ class TestRMSF(object):
             for _ in range(universe.trajectory.n_frames):
                 W.write(universe)
 
-        universe = mda.Universe(GRO, outfile)
+        universe = mda.Universe.from_files(GRO, outfile)
         rmsfs = rms.RMSF(universe.select_atoms('name CA'))
         rmsfs.run()
         assert_almost_equal(rmsfs.rmsf, 0, 5,

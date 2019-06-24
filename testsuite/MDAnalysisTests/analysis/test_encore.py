@@ -57,14 +57,14 @@ class TestEncore(object):
 
     @pytest.fixture()
     def ens1(self, ens1_template):
-        return mda.Universe(
+        return mda.Universe.from_files(
             ens1_template.filename,
             ens1_template.trajectory.timeseries(order='fac'),
             format=mda.coordinates.memory.MemoryReader)
 
     @pytest.fixture()
     def ens2(self, ens2_template):
-        return mda.Universe(
+        return mda.Universe.from_files(
             ens2_template.filename,
             ens2_template.trajectory.timeseries(order='fac'),
             format=mda.coordinates.memory.MemoryReader)

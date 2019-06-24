@@ -52,7 +52,7 @@ def test_soft_cut_q():
 
 
 def test_soft_cut_q_folded():
-    u = mda.Universe(contacts_villin_folded)
+    u = mda.Universe.from_files(contacts_villin_folded)
 
     contacts_data = np.genfromtxt(contacts_file)
     # indices have been stored 1 indexed
@@ -70,7 +70,7 @@ def test_soft_cut_q_folded():
 
 
 def test_soft_cut_q_unfolded():
-    u = mda.Universe(contacts_villin_unfolded)
+    u = mda.Universe.from_files(contacts_villin_unfolded)
 
     contacts_data = np.genfromtxt(contacts_file)
     # indices have been stored 1 indexed
@@ -201,8 +201,8 @@ class TestContacts(object):
 
     def test_villin_folded(self):
         # one folded, one unfolded
-        f = mda.Universe(contacts_villin_folded)
-        u = mda.Universe(contacts_villin_unfolded)
+        f = mda.Universe.from_files(contacts_villin_folded)
+        u = mda.Universe.from_files(contacts_villin_unfolded)
         sel = "protein and not name H*"
 
         grF = f.select_atoms(sel)
@@ -220,8 +220,8 @@ class TestContacts(object):
     def test_villin_unfolded(self):
 
         # both folded
-        f = mda.Universe(contacts_villin_folded)
-        u = mda.Universe(contacts_villin_folded)
+        f = mda.Universe.from_files(contacts_villin_folded)
+        u = mda.Universe.from_files(contacts_villin_folded)
         sel = "protein and not name H*"
 
         grF = f.select_atoms(sel)

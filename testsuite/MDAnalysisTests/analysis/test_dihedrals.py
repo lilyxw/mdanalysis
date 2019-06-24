@@ -37,7 +37,7 @@ class TestDihedral(object):
 
     @pytest.fixture()
     def atomgroup(self):
-        u = mda.Universe(GRO, XTC)
+        u = mda.Universe.from_files(GRO, XTC)
         ag = u.select_atoms("(resid 4 and name N CA C) or (resid 5 and name N)")
         return ag
 
@@ -74,7 +74,7 @@ class TestRamachandran(object):
 
     @pytest.fixture()
     def universe(self):
-        return mda.Universe(GRO, XTC)
+        return mda.Universe.from_files(GRO, XTC)
 
     @pytest.fixture()
     def rama_ref_array(self):
@@ -113,7 +113,7 @@ class TestRamachandran(object):
 
     def test_None_removal(self):
         with pytest.warns(UserWarning):
-            u = mda.Universe(PDB_rama)
+            u = mda.Universe.from_files(PDB_rama)
             rama = Ramachandran(u.select_atoms("protein").residues[1:-1])
 
     def test_plot(self, universe):
@@ -125,7 +125,7 @@ class TestJanin(object):
 
     @pytest.fixture()
     def universe(self):
-        return mda.Universe(GRO, XTC)
+        return mda.Universe.from_files(GRO, XTC)
 
     @pytest.fixture()
     def janin_ref_array(self):
@@ -164,7 +164,7 @@ class TestJanin(object):
 
     def test_atom_selection(self):
         with pytest.raises(ValueError):
-            u = mda.Universe(PDB_janin)
+            u = mda.Universe.from_files(PDB_janin)
             janin = Janin(u.select_atoms("protein and not resname ALA CYS GLY "
                                          "PRO SER THR VAL"))
 

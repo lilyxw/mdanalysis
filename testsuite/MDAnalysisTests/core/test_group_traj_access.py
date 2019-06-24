@@ -262,7 +262,7 @@ class TestAtomGroupTrajAccess(object):
 class TestAtom_ForceVelocity(object):
     @pytest.fixture()
     def u(self):
-        return MDAnalysis.Universe(PDB_xvf, TRR_xvf)
+        return MDAnalysis.Universe.from_files(PDB_xvf, TRR_xvf)
 
     @pytest.fixture()
     def a(self, u):
@@ -329,7 +329,7 @@ class TestGROVelocities(object):
     def testParse_velocities(self, reference_velocities):
         # read the velocities from the GRO_velocity file and compare the AtomGroup and individual Atom velocities
         # parsed with the reference values:
-        u = MDAnalysis.Universe(GRO_velocity)
+        u = MDAnalysis.Universe.from_files(GRO_velocity)
         all_atoms = u.select_atoms('all')
         # check for read-in and unit conversion for .gro file velocities for the entire AtomGroup:
         assert_almost_equal(all_atoms.velocities, reference_velocities,
@@ -361,7 +361,7 @@ class TestTRRForces(object):
 
     @pytest.fixture()
     def universe(self):
-        return MDAnalysis.Universe(PDB_xvf, TRR_xvf)
+        return MDAnalysis.Universe.from_files(PDB_xvf, TRR_xvf)
 
     @pytest.fixture()
     def reference_mean_protein_force(self):
@@ -382,7 +382,7 @@ class TestTRRForces(object):
 class TestTRRForcesNativeUnits(TestTRRForces):
     @pytest.fixture()
     def universe(self):
-        return MDAnalysis.Universe(PDB_xvf, TRR_xvf, convert_units=False)
+        return MDAnalysis.Universe.from_files(PDB_xvf, TRR_xvf, convert_units=False)
 
     @pytest.fixture()
     def reference_mean_protein_force(self):
@@ -397,7 +397,7 @@ class TestAtomGroupVelocities(object):
 
     @pytest.fixture()
     def universe(self):
-        return MDAnalysis.Universe(GRO, TRR)
+        return MDAnalysis.Universe.from_files(GRO, TRR)
 
     @pytest.fixture()
     def ag(self, universe):

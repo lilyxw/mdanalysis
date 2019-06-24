@@ -34,7 +34,7 @@ from MDAnalysis.lib import nsgrid
 
 @pytest.fixture
 def universe():
-    u = mda.Universe(GRO)
+    u = mda.Universe.from_files(GRO)
     return u
 
 def run_grid_search(u, ref_id, cutoff=3):

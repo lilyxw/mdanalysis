@@ -37,7 +37,7 @@ import MDAnalysis as mda
 class TestUpdatingSelection(object):
     @pytest.fixture()
     def u(self):
-        return mda.Universe(GRO, XTC)
+        return mda.Universe.from_files(GRO, XTC)
 
     @pytest.fixture()
     def ag(self, u):

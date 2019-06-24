@@ -37,7 +37,7 @@ from MDAnalysisTests.datafiles import GRO, XTC
 
 @pytest.fixture()
 def universe():
-    return mda.Universe(GRO, XTC)
+    return mda.Universe.from_files(GRO, XTC)
 
 
 def test_gnm(universe, tmpdir):

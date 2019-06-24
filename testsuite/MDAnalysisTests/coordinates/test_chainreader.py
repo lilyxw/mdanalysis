@@ -194,7 +194,7 @@ class TestChainReaderFormats(object):
     """Test of ChainReader with explicit formats (Issue 76)."""
 
     def test_set_all_format_tuples(self):
-        universe = mda.Universe(GRO, [(PDB, 'pdb'), (XTC, 'xtc'), (TRR,
+        universe = mda.Universe.from_files(GRO, [(PDB, 'pdb'), (XTC, 'xtc'), (TRR,
                                                                    'trr')])
         assert universe.trajectory.n_frames == 21
         assert_equal(universe.trajectory.filenames, [PDB, XTC, TRR])
@@ -337,7 +337,7 @@ class TestChainReaderContinuous(object):
 
     def test_mixed_filetypes(self):
         with pytest.raises(ValueError):
-            mda.Universe(PDB, [XTC, TRR], continuous=True)
+            mda.Universe.from_files(PDB, [XTC, TRR], continuous=True)
 
     def test_unsupported_filetypes(self):
         with pytest.raises(NotImplementedError):

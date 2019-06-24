@@ -48,13 +48,13 @@ from MDAnalysis.coordinates import XDR
 class _XDRReader_Sub(object):
     @pytest.fixture()
     def atoms(self):
-        usol = mda.Universe(PDB_sub_sol, self.XDR_SUB_SOL)
+        usol = mda.Universe.from_files(PDB_sub_sol, self.XDR_SUB_SOL)
         return usol.select_atoms("not resname SOL")
 
     def test_load_new_raises_ValueError(self):
         # should fail if we load universe with a trajectory with different
         # number of atoms when NOT using sub, same as before.
-        udry = mda.Universe(PDB_sub_dry)
+        udry = mda.Universe.from_files(PDB_sub_dry)
         with pytest.raises(ValueError):
             udry.load_new(self.XDR_SUB_SOL)
 
@@ -62,7 +62,7 @@ class _XDRReader_Sub(object):
         """
         load solvated trajectory into universe with unsolvated protein.
         """
-        udry = mda.Universe(PDB_sub_dry)
+        udry = mda.Universe.from_files(PDB_sub_dry)
         udry.load_new(self.XDR_SUB_SOL, sub=atoms.indices)
         ts = udry.atoms.ts
         assert_timestep_almost_equal(ts, atoms.ts)
@@ -88,7 +88,7 @@ class _GromacsReader(object):
 
     @pytest.fixture(scope='class')
     def universe(self):
-        return mda.Universe(GRO, self.filename, convert_units=True)
+        return mda.Universe.from_files(GRO, self.filename, convert_units=True)
 
     def test_flag_convert_lengths(self):
         assert_equal(mda.core.flags['convert_lengths'], True,
@@ -192,7 +192,7 @@ class _GromacsReader(object):
             assert_equal(universe.atoms.n_atoms, W.n_atoms)
 
     def test_Writer(self, tmpdir):
-        universe = mda.Universe(GRO, self.filename, convert_units=True)
+        universe = mda.Universe.from_files(GRO, self.filename, convert_units=True)
         ext = os.path.splitext(self.filename)[1]
         outfile = str(tmpdir.join('/xdr-reader-test' + ext))
         with universe.trajectory.Writer(outfile) as W:
@@ -201,7 +201,7 @@ class _GromacsReader(object):
             W.write(universe.atoms)
 
         universe.trajectory.rewind()
-        u = mda.Universe(GRO, outfile)
+        u = mda.Universe.from_files(GRO, outfile)
         assert_equal(u.trajectory.n_frames, 2)
         # prec = 6: TRR test fails; here I am generous and take self.prec =
         # 3...
@@ -287,7 +287,7 @@ class _XDRNoConversion(object):
 
     @pytest.fixture()
     def universe(self):
-        return mda.Universe(PDB, self.filename, convert_units=False)
+        return mda.Universe.from_files(PDB, self.filename, convert_units=False)
 
     def test_coordinates(self, universe):
         # note: these are the native coordinates in nm
@@ -327,7 +327,7 @@ class _GromacsWriter(object):
 
     @pytest.fixture(scope='class')
     def universe(self):
-        return mda.Universe(GRO, self.infilename)
+        return mda.Universe.from_files(GRO, self.infilename)
 
     @pytest.fixture()
     def Writer(self):
@@ -345,7 +345,7 @@ class _GromacsWriter(object):
             for ts in universe.trajectory:
                 W.write_next_timestep(ts)
 
-        uw = mda.Universe(GRO, outfile)
+        uw = mda.Universe.from_files(GRO, outfile)
 
         # check that the coordinates are identical for each time step
         for orig_ts, written_ts in zip(universe.trajectory, uw.trajectory):
@@ -393,7 +393,7 @@ class TestTRRWriter(_GromacsWriter):
             for ts in universe.trajectory:
                 W.write_next_timestep(ts)
 
-        uw = mda.Universe(GRO, outfile)
+        uw = mda.Universe.from_files(GRO, outfile)
 
         # check that the velocities are identical for each time step
         for orig_ts, written_ts in zip(universe.trajectory, uw.trajectory):
@@ -419,7 +419,7 @@ class TestTRRWriter(_GromacsWriter):
                     ts.has_velocities = False
                 W.write_next_timestep(ts)
 
-        uw = mda.Universe(GRO, outfile)
+        uw = mda.Universe.from_files(GRO, outfile)
         # check that the velocities are identical for each time step, except
         # for the gaps (that we must make sure to raise exceptions on).
         for orig_ts, written_ts in zip(universe.trajectory, uw.trajectory):

@@ -191,14 +191,14 @@ class TestUniverseCreation(object):
             u.load_new('thisfile', format = 'soup')
 
     def test_load_new_memory_reader_success(self):
-        u = mda.Universe(GRO)
+        u = mda.Universe.from_files(GRO)
         prot = u.select_atoms('protein')
         u2 = mda.Merge(prot)
         assert u2.load_new( [ prot.positions ], format=mda.coordinates.memory.MemoryReader) is u2
 
     def test_load_new_memory_reader_fails(self):
         def load():
-            u = mda.Universe(GRO)
+            u = mda.Universe.from_files(GRO)
             prot = u.select_atoms('protein')
             u2 = mda.Merge(prot)
             u2.load_new( [[ prot.positions ]], format=mda.coordinates.memory.MemoryReader)
@@ -264,7 +264,7 @@ class TestUniverse(object):
     def test_load_structure(self):
         # Universe(struct)
         ref = mda.Universe.from_files(PSF, PDB_small)
-        u = mda.Universe(PDB_small)
+        u = mda.Universe.from_files(PDB_small)
         assert_equal(len(u.atoms), 3341, "Loading universe failed somehow")
         assert_almost_equal(u.atoms.positions, ref.atoms.positions)
 
@@ -298,7 +298,7 @@ class TestUniverse(object):
 def test_chainid_quick_select():
     # check that chainIDs get grouped together when making the quick selectors
     # this pdb file has 2 segments with chainID A
-    u = mda.Universe(PDB_chainidrepeat)
+    u = mda.Universe.from_files(PDB_chainidrepeat)
 
     with pytest.warns(DeprecationWarning):
         for sg in (u.A, u.B):
@@ -434,7 +434,7 @@ class TestInMemoryUniverse(object):
                      err_msg="Unexpected shape of trajectory timeseries")
 
     def test_reader_wo_timeseries(self):
-        universe = mda.Universe(GRO, TRR, in_memory=True)
+        universe = mda.Universe.from_files(GRO, TRR, in_memory=True)
         assert_equal(universe.trajectory.timeseries(universe.atoms).shape,
                      (47681, 10, 3),
                      err_msg="Unexpected shape of trajectory timeseries")
@@ -447,14 +447,14 @@ class TestInMemoryUniverse(object):
                      err_msg="Unexpected shape of trajectory timeseries")
 
     def test_reader_wo_timeseries_frame_interval(self):
-        universe = mda.Universe(GRO, TRR, in_memory=True,
+        universe = mda.Universe.from_files(GRO, TRR, in_memory=True,
                                        in_memory_step=3)
         assert_equal(universe.trajectory.timeseries(universe.atoms).shape,
                      (47681, 4, 3),
                      err_msg="Unexpected shape of trajectory timeseries")
 
     def test_existing_universe(self):
-        universe = mda.Universe(PDB_small, DCD)
+        universe = mda.Universe.from_files(PDB_small, DCD)
         universe.transfer_to_memory()
         assert_equal(universe.trajectory.timeseries(universe.atoms).shape,
                      (3341, 98, 3),
@@ -470,7 +470,7 @@ class TestInMemoryUniverse(object):
                      err_msg="Unexpected differences between arrays.")
 
     def test_slicing_with_start_stop(self):
-        universe = MDAnalysis.Universe(PDB_small, DCD)
+        universe = MDAnalysis.Universe.from_files(PDB_small, DCD)
         # Skip only the last frame
         universe.transfer_to_memory(start=10, stop=20)
         assert_equal(universe.trajectory.timeseries(universe.atoms).shape,
@@ -478,7 +478,7 @@ class TestInMemoryUniverse(object):
                      err_msg="Unexpected shape of trajectory timeseries")
 
     def test_slicing_without_start(self):
-        universe = MDAnalysis.Universe(PDB_small, DCD)
+        universe = MDAnalysis.Universe.from_files(PDB_small, DCD)
         # Skip only the last frame
         universe.transfer_to_memory(stop=10)
         assert_equal(universe.trajectory.timeseries(universe.atoms).shape,
@@ -486,7 +486,7 @@ class TestInMemoryUniverse(object):
                      err_msg="Unexpected shape of trajectory timeseries")
 
     def test_slicing_without_stop(self):
-        universe = MDAnalysis.Universe(PDB_small, DCD)
+        universe = MDAnalysis.Universe.from_files(PDB_small, DCD)
         # Skip only the last frame
         universe.transfer_to_memory(start=10)
         print(universe.trajectory.timeseries(universe.atoms).shape)
@@ -495,7 +495,7 @@ class TestInMemoryUniverse(object):
                      err_msg="Unexpected shape of trajectory timeseries")
 
     def test_slicing_step_without_start_stop(self):
-        universe = MDAnalysis.Universe(PDB_small, DCD)
+        universe = MDAnalysis.Universe.from_files(PDB_small, DCD)
         # Skip only the last frame
         universe.transfer_to_memory(step=2)
         print(universe.trajectory.timeseries(universe.atoms).shape)
@@ -504,7 +504,7 @@ class TestInMemoryUniverse(object):
                      err_msg="Unexpected shape of trajectory timeseries")
 
     def test_slicing_step_with_start_stop(self):
-        universe = MDAnalysis.Universe(PDB_small, DCD)
+        universe = MDAnalysis.Universe.from_files(PDB_small, DCD)
         # Skip only the last frame
         universe.transfer_to_memory(start=10, stop=30, step=2)
         print(universe.trajectory.timeseries(universe.atoms).shape)
@@ -513,7 +513,7 @@ class TestInMemoryUniverse(object):
                      err_msg="Unexpected shape of trajectory timeseries")
 
     def test_slicing_step_dt(self):
-        universe = MDAnalysis.Universe(PDB_small, DCD)
+        universe = MDAnalysis.Universe.from_files(PDB_small, DCD)
         dt = universe.trajectory.dt
         universe.transfer_to_memory(step=2)
         assert_almost_equal(dt * 2, universe.trajectory.dt,
@@ -521,7 +521,7 @@ class TestInMemoryUniverse(object):
                             + "dt not updated with step information")
 
     def test_slicing_negative_start(self):
-        universe = MDAnalysis.Universe(PDB_small, DCD)
+        universe = MDAnalysis.Universe.from_files(PDB_small, DCD)
         # Skip only the last frame
         universe.transfer_to_memory(start=-10)
         print(universe.trajectory.timeseries(universe.atoms).shape)
@@ -530,7 +530,7 @@ class TestInMemoryUniverse(object):
                      err_msg="Unexpected shape of trajectory timeseries")
 
     def test_slicing_negative_stop(self):
-        universe = MDAnalysis.Universe(PDB_small, DCD)
+        universe = MDAnalysis.Universe.from_files(PDB_small, DCD)
         # Skip only the last frame
         universe.transfer_to_memory(stop=-20)
         print(universe.trajectory.timeseries(universe.atoms).shape)
@@ -621,15 +621,15 @@ class TestAddTopologyAttr(object):
 class TestAllCoordinatesKwarg(object):
     @pytest.fixture(scope='class')
     def u_GRO_TRR(self):
-        return mda.Universe(GRO, TRR)
+        return mda.Universe.from_files(GRO, TRR)
 
     @pytest.fixture(scope='class')
     def u_GRO_TRR_allcoords(self):
-        return mda.Universe(GRO, TRR, all_coordinates=True)
+        return mda.Universe.from_files(GRO, TRR, all_coordinates=True)
 
     @pytest.fixture(scope='class')
     def u_GRO(self):
-        return mda.Universe(GRO)
+        return mda.Universe.from_files(GRO)
 
     def test_all_coordinates_length(self, u_GRO_TRR, u_GRO_TRR_allcoords):
         # length with all_coords should be +1

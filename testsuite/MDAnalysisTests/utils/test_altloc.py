@@ -29,7 +29,7 @@ from MDAnalysisTests.datafiles import PDB_full
 
 @pytest.fixture()
 def u():
-    return Universe(PDB_full, guess_bonds=True)
+    return Universe.from_files(PDB_full, guess_bonds=True)
 
 
 def test_atomgroups(u):

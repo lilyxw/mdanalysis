@@ -33,7 +33,7 @@ from MDAnalysisTests.datafiles import GRO_MEMPROT, XTC_MEMPROT
 
 @pytest.fixture(scope='module')
 def u():
-    return mda.Universe(GRO_MEMPROT, XTC_MEMPROT)
+    return mda.Universe.from_files(GRO_MEMPROT, XTC_MEMPROT)
 
 
 @pytest.fixture(scope='module')

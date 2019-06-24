@@ -31,7 +31,7 @@ from numpy.testing import assert_array_almost_equal
 
 @pytest.fixture(scope='module')
 def u():
-    return MDAnalysis.Universe(PDB, XTC)
+    return MDAnalysis.Universe.from_files(PDB, XTC)
 
 
 @pytest.fixture(scope='module')

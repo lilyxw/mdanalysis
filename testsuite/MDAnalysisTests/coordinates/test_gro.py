@@ -50,7 +50,7 @@ class TestGROReaderOld(RefAdK):
 
     @pytest.fixture(scope='class')
     def universe(self):
-        return mda.Universe(GRO)
+        return mda.Universe.from_files(GRO)
 
     def test_flag_convert_lengths(self):
         assert_equal(mda.core.flags['convert_lengths'], True,
@@ -99,7 +99,7 @@ class TestGROReaderNoConversionOld(RefAdK):
 
     @pytest.fixture(scope='class')
     def universe(self):
-        return mda.Universe(GRO, convert_units=False)
+        return mda.Universe.from_files(GRO, convert_units=False)
 
     def test_coordinates(self, universe):
         # note: these are the native coordinates in nm; for the test to succeed
@@ -234,7 +234,7 @@ class TestGROWriter(BaseWriterTest):
         with ValueError (Issue 57)"""
         # modify coordinates so we need our own copy or we could mess up
         # parallel tests
-        u = mda.Universe(GRO)
+        u = mda.Universe.from_files(GRO)
         u.atoms[2000].position = [11.589, -999.9995 * 10, 22.2]  # nm -> A
         outfile = self.tmp_file('coordinate-limits-min-test', ref, tempdir)
         with pytest.raises(ValueError):
@@ -245,7 +245,7 @@ class TestGROWriter(BaseWriterTest):
         with ValueError (Issue 57)"""
         # modify coordinates so we need our own copy or we could mess up
         # parallel tests
-        u = mda.Universe(GRO)
+        u = mda.Universe.from_files(GRO)
         # nm -> A  ; [ob] 9999.9996 not caught
         u.atoms[1000].position = [0, 9999.9999 * 10, 1]
         outfile = self.tmp_file('coordinate-limits-max-test', ref, tempdir)
@@ -257,7 +257,7 @@ class TestGROWriter(BaseWriterTest):
         raises exception for convert_units=False"""
         # modify coordinates so we need our own copy or we could mess up
         # parallel tests
-        u = mda.Universe(GRO, convert_units=False)
+        u = mda.Universe.from_files(GRO, convert_units=False)
         u.atoms[1000].position = [22.2, 9999.9999, 37.89]
         outfile = self.tmp_file('coordinate-limits-max-noconversion-test', ref,
                                 tempdir)

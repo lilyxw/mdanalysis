@@ -37,7 +37,7 @@ class TestPDBQT(object):
     @pytest.fixture()
     def universe(self):
         """Set up the standard AdK system in implicit solvent."""
-        return mda.Universe(PDBQT_input)
+        return mda.Universe.from_files(PDBQT_input)
 
     def test_segid(self, universe):
         sel = universe.select_atoms('segid A')
@@ -62,7 +62,7 @@ class TestPDBQT(object):
         the atoms in the query pdb to create a list of protein
         residues within 4.0A of the query atoms.
         '''
-        query_universe = mda.Universe(PDBQT_querypdb)  # PDB file
+        query_universe = mda.Universe.from_files(PDBQT_querypdb)  # PDB file
 
         protein = universe.select_atoms("protein")
         ns_protein = AtomNeighborSearch(protein)
@@ -91,7 +91,7 @@ class TestPDBQTWriter(object):
         return str(tmpdir) + 'out.pdbqt'
 
     def test_roundtrip_writing_coords(self, outfile):
-        u = mda.Universe(PDBQT_input)
+        u = mda.Universe.from_files(PDBQT_input)
         u.atoms.write(outfile)
         u2 = mda.Universe(outfile)
 
@@ -100,7 +100,7 @@ class TestPDBQTWriter(object):
 
     def test_roundtrip_formatting(self, outfile):
         # Compare formatting of first line
-        u = mda.Universe(PDBQT_input)
+        u = mda.Universe.from_files(PDBQT_input)
         u.atoms.write(outfile)
 
         with open(PDBQT_input, 'r') as inf:
@@ -140,7 +140,7 @@ class TestPDBQTWriter(object):
         assert all(u2.atoms[25:50].segids == 'B')
 
     def test_get_writer(self, outfile):
-        u = mda.Universe(PDBQT_input)
+        u = mda.Universe.from_files(PDBQT_input)
         w = u.trajectory.Writer(outfile)
 
         assert isinstance(w, mda.coordinates.PDBQT.PDBQTWriter)

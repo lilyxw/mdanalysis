@@ -134,7 +134,7 @@ class _PDBMetadata(TestCase, Ref4e43):
 class TestExtendedPDBReader(_SingleFrameReader):
     __test__ = True
     def setUp(self):
-        self.universe = mda.Universe(PDB_small,
+        self.universe = mda.Universe.from_files(PDB_small,
                                      topology_format="XPDB",
                                      format="XPDB")
         # 3 decimals in PDB spec
@@ -337,7 +337,7 @@ class TestMultiPDBReader(object):
     @staticmethod
     @pytest.fixture(scope='class')
     def multiverse():
-        return mda.Universe(PDB_multiframe, guess_bonds=True)
+        return mda.Universe.from_files(PDB_multiframe, guess_bonds=True)
 
     @staticmethod
     @pytest.fixture(scope='class')
@@ -478,7 +478,7 @@ def test_conect_bonds_all(tmpdir):
 class TestMultiPDBWriter(TestCase):
     def setUp(self):
         self.universe = mda.Universe.from_files(PSF, PDB_small)
-        self.multiverse = mda.Universe(PDB_multiframe)
+        self.multiverse = mda.Universe.from_files(PDB_multiframe)
         self.universe2 = mda.Universe.from_files(PSF, DCD)
         # 3 decimals in PDB spec
         # http://www.wwpdb.org/documentation/format32/sect9.html#ATOM
@@ -560,7 +560,7 @@ class TestMultiPDBWriter(TestCase):
 
 class TestPDBReaderBig(TestCase, RefAdK):
     def setUp(self):
-        self.universe = mda.Universe(PDB)
+        self.universe = mda.Universe.from_files(PDB)
         self.prec = 6
 
     def tearDown(self):
@@ -705,7 +705,7 @@ class TestPDBXLSerial(TestCase):
     """For Issue #446"""
 
     def setUp(self):
-        self.u = mda.Universe(PDB_xlserial)
+        self.u = mda.Universe.from_files(PDB_xlserial)
 
     def tearDown(self):
         del self.u
@@ -749,7 +749,7 @@ class TestPSF_PDBReader(TestPDBReader):
 
 def test_write_occupancies(tmpdir):
     """Tests for Issue #620 Modify occupancies, write out the file and check"""
-    u = mda.Universe(PDB_small)
+    u = mda.Universe.from_files(PDB_small)
     u.atoms.occupancies = 0.12
 
     outfile = str(tmpdir.join('occ.pdb'))

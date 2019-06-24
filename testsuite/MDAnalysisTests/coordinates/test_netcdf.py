@@ -318,13 +318,13 @@ class _NCDFWriterTest(object):
                                                "correctly".format(k))
 
     def test_TRR2NCDF(self, outfile):
-        trr = mda.Universe(GRO, TRR)
+        trr = mda.Universe.from_files(GRO, TRR)
         with mda.Writer(outfile, trr.trajectory.n_atoms,
                         velocities=True, format="ncdf") as W:
             for ts in trr.trajectory:
                 W.write_next_timestep(ts)
 
-        uw = mda.Universe(GRO, outfile)
+        uw = mda.Universe.from_files(GRO, outfile)
 
         for orig_ts, written_ts in zip(trr.trajectory,
                                        uw.trajectory):

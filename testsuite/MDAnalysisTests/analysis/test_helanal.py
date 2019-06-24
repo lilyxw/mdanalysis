@@ -127,7 +127,7 @@ def test_helanal_trajectory(tmpdir, reference=HELANAL_BENDING_MATRIX,
 
 
 def test_helanal_main(reference=HELANAL_SINGLE_DATA):
-    u = mda.Universe(PDB_small)
+    u = mda.Universe.from_files(PDB_small)
     # Helix 8: 161 - 187 http://www.rcsb.org/pdb/explore.do?structureId=4AKE
     data = MDAnalysis.analysis.helanal.helanal_main(
         PDB_small, selection="name CA and resnum 161-187")
@@ -141,7 +141,7 @@ def test_helanal_main(reference=HELANAL_SINGLE_DATA):
 
 def test_xtc_striding(tmpdir):
     """testing MDAnalysis.analysis.helanal xtc striding: Check for resolution of Issue #188."""
-    u = MDAnalysis.Universe(GRO, XTC)
+    u = MDAnalysis.Universe.from_files(GRO, XTC)
     u.trajectory[1]
 
     with tmpdir.as_cwd():

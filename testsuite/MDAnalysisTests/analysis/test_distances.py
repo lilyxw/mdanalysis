@@ -115,14 +115,14 @@ class TestDist(object):
     @staticmethod
     @pytest.fixture()
     def ag():
-        u = MDAnalysis.Universe(GRO)
+        u = MDAnalysis.Universe.from_files(GRO)
         return u.atoms[1:10]
 
     # TODO: How are ag and ag2 different?!
     @staticmethod
     @pytest.fixture()
     def ag2():
-        u2 = MDAnalysis.Universe(GRO)
+        u2 = MDAnalysis.Universe.from_files(GRO)
         return u2.atoms[11:20]
 
     @staticmethod
@@ -184,7 +184,7 @@ class TestBetween(object):
     @staticmethod
     @pytest.fixture()
     def u():
-        return MDAnalysis.Universe(GRO)
+        return MDAnalysis.Universe.from_files(GRO)
 
     @staticmethod
     @pytest.fixture()

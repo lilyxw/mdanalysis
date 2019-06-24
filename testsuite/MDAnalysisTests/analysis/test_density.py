@@ -148,7 +148,7 @@ class Test_density_from_Universe(object):
 
     @pytest.fixture()
     def universe(self):
-        return mda.Universe(self.topology, self.trajectory)
+        return mda.Universe.from_files(self.topology, self.trajectory)
 
     def check_density_from_Universe(self, atomselection, ref_meandensity,
                                     universe, tmpdir, **kwargs):
@@ -303,7 +303,7 @@ class TestNotWithin(object):
     @staticmethod
     @pytest.fixture()
     def u():
-        return mda.Universe(GRO)
+        return mda.Universe.from_files(GRO)
 
     def test_within(self, u):
         from MDAnalysis.analysis.density import notwithin_coordinates_factory as ncf

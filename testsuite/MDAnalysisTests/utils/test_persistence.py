@@ -43,12 +43,12 @@ class TestAtomGroupPickle(object):
     @staticmethod
     @pytest.fixture()
     def universe():
-        return mda.Universe(PDB_small, PDB_small, PDB_small)
+        return mda.Universe.from_files(PDB_small, PDB_small, PDB_small)
 
     @staticmethod
     @pytest.fixture()
     def universe_n():
-        return mda.Universe(PDB_small, PDB_small, PDB_small, anchor_name="test1")
+        return mda.Universe.from_files(PDB_small, PDB_small, PDB_small, anchor_name="test1")
 
     @staticmethod
     @pytest.fixture()
@@ -85,8 +85,8 @@ class TestAtomGroupPickle(object):
         assert newag.universe is universe_n, "Unpickled AtomGroup on wrong Universe."
 
     def test_unpickle_missing(self):
-        universe = mda.Universe(PDB_small, PDB_small, PDB_small)
-        universe_n = mda.Universe(PDB_small, PDB_small, PDB_small,
+        universe = mda.Universe.from_files(PDB_small, PDB_small, PDB_small)
+        universe_n = mda.Universe.from_files(PDB_small, PDB_small, PDB_small,
                                   anchor_name="test1")
         ag = universe.atoms[:20]  # prototypical AtomGroup
         ag_n = universe_n.atoms[:10]
@@ -154,7 +154,7 @@ class TestPicklingUpdatingAtomGroups(object):
     @staticmethod
     @pytest.fixture()
     def u():
-        return mda.Universe(PDB_small)
+        return mda.Universe.from_files(PDB_small)
 
     def test_pickling_uag(self, u):
         ag = u.atoms[:100]

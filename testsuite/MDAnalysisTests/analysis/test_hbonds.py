@@ -53,7 +53,7 @@ class TestHydrogenBondAnalysis(object):
     @staticmethod
     @pytest.fixture(scope='class')
     def universe():
-        return MDAnalysis.Universe(PDB_helix)
+        return MDAnalysis.Universe.from_files(PDB_helix)
 
     @staticmethod
     @pytest.fixture(scope='class')
@@ -122,7 +122,7 @@ ATOM      2  OW  SOL     2       3.024   4.456   4.147  1.00  0.00      SYST H 0
         assert h.timeseries[0][0][2] == 'ALA2:H1'
 
     def test_true_traj(self):
-        u = MDAnalysis.Universe(GRO, XTC)
+        u = MDAnalysis.Universe.from_files(GRO, XTC)
         u.add_TopologyAttr(guess_types(u.atoms.names))
         h = MDAnalysis.analysis.hbonds.HydrogenBondAnalysis(u,'protein','resname ASP', distance=3.0, angle=120.0)
         h.run()
@@ -152,7 +152,7 @@ class TestHydrogenBondAnalysisPBC(TestHydrogenBondAnalysis):
     @staticmethod
     @pytest.fixture(scope='class')
     def universe():
-        u = MDAnalysis.Universe(PDB_helix)
+        u = MDAnalysis.Universe.from_files(PDB_helix)
         # transfer to memory to changes to coordinates are reset
         u.transfer_to_memory()
         # place in huge oversized box
@@ -223,7 +223,7 @@ class TestHydrogenBondAnalysisHeavyFail(TestHydrogenBondAnalysisHeavy):
 
 class TestHydrogenBondAnalysisChecking(object):
     def _setUp(self):
-        self.universe = u = MDAnalysis.Universe(PDB_helix)
+        self.universe = u = MDAnalysis.Universe.from_files(PDB_helix)
         self.kwargs = {
             'selection1': 'protein',
             'selection2': 'protein',
