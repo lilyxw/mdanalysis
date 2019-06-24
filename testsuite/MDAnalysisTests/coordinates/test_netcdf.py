@@ -45,7 +45,7 @@ class _NCDFReaderTest(_TRJReaderTest):
 
     @pytest.fixture()
     def universe(self):
-        return mda.Universe(self.topology, self.filename)
+        return mda.Universe.from_files(self.topology, self.filename)
 
     def test_slice_iteration(self, universe):
         frames = [ts.frame for ts in universe.trajectory[4:-2:4]]
@@ -94,12 +94,12 @@ class _NCDFReaderTest(_TRJReaderTest):
 class _NCDFReaderTest_mmap_None(_NCDFReaderTest):
     @pytest.fixture()
     def universe(self):
-        return mda.Universe(self.topology, self.filename, mmap=None)
+        return mda.Universe.from_files(self.topology, self.filename, mmap=None)
 
 class _NCDFReaderTest_mmap_True(_NCDFReaderTest):
     @pytest.fixture()
     def universe(self):
-        return mda.Universe(self.topology, self.filename, mmap=True)
+        return mda.Universe.from_files(self.topology, self.filename, mmap=True)
 
     def test_mmap_kwarg(self, universe):
         # default is None
@@ -108,7 +108,7 @@ class _NCDFReaderTest_mmap_True(_NCDFReaderTest):
 class _NCDFReaderTest_mmap_False(_NCDFReaderTest):
     @pytest.fixture()
     def universe(self):
-        return mda.Universe(self.topology, self.filename, mmap=False)
+        return mda.Universe.from_files(self.topology, self.filename, mmap=False)
 
     def test_mmap_kwarg(self, universe):
         assert universe.trajectory._mmap == False
@@ -141,7 +141,7 @@ class TestNCDFReader2(object):
 
     @pytest.fixture(scope='class')
     def u(self):
-        return mda.Universe(PFncdf_Top, PFncdf_Trj)
+        return mda.Universe.from_files(PFncdf_Top, PFncdf_Trj)
 
     def test_positions_1(self, u):
         """Check positions on first frame"""
@@ -200,7 +200,7 @@ class _NCDFWriterTest(object):
 
     @pytest.fixture()
     def universe(self):
-        return mda.Universe(self.topology, self.filename)
+        return mda.Universe.from_files(self.topology, self.filename)
 
     @pytest.fixture()
     def outfile(self, tmpdir):
@@ -265,7 +265,7 @@ class _NCDFWriterTest(object):
             writer.write_next_timestep(ts)
 
     def _check_new_traj(self, universe, outfile):
-        uw = mda.Universe(self.topology, outfile)
+        uw = mda.Universe.from_files(self.topology, outfile)
 
         # check that the trajectories are identical for each time step
         for orig_ts, written_ts in zip(universe.trajectory,
@@ -356,7 +356,7 @@ class _NCDFWriterTest(object):
             for ts in universe.trajectory:
                 W.write(p)
 
-        uw = mda.Universe(outtop, outfile)
+        uw = mda.Universe.from_files(outtop, outfile)
         pw = uw.atoms
 
         for orig_ts, written_ts in zip(universe.trajectory,
@@ -433,7 +433,7 @@ class TestNCDFWriterVelsForces(object):
             w.write(ts1)
             w.write(ts2)
 
-        u = mda.Universe(self.top, outfile)
+        u = mda.Universe.from_files(self.top, outfile)
         for ts, ref_ts in zip(u.trajectory, [ts1, ts2]):
             if pos:
                 assert_almost_equal(ts._pos, ref_ts._pos, self.prec)

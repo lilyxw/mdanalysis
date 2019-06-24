@@ -57,23 +57,23 @@ class TOPBase(ParserBase):
         assert len(top.impropers.values) == self.expected_n_impropers
 
     def test_bonds_atom_counts(self, filename):
-        u = mda.Universe(filename)
+        u = mda.Universe.from_files(filename)
         assert len(u.atoms[[0]].bonds) == self.expected_n_zero_bonds
         assert len(u.atoms[[self.atom_i]].bonds) == self.expected_n_i_bonds
 
     def test_angles_atom_counts(self, filename):
-        u = mda.Universe(filename)
+        u = mda.Universe.from_files(filename)
         assert len(u.atoms[[0]].angles) == self.expected_n_zero_angles
         assert len(u.atoms[[self.atom_i]].angles) == self.expected_n_i_angles
 
     def test_dihedrals_atom_counts(self, filename):
-        u = mda.Universe(filename)
+        u = mda.Universe.from_files(filename)
         assert len(u.atoms[[0]].dihedrals) == self.expected_n_zero_dihedrals
         assert len(u.atoms[[self.atom_i]].dihedrals) == \
             self.expected_n_i_dihedrals
 
     def test_impropers_atom_counts(self, filename):
-        u = mda.Universe(filename)
+        u = mda.Universe.from_files(filename)
         assert len(u.atoms[[0]].impropers) == self.expected_n_zero_impropers
         assert len(u.atoms[[self.atom_i]].impropers) == \
             self.expected_n_i_impropers
@@ -351,12 +351,12 @@ class TestErrors(object):
     # Check Errors being raised
     def test_versionline(self):
         with pytest.raises(ValueError):
-            u = mda.Universe(PRMErr1)
+            u = mda.Universe.from_files(PRMErr1)
 
     def test_title(self):
         with pytest.raises(ValueError):
-            u = mda.Universe(PRMErr2)
+            u = mda.Universe.from_files(PRMErr2)
 
     def test_flag(self):
         with pytest.raises(IndexError):
-            u = mda.Universe(PRMErr3)
+            u = mda.Universe.from_files(PRMErr3)

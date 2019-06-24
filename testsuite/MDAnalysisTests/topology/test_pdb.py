@@ -221,7 +221,7 @@ END
 """
 
 def test_PDB_hex():
-    u = mda.Universe.from_files(StringIO(PDB_hex), format='PDB')
+    u = mda.Universe.from_streams(StringIO(PDB_hex), format='PDB')
     assert len(u.atoms) == 5
     assert u.atoms[0].id == 1
     assert u.atoms[1].id == 100000

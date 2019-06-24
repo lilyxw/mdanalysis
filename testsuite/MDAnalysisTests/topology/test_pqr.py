@@ -61,7 +61,7 @@ class TestPQRParser2(TestPQRParser):
 
 
 def test_record_types():
-    u = mda.Universe(PQR_icodes)
+    u = mda.Universe.from_files(PQR_icodes)
 
     assert u.atoms[4052].record_type == 'ATOM'
     assert u.atoms[4053].record_type == 'HETATM'
@@ -83,7 +83,7 @@ ENDMDL
 '''
 
 def test_gromacs_flavour():
-    u = mda.Universe(StringIO(GROMACS_PQR), format='PQR')
+    u = mda.Universe.from_streams(StringIO(GROMACS_PQR), format='PQR')
 
     assert len(u.atoms) == 1
     # topology things

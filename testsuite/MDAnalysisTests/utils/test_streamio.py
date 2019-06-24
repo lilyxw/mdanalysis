@@ -344,32 +344,32 @@ del _StreamData
 # possibly add tests to individual readers instead?
 class TestStreamIO(RefAdKSmall):
     def test_PrimitivePDBReader(self):
-        u = MDAnalysis.Universe(streamData.as_NamedStream('PDB'))
+        u = MDAnalysis.Universe.from_files(streamData.as_NamedStream('PDB'))
         assert_equal(u.atoms.n_atoms, self.ref_n_atoms)
 
 
     def test_PDBReader(self):
         try:
-            u = MDAnalysis.Universe(streamData.as_NamedStream('PDB'))
+            u = MDAnalysis.Universe.from_files(streamData.as_NamedStream('PDB'))
         except Exception as err:
             raise pytest.fail("StreamIO not supported:\n>>>>> {0}".format(err))
         assert_equal(u.atoms.n_atoms, self.ref_n_atoms)
 
     def test_CRDReader(self):
-        u = MDAnalysis.Universe(streamData.as_NamedStream('CRD'))
+        u = MDAnalysis.Universe.from_files(streamData.as_NamedStream('CRD'))
         assert_equal(u.atoms.n_atoms, self.ref_n_atoms)
 
     def test_PSFParser(self):
-        u = MDAnalysis.Universe(streamData.as_NamedStream('PSF'))
+        u = MDAnalysis.Universe.from_files(streamData.as_NamedStream('PSF'))
         assert_equal(u.atoms.n_atoms, self.ref_n_atoms)
 
     def test_PSF_CRD(self):
-        u = MDAnalysis.Universe(streamData.as_NamedStream('PSF'),
+        u = MDAnalysis.Universe.from_files(streamData.as_NamedStream('PSF'),
                                 streamData.as_NamedStream('CRD'))
         assert_equal(u.atoms.n_atoms, self.ref_n_atoms)
 
     def test_PQRReader(self):
-        u = MDAnalysis.Universe(streamData.as_NamedStream('PQR'))
+        u = MDAnalysis.Universe.from_files(streamData.as_NamedStream('PQR'))
         assert_equal(u.atoms.n_atoms, self.ref_n_atoms)
         assert_almost_equal(u.atoms.total_charge(), self.ref_charmm_totalcharge, 3,
                             "Total charge (in CHARMM) does not match expected value.")
@@ -377,7 +377,7 @@ class TestStreamIO(RefAdKSmall):
                             "Charges for H atoms do not match.")
 
     def test_PDBQTReader(self):
-        u = MDAnalysis.Universe(streamData.as_NamedStream('PDBQT'))
+        u = MDAnalysis.Universe.from_files(streamData.as_NamedStream('PDBQT'))
         sel = u.select_atoms('backbone')
         assert_equal(sel.n_atoms, 796)
         sel = u.select_atoms('segid A')
@@ -386,7 +386,7 @@ class TestStreamIO(RefAdKSmall):
         assert_equal(sel.n_atoms, 896, "failed to select segment B")
 
     def test_GROReader(self):
-        u = MDAnalysis.Universe(streamData.as_NamedStream('GRO'))
+        u = MDAnalysis.Universe.from_files(streamData.as_NamedStream('GRO'))
         assert_equal(u.atoms.n_atoms, 6)
         assert_almost_equal(u.atoms[3].position,
                             10. * np.array([1.275, 0.053, 0.622]), 3,  # manually convert nm -> A
@@ -396,14 +396,14 @@ class TestStreamIO(RefAdKSmall):
                             err_msg="wrong velocity for water 2 OW")
 
     def test_MOL2Reader(self):
-        u = MDAnalysis.Universe(streamData.as_NamedStream('MOL2'))
+        u = MDAnalysis.Universe.from_files(streamData.as_NamedStream('MOL2'))
         assert_equal(len(u.atoms), 49)
         assert_equal(u.trajectory.n_frames, 200)
         u.trajectory[199]
         assert_array_almost_equal(u.atoms.positions[0], [1.7240, 11.2730, 14.1200])
 
     def test_XYZReader(self):
-        u = MDAnalysis.Universe(streamData.as_NamedStream('XYZ_PSF'),
+        u = MDAnalysis.Universe.from_files(streamData.as_NamedStream('XYZ_PSF'),
                                 streamData.as_NamedStream('XYZ'))
         assert_equal(len(u.atoms), 8)
         assert_equal(u.trajectory.n_frames, 3)

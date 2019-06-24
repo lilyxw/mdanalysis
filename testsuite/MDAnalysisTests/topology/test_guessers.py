@@ -104,7 +104,7 @@ def test_guess_impropers():
 
 
 def test_guess_bonds():
-    u = mda.Universe(two_water_gro)
+    u = mda.Universe.from_files(two_water_gro)
     bonds = guessers.guess_bonds(u.atoms, u.atoms.positions, u.dimensions)
     assert_equal(bonds, ((0, 1),
                          (0, 2),

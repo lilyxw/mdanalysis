@@ -88,7 +88,7 @@ def test_nsgrid_PBC_rect():
     results = np.array([191, 192, 672, 682, 683, 684, 995, 996, 2060, 2808, 3300, 3791,
                         3792]) - 1  # Atomid are from gmx select so there start from 1 and not 0. hence -1!
 
-    universe = mda.Universe(Martini_membrane_gro)
+    universe = mda.Universe.from_files(Martini_membrane_gro)
     cutoff = 7
 
     # FastNS is called differently to max coverage

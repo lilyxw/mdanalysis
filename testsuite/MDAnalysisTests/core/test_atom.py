@@ -120,7 +120,7 @@ class TestAtomNoForceNoVel(object):
     @staticmethod
     @pytest.fixture()
     def a():
-        u = mda.Universe(XYZ_mini)
+        u = mda.Universe.from_files(XYZ_mini)
         return u.atoms[0]
 
     def test_velocity_fail(self, a):

@@ -176,7 +176,7 @@ class RefVGV(object):
 
     Computed from bala.trj::
 
-      w = MDAnalysis.Universe(PRMncdf, TRJncdf)
+      w = MDAnalysis.Universe.from_files(PRMncdf, TRJncdf)
       ref_n_atoms = len(w.atoms) ref_proteinatoms = len(w.select_atoms("protein"))
       ref_sum_centre_of_geometry = np.sum([protein.center_of_geometry()
                                            for ts in w.trajectory])

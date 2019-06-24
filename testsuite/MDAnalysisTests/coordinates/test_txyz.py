@@ -32,17 +32,17 @@ import MDAnalysis as mda
 
 @pytest.fixture
 def TXYZ_U():
-    return mda.Universe(TXYZ)
+    return mda.Universe.from_files(TXYZ)
 
 
 @pytest.fixture
 def ARC_U():
-    return mda.Universe(ARC)
+    return mda.Universe.from_files(ARC)
 
 
 @pytest.fixture
 def ARC_PBC_U():
-    return mda.Universe(ARC_PBC)
+    return mda.Universe.from_files(ARC_PBC)
 
 
 def test_txyz_positions(TXYZ_U):

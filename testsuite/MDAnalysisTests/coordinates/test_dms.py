@@ -35,7 +35,7 @@ from MDAnalysisTests.coordinates.base import BaseTimestepTest
 class TestDMSReader(object):
     @pytest.fixture()
     def universe(self):
-        return mda.Universe(DMS)
+        return mda.Universe.from_files(DMS)
 
     @pytest.fixture()
     def ts(self, universe):

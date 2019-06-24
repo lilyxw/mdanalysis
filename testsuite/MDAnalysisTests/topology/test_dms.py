@@ -43,7 +43,7 @@ class TestDMSParser(ParserBase):
 
     def test_atomsels(self, filename):
         # Desired value taken from VMD atomsel
-        u = mda.Universe(filename)
+        u = mda.Universe.from_files(filename)
 
         s0 = u.select_atoms("name CA")
         assert len(s0) == 214

@@ -411,14 +411,14 @@ class TestEncoreClustering(object):
 
     @pytest.fixture()
     def ens1(self, ens1_template):
-        return mda.Universe(
+        return mda.Universe.from_files(
                 ens1_template.filename,
                 ens1_template.trajectory.timeseries(order='fac'),
                 format=mda.coordinates.memory.MemoryReader)
 
     @pytest.fixture()
     def ens2(self, ens2_template):
-        return mda.Universe(
+        return mda.Universe.from_files(
             ens2_template.filename,
             ens2_template.trajectory.timeseries(order='fac'),
             format=mda.coordinates.memory.MemoryReader)
@@ -638,14 +638,14 @@ class TestEncoreDimensionalityReduction(object):
 
     @pytest.fixture()
     def ens1(self, ens1_template):
-        return mda.Universe(
+        return mda.Universe.from_files(
             ens1_template.filename,
             ens1_template.trajectory.timeseries(order='fac'),
             format=mda.coordinates.memory.MemoryReader)
 
     @pytest.fixture()
     def ens2(self, ens2_template):
-        return mda.Universe(
+        return mda.Universe.from_files(
             ens2_template.filename,
             ens2_template.trajectory.timeseries(order='fac'),
             format=mda.coordinates.memory.MemoryReader)
@@ -740,7 +740,7 @@ class TestEncoreDimensionalityReduction(object):
 class TestEncoreConfDistMatrix(object):
     def test_get_distance_matrix(self):
         # Issue #1324
-        u = mda.Universe(TPR,XTC)
+        u = mda.Universe.from_files(TPR,XTC)
         dm = confdistmatrix.get_distance_matrix(u)
 
 class TestEncoreImportWarnings(object):

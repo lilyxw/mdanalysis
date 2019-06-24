@@ -149,18 +149,18 @@ class TestMOL2NoSubstructure(object):
         assert r.n_atoms == 45
 
     def test_universe(self):
-        u = mda.Universe(mol2_zinc)
+        u = mda.Universe.from_files(mol2_zinc)
         assert len(u.atoms) == self.n_atoms
 
     def test_write_nostructure(self):
         mytempdir = tempdir.TempDir()
         outfile = os.path.join(mytempdir.name, 'test.mol2')
 
-        u = mda.Universe(mol2_zinc)
+        u = mda.Universe.from_files(mol2_zinc)
         with mda.Writer(outfile) as W:
             W.write(u.atoms)
 
-        u2 = mda.Universe(outfile)
+        u2 = mda.Universe.from_files(outfile)
 
         assert len(u.atoms) == len(u2.atoms)
 

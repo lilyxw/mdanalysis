@@ -56,7 +56,7 @@ class _TestLammpsData_Coords(object):
 
     @pytest.fixture(scope='class')
     def u(self):
-        return mda.Universe(self.filename)
+        return mda.Universe.from_files(self.filename)
 
     def test_n_atoms(self, u):
         assert_equal(u.atoms.n_atoms, self.n_atoms)
@@ -103,14 +103,14 @@ class TestLammpsDataMini_Coords(_TestLammpsData_Coords, RefLAMMPSDataMini):
 ], scope='module')
 def LAMMPSDATAWriter(request, tmpdir_factory):
     filename = request.param
-    u = mda.Universe(filename)
+    u = mda.Universe.from_files(filename)
     fn = os.path.split(filename)[1]
     outfile = str(tmpdir_factory.mktemp('data').join(fn))
 
     with mda.Writer(outfile, n_atoms=u.atoms.n_atoms) as w:
         w.write(u.atoms)
 
-    u_new = mda.Universe(outfile)
+    u_new = mda.Universe.from_files(outfile)
 
     return u, u_new
 
@@ -160,14 +160,14 @@ class TestLAMMPSDATAWriter_data_partial(TestLAMMPSDATAWriter):
     def LAMMPSDATA_partial(tmpdir):
         filename = LAMMPSdata
         N_kept = 5
-        u = mda.Universe(filename)
+        u = mda.Universe.from_files(filename)
         ext = os.path.splitext(filename)[1]
         outfile = str(tmpdir.join('lammps-data-writer-test' + ext))
 
         with mda.Writer(outfile, n_atoms=N_kept) as w:
             w.write(u.atoms[:N_kept])
 
-        u_new = mda.Universe(outfile)
+        u_new = mda.Universe.from_files(outfile)
 
         return u, u_new
 
@@ -201,7 +201,7 @@ class TestLAMMPSDCDReader(RefLAMMPSDataDCD):
 
     @pytest.fixture(scope='class')
     def u(self):
-        return mda.Universe(self.topology, self.trajectory,
+        return mda.Universe.from_files(self.topology, self.trajectory,
                             format=self.format)
 
     def test_Reader_is_LAMMPS(self, u):
@@ -235,7 +235,7 @@ class TestLAMMPSDCDReader(RefLAMMPSDataDCD):
                                 iframe, self.dt))
 
     def test_LAMMPSDCDReader_set_dt(self, u, dt=1500.):
-        u = mda.Universe(self.topology, self.trajectory, format=self.format,
+        u = mda.Universe.from_files(self.topology, self.trajectory, format=self.format,
                          dt=dt)
         iframe = self.get_frame_from_end(1, u)
         assert_almost_equal(u.trajectory[iframe].time, iframe * dt,
@@ -245,7 +245,7 @@ class TestLAMMPSDCDReader(RefLAMMPSDataDCD):
 
     def test_wrong_time_unit(self):
         def wrong_load(unit="nm"):
-            return mda.Universe(self.topology, self.trajectory,
+            return mda.Universe.from_files(self.topology, self.trajectory,
                                 format=self.format,
                                 timeunit=unit)
 
@@ -254,7 +254,7 @@ class TestLAMMPSDCDReader(RefLAMMPSDataDCD):
 
     def test_wrong_unit(self):
         def wrong_load(unit="GARBAGE"):
-            return mda.Universe(self.topology, self.trajectory,
+            return mda.Universe.from_files(self.topology, self.trajectory,
                                 format=self.format,
                                 timeunit=unit)
 
@@ -267,7 +267,7 @@ class TestLAMMPSDCDWriter(RefLAMMPSDataDCD):
 
     @pytest.fixture(scope='class')
     def u(self):
-        return mda.Universe(self.topology, self.trajectory, format=self.format)
+        return mda.Universe.from_files(self.topology, self.trajectory, format=self.format)
 
     def test_Writer_is_LAMMPS(self, u, tmpdir):
         ext = os.path.splitext(self.trajectory)[1]
@@ -286,7 +286,7 @@ class TestLAMMPSDCDWriter(RefLAMMPSDataDCD):
             for ts in u.trajectory[:n_frames]:
                 w.write(ts)
 
-        short = mda.Universe(self.topology, outfile)
+        short = mda.Universe.from_files(self.topology, outfile)
         assert_equal(short.trajectory.n_frames, n_frames,
                      err_msg="number of frames mismatch")
         assert_almost_equal(short.trajectory[n_frames - 1].positions,
@@ -313,7 +313,7 @@ class TestLAMMPSDCDWriter(RefLAMMPSDataDCD):
         #       attached to their frames. This could be considered a bug
         #       but DCD has no way to store timestamps. Right now, we'll simply
         #       test that this is the case and pass.
-        reversed = mda.Universe(self.topology, outfile)
+        reversed = mda.Universe.from_files(self.topology, outfile)
         assert_equal(reversed.trajectory.n_frames, u.trajectory.n_frames,
                      err_msg="number of frames mismatch")
         rev_times = [ts.time for ts in reversed.trajectory]
@@ -357,7 +357,7 @@ class TestLAMMPSDCDWriterClass(object):
 
 
 def test_triclinicness():
-    u = mda.Universe(LAMMPScnt)
+    u = mda.Universe.from_files(LAMMPScnt)
 
     assert u.dimensions[3] == 90.
     assert u.dimensions[4] == 90.
@@ -421,7 +421,7 @@ class TestLammpsDumpReader(object):
                 with gzip.GzipFile(f, 'wb') as fout:
                     fout.write(data)
 
-        yield mda.Universe(f, format='LAMMPSDUMP')
+        yield mda.Universe.from_files(f, format='LAMMPSDUMP')
 
     @pytest.fixture()
     def reference_positions(self):

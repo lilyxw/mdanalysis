@@ -56,7 +56,7 @@ import pytest
 class TestDeprecationWarnings(object):
     def test_AtomGroupUniverse_usage_warning(self):
         with pytest.deprecated_call():
-            mda.core.AtomGroup.Universe.from_files(PSF, DCD)
+            mda.core.AtomGroup.Universe(PSF, DCD)
 
 
 class TestAtomGroupToTopology(object):
@@ -132,7 +132,7 @@ class TestAtomGroupWriting(object):
         ref_positions = np.stack([ts.positions for ts in selection])
         u.atoms.write(destination, frames=frames)
 
-        u_new = mda.Universe(destination)
+        u_new = mda.Universe.from_files(destination)
         new_positions = np.stack([ts.positions for ts in u_new.trajectory])
 
         assert_array_almost_equal(new_positions, ref_positions)
@@ -148,7 +148,7 @@ class TestAtomGroupWriting(object):
         ref_positions = np.stack([ts.positions for ts in selection])
         u.atoms.write(destination, frames=selection)
 
-        u_new = mda.Universe(destination)
+        u_new = mda.Universe.from_files(destination)
         new_positions = np.stack([ts.positions for ts in u_new.trajectory])
 
         assert_array_almost_equal(new_positions, ref_positions)
@@ -157,7 +157,7 @@ class TestAtomGroupWriting(object):
     def test_write_frame_none(self, u, tmpdir, extension):
         destination = str(tmpdir / 'test.' + extension)
         u.atoms.write(destination, frames=None)
-        u_new = mda.Universe(destination)
+        u_new = mda.Universe.from_files(destination)
         new_positions = np.stack([ts.positions for ts in u_new.trajectory])
         # Most format only save 3 decimals; XTC even has only 2.
         assert_array_almost_equal(
@@ -167,7 +167,7 @@ class TestAtomGroupWriting(object):
     def test_write_frames_all(self, u, tmpdir):
         destination = str(tmpdir / 'test.dcd')
         u.atoms.write(destination, frames='all')
-        u_new = mda.Universe(destination)
+        u_new = mda.Universe.from_files(destination)
         ref_positions = np.stack([ts.positions for ts in u.trajectory])
         new_positions = np.stack([ts.positions for ts in u_new.trajectory])
         assert_array_almost_equal(new_positions, ref_positions)
@@ -224,7 +224,7 @@ class _WriteAtoms(object):
         return str(tmpdir) + "writeatoms." + self.ext
 
     def universe_from_tmp(self, outfile):
-        return mda.Universe(outfile, convert_units=True)
+        return mda.Universe.from_files(outfile, convert_units=True)
 
     def test_write_atoms(self, universe, outfile):
         universe.atoms.write(outfile)
@@ -536,7 +536,7 @@ class TestWrap(object):
 
     @pytest.fixture()
     def u(self):
-        return mda.Universe(TRZ_psf, TRZ)
+        return mda.Universe.from_files(TRZ_psf, TRZ)
 
     @pytest.fixture()
     def ag(self, u):
@@ -700,10 +700,10 @@ class TestOrphans(object):
       - should be able to use the Reader (coordinates)
     """
     def test_atom(self):
-        u = mda.Universe(two_water_gro)
+        u = mda.Universe.from_files(two_water_gro)
 
         def getter():
-            u2 = mda.Universe(two_water_gro)
+            u2 = mda.Universe.from_files(two_water_gro)
             return u2.atoms[1]
 
         atom = getter()
@@ -713,10 +713,10 @@ class TestOrphans(object):
         assert_almost_equal(atom.position, u.atoms[1].position)
 
     def test_atomgroup(self):
-        u = mda.Universe(two_water_gro)
+        u = mda.Universe.from_files(two_water_gro)
 
         def getter():
-            u2 = mda.Universe(two_water_gro)
+            u2 = mda.Universe.from_files(two_water_gro)
             return u2.atoms[:4]
 
         ag = getter()
@@ -738,8 +738,8 @@ class TestCrossUniverse(object):
         Checks that adding objects from different universes
         doesn't proceed quietly.
         """
-        u1 = mda.Universe(two_water_gro)
-        u2 = mda.Universe(two_water_gro)
+        u1 = mda.Universe.from_files(two_water_gro)
+        u2 = mda.Universe.from_files(two_water_gro)
 
         A = [u1.atoms[:2], u1.atoms[3]]
         B = [u2.atoms[:3], u2.atoms[0]]
@@ -749,7 +749,7 @@ class TestCrossUniverse(object):
 
     def test_adding_empty_ags(self):
         """ Check that empty AtomGroups don't trip up on the Universe check """
-        u = mda.Universe(two_water_gro)
+        u = mda.Universe.from_files(two_water_gro)
 
         assert len(u.atoms[[]] + u.atoms[:3]) == 3
         assert len(u.atoms[:3] + u.atoms[[]]) == 3
@@ -883,7 +883,7 @@ class TestPBCFlag(object):
 
     @pytest.fixture()
     def ag(self):
-        universe = mda.Universe(TRZ_psf, TRZ)
+        universe = mda.Universe.from_files(TRZ_psf, TRZ)
         return universe.residues[0:3]
 
     def test_default(self, ag, ref_noPBC):
@@ -1429,7 +1429,7 @@ class TestAtomGroupTimestep(object):
 
     @pytest.fixture()
     def universe(self):
-        return mda.Universe(TRZ_psf, TRZ)
+        return mda.Universe.from_files(TRZ_psf, TRZ)
 
     def test_partial_timestep(self, universe):
         ag = universe.select_atoms('name Ca')

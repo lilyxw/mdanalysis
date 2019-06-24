@@ -83,6 +83,6 @@ from MDAnalysis.tests.datafiles import (
 def test_str_types(top_format, top, prop):
     # Python 2/3 topology string type checking
     # Related to Issue #1336
-    u = MDAnalysis.Universe(top, format=top_format)
+    u = MDAnalysis.Universe.from_files(top, format=top_format)
     if hasattr(u.atoms[0], prop):
         assert isinstance(getattr(u.atoms[0], prop), string_types)

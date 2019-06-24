@@ -407,7 +407,7 @@ class TestTriclinicDistances(object):
     @staticmethod
     @pytest.fixture()
     def TRIC():
-        return MDAnalysis.Universe(TRIC)
+        return MDAnalysis.Universe.from_files(TRIC)
 
     @staticmethod
     @pytest.fixture()
@@ -798,7 +798,7 @@ class Test_apply_PBC(object):
                             err_msg="Ortho apply_PBC #2 failed comparison with np")
 
     def test_tric_PBC(self, backend):
-        U = MDAnalysis.Universe(TRIC)
+        U = MDAnalysis.Universe.from_files(TRIC)
         atoms = U.atoms.positions
         box = U.dimensions
 

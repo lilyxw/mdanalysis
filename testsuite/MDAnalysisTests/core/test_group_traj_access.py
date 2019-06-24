@@ -430,7 +430,7 @@ class TestAtomGroupForces(object):
 
     @pytest.fixture()
     def universe(self):
-        return MDAnalysis.Universe(COORDINATES_XYZ, COORDINATES_TRR)
+        return MDAnalysis.Universe.from_files(COORDINATES_XYZ, COORDINATES_TRR)
 
     @pytest.fixture()
     def ag(self, universe):

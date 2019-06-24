@@ -328,7 +328,7 @@ class TestSelectionsCHARMM(object):
 class TestSelectionsAMBER(object):
     @pytest.fixture()
     def universe(self):
-        return MDAnalysis.Universe(PRMpbc, TRJpbc_bz2)
+        return MDAnalysis.Universe.from_files(PRMpbc, TRJpbc_bz2)
 
     def test_protein(self, universe):
         sel = universe.select_atoms('protein')
@@ -415,7 +415,7 @@ class TestSelectionsTPR(object):
     @staticmethod
     @pytest.fixture(scope='class')
     def universe():
-        return MDAnalysis.Universe(TPR,XTC)
+        return MDAnalysis.Universe.from_files(TPR,XTC)
 
     def test_same_fragment(self, universe):
         """Test the 'same ... as' construct (Issue 217)"""
@@ -449,7 +449,7 @@ class TestSelectionsTPR(object):
 class TestSelectionsNucleicAcids(object):
     @pytest.fixture()
     def universe(self):
-        return MDAnalysis.Universe(NUCL)
+        return MDAnalysis.Universe.from_files(NUCL)
 
     def test_nucleic(self, universe):
         rna = universe.select_atoms("nucleic")
@@ -457,7 +457,7 @@ class TestSelectionsNucleicAcids(object):
         assert_equal(rna.n_residues, 23)
 
     def test_nucleic_all(self, universe):
-        u = mda.Universe(NUCLsel)
+        u = mda.Universe.from_files(NUCLsel)
 
         sel = u.select_atoms('nucleic')
 
@@ -572,7 +572,7 @@ class BaseDistanceSelection(object):
 class TestOrthogonalDistanceSelections(BaseDistanceSelection):
     @pytest.fixture()
     def u(self):
-        return mda.Universe(TRZ_psf, TRZ)
+        return mda.Universe.from_files(TRZ_psf, TRZ)
 
     @pytest.mark.parametrize('meth, periodic', [
         ('distmat', True),

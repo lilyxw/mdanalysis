@@ -96,13 +96,13 @@ class TestBaseTimestepInterface(object):
     @pytest.fixture()
     def universe(self, topology, trajectory, trajectory_format, topology_format):
         if trajectory_format is not None and topology_format is not None:
-            return mda.Universe(topology, trajectory, format=trajectory_format,
+            return mda.Universe.from_files(topology, trajectory, format=trajectory_format,
                                 topology_format=topology_format)
 
         if trajectory is not None:
-            return mda.Universe(topology, trajectory)
+            return mda.Universe.from_files(topology, trajectory)
         else:
-            return mda.Universe(topology, format=trajectory_format)
+            return mda.Universe.from_files(topology, format=trajectory_format)
 
     def test_frame(self, universe):
         assert_equal(universe.trajectory.ts.frame, 0)
@@ -123,7 +123,7 @@ class TestBaseTimestepInterface(object):
 def test_atomgroup_dims_access(uni):
     uni_args, uni_kwargs = uni
     # check that AtomGroup.dimensions always returns a copy
-    u = mda.Universe(*uni_args, **uni_kwargs)
+    u = mda.Universe.from_files(*uni_args, **uni_kwargs)
 
     ag = u.atoms[:10]
 

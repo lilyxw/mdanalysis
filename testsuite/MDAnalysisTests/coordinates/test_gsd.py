@@ -32,7 +32,7 @@ import os
 
 @pytest.fixture
 def GSD_U():
-    return mda.Universe(GSD)
+    return mda.Universe.from_files(GSD)
 
 @pytest.mark.skipif(os.name == 'nt',
                     reason="gsd not windows compatible")

@@ -180,6 +180,6 @@ class TestFragments(object):
 
 
 def test_tpr_fragments():
-    frags = mda.Universe(TPR, XTC).atoms.fragments
+    frags = mda.Universe.from_files(TPR, XTC).atoms.fragments
 
     assert len(frags[0]) == 3341

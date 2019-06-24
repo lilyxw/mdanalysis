@@ -29,7 +29,7 @@ from numpy.testing import assert_almost_equal
 
 
 def test_serial():
-    universe = mda.Universe(waterPSF, waterDCD)
+    universe = mda.Universe.from_files(waterPSF, waterDCD)
     sel_string = 'all'
     selection = universe.select_atoms(sel_string)
 

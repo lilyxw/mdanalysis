@@ -544,7 +544,7 @@ class BaseWriterTest(object):
                                           decimal=ref.prec)
 
     def test_write_trajectory_atomgroup(self, ref,reader, tempdir):
-        uni = mda.Universe(ref.topology, ref.trajectory)
+        uni = mda.Universe.from_files(ref.topology, ref.trajectory)
         outfile = self.tmp_file('write-atoms-test', ref, tempdir)
         with ref.writer(outfile, uni.atoms.n_atoms) as w:
             for ts in uni.trajectory:
@@ -552,7 +552,7 @@ class BaseWriterTest(object):
         self._check_copy(outfile, ref, reader)
 
     def test_write_trajectory_universe(self, ref, reader, tempdir):
-        uni = mda.Universe(ref.topology, ref.trajectory)
+        uni = mda.Universe.from_files(ref.topology, ref.trajectory)
         outfile = self.tmp_file('write-uni-test', ref, tempdir)
         with ref.writer(outfile, uni.atoms.n_atoms) as w:
             for ts in uni.trajectory:
@@ -560,7 +560,7 @@ class BaseWriterTest(object):
         self._check_copy(outfile, ref, reader)
 
     def test_write_selection(self, ref, reader, u_no_resnames, u_no_resids, u_no_names, tempdir):
-        uni = mda.Universe(ref.topology, ref.trajectory)
+        uni = mda.Universe.from_files(ref.topology, ref.trajectory)
         sel_str = 'resid 1'
         sel = uni.select_atoms(sel_str)
         outfile = self.tmp_file('write-selection-test', ref, tempdir)
@@ -1012,7 +1012,7 @@ class BaseTimestepTest(object):
     def test_copy(self, func, ts):
         if self.uni_args is None:
             return
-        u = mda.Universe(*self.uni_args)
+        u = mda.Universe.from_files(*self.uni_args)
         ts = u.trajectory.ts
         func(self, self.name, ts)
 

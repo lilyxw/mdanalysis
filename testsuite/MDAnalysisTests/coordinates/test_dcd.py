@@ -359,7 +359,7 @@ class RefNAMDtriclinicDCD(object):
 
 @pytest.mark.parametrize("ref", (RefCHARMMtriclinicDCD, RefNAMDtriclinicDCD))
 def test_read_unitcell_triclinic(ref):
-    u = mda.Universe(ref.topology, ref.trajectory)
+    u = mda.Universe.from_files(ref.topology, ref.trajectory)
     for ts, box in zip(u.trajectory, ref.ref_dimensions[:, 1:]):
         assert_array_almost_equal(ts.dimensions, box, 4,
                                   err_msg="box dimensions A,B,C,alpha,"
@@ -369,14 +369,14 @@ def test_read_unitcell_triclinic(ref):
 
 @pytest.mark.parametrize("ref", (RefCHARMMtriclinicDCD, RefNAMDtriclinicDCD))
 def test_write_unitcell_triclinic(ref, tmpdir):
-    u = mda.Universe(ref.topology, ref.trajectory)
+    u = mda.Universe.from_files(ref.topology, ref.trajectory)
     outfile = 'triclinic.dcd'
     with tmpdir.as_cwd():
         with u.trajectory.OtherWriter(outfile) as w:
             for ts in u.trajectory:
                 w.write(ts)
 
-        w = mda.Universe(ref.topology, outfile)
+        w = mda.Universe.from_files(ref.topology, outfile)
         for ts_orig, ts_copy in zip(u.trajectory, w.trajectory):
             assert_almost_equal(ts_orig.dimensions, ts_copy.dimensions, 4,
                                 err_msg="DCD->DCD: unit cell dimensions wrong "
@@ -388,11 +388,11 @@ def ncdf2dcd(tmpdir_factory):
     pytest.importorskip("netCDF4")
     testfile = tmpdir_factory.mktemp('dcd').join('ncdf2dcd.dcd')
     testfile = str(testfile)
-    ncdf = mda.Universe(PRMncdf, NCDF)
+    ncdf = mda.Universe.from_files(PRMncdf, NCDF)
     with mda.Writer(testfile, n_atoms=ncdf.atoms.n_atoms) as w:
         for ts in ncdf.trajectory:
             w.write(ts)
-    return ncdf, mda.Universe(PRMncdf, testfile)
+    return ncdf, mda.Universe.from_files(PRMncdf, testfile)
 
 
 def test_ncdf2dcd_unitcell(ncdf2dcd):
@@ -416,7 +416,7 @@ def test_ncdf2dcd_coords(ncdf2dcd):
                         (PSF_NAMD_GBIS, DCD_NAMD_GBIS)])
 def universe(request):
     psf, dcd = request.param
-    yield mda.Universe(psf, dcd)
+    yield mda.Universe.from_files(psf, dcd)
 
 def test_ts_time(universe):
     # issue #1819

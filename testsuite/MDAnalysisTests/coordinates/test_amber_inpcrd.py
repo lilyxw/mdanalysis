@@ -51,9 +51,9 @@ class TestINPCRDReader(object):
         self._check_ts(r.ts)
 
     def test_universe_inpcrd(self):
-        u = mda.Universe(XYZ_five, INPCRD)
+        u = mda.Universe.from_files(XYZ_five, INPCRD)
         self._check_ts(u.trajectory.ts)
 
     def test_universe_restrt(self):
-        u = mda.Universe(XYZ_five, INPCRD, format='RESTRT')
+        u = mda.Universe.from_files(XYZ_five, INPCRD, format='RESTRT')
         self._check_ts(u.trajectory.ts)

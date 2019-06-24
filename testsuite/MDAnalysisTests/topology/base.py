@@ -91,5 +91,5 @@ class ParserBase(object):
 
     def test_creates_universe(self, filename):
         """Check that Universe works with this Parser"""
-        u = mda.Universe(filename)
+        u = mda.Universe.from_files(filename)
         assert isinstance(u, mda.Universe)

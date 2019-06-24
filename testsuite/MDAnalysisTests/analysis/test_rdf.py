@@ -32,7 +32,7 @@ from MDAnalysisTests.datafiles import two_water_gro
 
 @pytest.fixture(scope='module')
 def u():
-    return mda.Universe(two_water_gro)
+    return mda.Universe.from_files(two_water_gro)
 
 
 @pytest.fixture(scope='module')

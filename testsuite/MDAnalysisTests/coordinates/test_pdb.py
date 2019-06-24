@@ -47,7 +47,7 @@ class TestPDBReader(_SingleFrameReader):
     __test__ = True
     def setUp(self):
         # can lead to race conditions when testing in parallel
-        self.universe = mda.Universe(RefAdKSmall.filename)
+        self.universe = mda.Universe.from_files(RefAdKSmall.filename)
         # 3 decimals in PDB spec
         # http://www.wwpdb.org/documentation/format32/sect9.html#ATOM
         self.prec = 3
@@ -65,7 +65,7 @@ class TestPDBReader(_SingleFrameReader):
 
     def test_ENT(self):
         from MDAnalysis.coordinates.PDB import PDBReader
-        self.universe = mda.Universe(ENT)
+        self.universe = mda.Universe.from_files(ENT)
         assert isinstance(self.universe.trajectory, PDBReader), "failed to choose PDBReader"
 
 
@@ -73,7 +73,7 @@ class _PDBMetadata(TestCase, Ref4e43):
     __test__ = False
 
     def setUp(self):
-        self.universe = mda.Universe(self.filename)
+        self.universe = mda.Universe.from_files(self.filename)
 
     def tearDown(self):
         del self.universe
@@ -143,7 +143,7 @@ class TestExtendedPDBReader(_SingleFrameReader):
 
     def test_long_resSeq(self):
         # it checks that it can read a 5-digit resid
-        self.universe = mda.Universe(XPDB_small, topology_format="XPDB")
+        self.universe = mda.Universe.from_files(XPDB_small, topology_format="XPDB")
         u = self.universe.select_atoms(
             'resid 1 or resid 10 or resid 100 or resid 1000 or resid 10000')
         assert_equal(u[4].resid, 10000, "can't read a five digit resid")
@@ -191,49 +191,49 @@ class TestPDBWriter(object):
 
     def test_writer_no_resnames(self, u_no_resnames, outfile):
         u_no_resnames.atoms.write(outfile)
-        u = mda.Universe(outfile)
+        u = mda.Universe.from_files(outfile)
         expected = np.array(['UNK'] * u_no_resnames.atoms.n_atoms)
         assert_equal(u.atoms.resnames, expected)
 
     def test_writer_no_resids(self, u_no_resids, outfile):
         u_no_resids.atoms.write(outfile)
-        u = mda.Universe(outfile)
+        u = mda.Universe.from_files(outfile)
         expected = np.ones((25,))
         assert_equal(u.residues.resids, expected)
 
     def test_writer_no_atom_names(self, u_no_names, outfile):
         u_no_names.atoms.write(outfile)
-        u = mda.Universe(outfile)
+        u = mda.Universe.from_files(outfile)
         expected = np.array(['X'] * u_no_names.atoms.n_atoms)
         assert_equal(u.atoms.names, expected)
 
     def test_writer_no_altlocs(self, u_no_names, outfile):
         u_no_names.atoms.write(outfile)
-        u = mda.Universe(outfile)
+        u = mda.Universe.from_files(outfile)
         expected = np.array([''] * u_no_names.atoms.n_atoms)
         assert_equal(u.atoms.altLocs, expected)
 
     def test_writer_no_icodes(self, u_no_names, outfile):
         u_no_names.atoms.write(outfile)
-        u = mda.Universe(outfile)
+        u = mda.Universe.from_files(outfile)
         expected = np.array([''] * u_no_names.atoms.n_atoms)
         assert_equal(u.atoms.icodes, expected)
 
     def test_writer_no_segids(self, u_no_names, outfile):
         u_no_names.atoms.write(outfile)
-        u = mda.Universe(outfile)
+        u = mda.Universe.from_files(outfile)
         expected = np.array(['SYSTEM'] * u_no_names.atoms.n_atoms)
         assert_equal([atom.segid for atom in u.atoms], expected)
 
     def test_writer_no_occupancies(self, u_no_names, outfile):
         u_no_names.atoms.write(outfile)
-        u = mda.Universe(outfile)
+        u = mda.Universe.from_files(outfile)
         expected = np.ones(u_no_names.atoms.n_atoms)
         assert_equal(u.atoms.occupancies, expected)
 
     def test_writer_no_tempfactors(self, u_no_names, outfile):
         u_no_names.atoms.write(outfile)
-        u = mda.Universe(outfile)
+        u = mda.Universe.from_files(outfile)
         expected = np.zeros(u_no_names.atoms.n_atoms)
         assert_equal(u.atoms.tempfactors, expected)
 
@@ -244,7 +244,7 @@ class TestPDBWriter(object):
         u.trajectory[50]
         with  mda.Writer(outfile) as W:
             W.write(u.select_atoms('all'))
-        u2 = mda.Universe(outfile)
+        u2 = mda.Universe.from_files(outfile)
         assert_equal(u2.trajectory.n_frames,
                      1,
                      err_msg="The number of frames should be 1.")
@@ -342,7 +342,7 @@ class TestMultiPDBReader(object):
     @staticmethod
     @pytest.fixture(scope='class')
     def conect():
-        return mda.Universe(CONECT, guess_bonds=True)
+        return mda.Universe.from_files(CONECT, guess_bonds=True)
 
     def test_n_frames(self, multiverse):
         assert_equal(multiverse.trajectory.n_frames, 24,
@@ -396,7 +396,7 @@ class TestMultiPDBReader(object):
 
         outfile = str(tmpdir.join('test-pdb-hbonds.pdb'))
         conect.atoms.write(outfile, bonds="conect")
-        u1 = mda.Universe(outfile, guess_bonds=True)
+        u1 = mda.Universe.from_files(outfile, guess_bonds=True)
 
         assert_equal(len(u1.atoms), 1890)
         assert_equal(len(u1.bonds), 1922)
@@ -460,14 +460,14 @@ class TestMultiPDBReader(object):
                                               "is %d" % (len(u._topology.bonds.values), len(desired)))
 
 def test_conect_bonds_all(tmpdir):
-    conect = mda.Universe(CONECT, guess_bonds=True)
+    conect = mda.Universe.from_files(CONECT, guess_bonds=True)
 
     assert_equal(len(conect.atoms), 1890)
     assert_equal(len(conect.bonds), 1922)
 
     outfile = os.path.join(str(tmpdir), 'pdb-connect-bonds.pdb')
     conect.atoms.write(outfile, bonds="all")
-    u2 = mda.Universe(outfile, guess_bonds=True)
+    u2 = mda.Universe.from_files(outfile, guess_bonds=True)
 
     assert_equal(len(u2.atoms), 1890)
     assert_equal(len([b for b in u2.bonds if not b.is_guessed]), 1922)
@@ -511,7 +511,7 @@ class TestMultiPDBWriter(TestCase):
         for ts in u.trajectory[-6:]:
             pdb.write(group)
         pdb.close()
-        u2 = mda.Universe(self.outfile)
+        u2 = mda.Universe.from_files(self.outfile)
         assert_equal(len(u2.atoms), desired_group,
                      err_msg="MultiPDBWriter trajectory written for an "
                              "AtomGroup contains %d atoms, it should contain %d" % (
@@ -534,7 +534,7 @@ class TestMultiPDBWriter(TestCase):
 
         with mda.Writer(self.outfile, multiframe=True, start=12, step=2) as W:
             W.write_all_timesteps(group)
-        u2 = mda.Universe(self.outfile)
+        u2 = mda.Universe.from_files(self.outfile)
         assert_equal(len(u2.atoms), desired_group,
                      err_msg="MultiPDBWriter trajectory written for an "
                              "AtomGroup contains %d atoms, it should contain %d" % (
@@ -552,7 +552,7 @@ class TestMultiPDBWriter(TestCase):
             for ts in u.trajectory[-2:]:
                 W.write(u.atoms)
 
-        u0 = mda.Universe(self.outfile)
+        u0 = mda.Universe.from_files(self.outfile)
         assert_equal(u0.trajectory.n_frames,
                      2,
                      err_msg="The number of frames should be 3.")
@@ -660,7 +660,7 @@ class TestIncompletePDB(TestCase):
     """
 
     def setUp(self):
-        self.u = mda.Universe(INC_PDB)
+        self.u = mda.Universe.from_files(INC_PDB)
 
     def tearDown(self):
         del self.u
@@ -756,7 +756,7 @@ def test_write_occupancies(tmpdir):
 
     u.atoms.write(outfile)
 
-    u2 = mda.Universe(outfile)
+    u2 = mda.Universe.from_files(outfile)
 
     assert_array_almost_equal(u2.atoms.occupancies, 0.12)
 
@@ -764,7 +764,7 @@ def test_write_occupancies(tmpdir):
 class TestWriterAlignments(object):
     @pytest.fixture(scope='class')
     def writtenstuff(self, tmpdir_factory):
-        u = mda.Universe(ALIGN)
+        u = mda.Universe.from_files(ALIGN)
         outfile = str(tmpdir_factory.mktemp('pdb').join('nucl.pdb'))
         u.atoms.write(outfile)
         with open(outfile) as fh:
@@ -829,11 +829,11 @@ class TestCrystModelOrder(object):
     position = [10, 20, 30]
 
     def test_len(self, pdbfile):
-        u = mda.Universe(pdbfile)
+        u = mda.Universe.from_files(pdbfile)
         assert len(u.trajectory) == 3
 
     def test_order(self, pdbfile):
-        u = mda.Universe(pdbfile)
+        u = mda.Universe.from_files(pdbfile)
 
         for ts, refbox, refpos in zip(
                 u.trajectory, self.boxsize, self.position):
@@ -841,7 +841,7 @@ class TestCrystModelOrder(object):
             assert_almost_equal(u.atoms[0].position[0], refpos)
 
     def test_seekaround(self, pdbfile):
-        u = mda.Universe(pdbfile)
+        u = mda.Universe.from_files(pdbfile)
 
         for frame in [2, 0, 2, 1]:
             u.trajectory[frame]
@@ -849,7 +849,7 @@ class TestCrystModelOrder(object):
             assert_almost_equal(u.atoms[0].position[0], self.position[frame])
 
     def test_rewind(self, pdbfile):
-        u = mda.Universe(pdbfile)
+        u = mda.Universe.from_files(pdbfile)
 
         u.trajectory[2]
         u.trajectory.rewind()

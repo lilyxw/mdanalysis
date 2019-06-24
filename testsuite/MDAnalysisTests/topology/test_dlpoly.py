@@ -37,7 +37,7 @@ from MDAnalysisTests.datafiles import (
 
 class DLPUniverse(ParserBase):
     def test_creates_universe(self, filename):
-        u = mda.Universe(filename, topology_format=self.format)
+        u = mda.Universe.from_files(filename, topology_format=self.format)
         assert isinstance(u, mda.Universe)
 
 

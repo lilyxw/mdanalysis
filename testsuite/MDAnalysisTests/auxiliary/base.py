@@ -316,7 +316,7 @@ class BaseAuxReaderTest(object):
 
     def test_iterate_through_trajectory(self, ref):
         # add to trajectory
-        u = mda.Universe(COORDINATES_TOPOLOGY, COORDINATES_XTC)
+        u = mda.Universe.from_files(COORDINATES_TOPOLOGY, COORDINATES_XTC)
         u.trajectory.add_auxiliary('test', ref.testdata)
         # check the representative values of aux for each frame are as expected
         # trajectory here has same dt, offset; so there's a direct correspondence
@@ -328,7 +328,7 @@ class BaseAuxReaderTest(object):
 
     def test_iterate_as_auxiliary_from_trajectory(self, ref):
         # add to trajectory
-        u = mda.Universe(COORDINATES_TOPOLOGY, COORDINATES_XTC)
+        u = mda.Universe.from_files(COORDINATES_TOPOLOGY, COORDINATES_XTC)
         u.trajectory.add_auxiliary('test', ref.testdata)
         # check representative values of aux for each frame are as expected
         # trahectory here has same dt, offset, so there's a direct correspondence

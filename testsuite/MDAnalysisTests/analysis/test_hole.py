@@ -95,7 +95,7 @@ class TestHOLEtraj(object):
     # (eg iteration) because this is not safe in parallel
     @pytest.fixture()
     def universe(self):
-        return MDAnalysis.Universe(self.filename)
+        return MDAnalysis.Universe.from_files(self.filename)
 
     @pytest.fixture()
     def H(self, universe, tmpdir):
@@ -153,7 +153,7 @@ class TestHoleModule(object):
     @staticmethod
     @pytest.fixture()
     def universe():
-        return MDAnalysis.Universe(MULTIPDB_HOLE)
+        return MDAnalysis.Universe.from_files(MULTIPDB_HOLE)
 
     @pytest.mark.skipif(rlimits_missing, reason="Test skipped because platform does not allow setting rlimits")
     def test_hole_module_fd_closure(self, universe, tmpdir):

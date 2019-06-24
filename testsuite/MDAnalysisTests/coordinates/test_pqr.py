@@ -38,7 +38,7 @@ from MDAnalysisTests import tempdir, make_Universe
 class TestPQRReader(_SingleFrameReader):
     __test__ = True
     def setUp(self):
-        self.universe = mda.Universe(PQR)
+        self.universe = mda.Universe.from_files(PQR)
         # 3 decimals in PDB spec
         # http://www.wwpdb.org/documentation/format32/sect9.html#ATOM
         self.prec = 3
@@ -72,7 +72,7 @@ class TestPQRWriter(RefAdKSmall):
     @staticmethod
     @pytest.fixture
     def universe():
-        return mda.Universe(PQR)
+        return mda.Universe.from_files(PQR)
 
     prec = 3
 
@@ -81,7 +81,7 @@ class TestPQRWriter(RefAdKSmall):
 
         assert_equal(universe.segments.segids[0], 'SYSTEM')
         universe.atoms.write(outfile)
-        u = mda.Universe(outfile)
+        u = mda.Universe.from_files(outfile)
         assert_equal(u.segments.segids[0], 'SYSTEM')
         assert_almost_equal(u.atoms.positions,
                             universe.atoms.positions, self.prec,
@@ -103,7 +103,7 @@ class TestPQRWriter(RefAdKSmall):
         universe.segments.segids = 'A'
         assert_equal(universe.segments.segids[0], 'A')  # sanity check
         universe.atoms.write(outfile)
-        u = mda.Universe(outfile)
+        u = mda.Universe.from_files(outfile)
         assert_equal(u.segments.segids[0], 'A')
         assert_almost_equal(u.atoms.positions,
                             universe.atoms.positions, self.prec,
@@ -128,7 +128,7 @@ class TestPQRWriter(RefAdKSmall):
     def test_total_charge(self, universe, tmpdir):
         outfile = str(tmpdir.join('pqr-test.pqr'))
         universe.atoms.write(outfile)
-        u = mda.Universe(outfile)
+        u = mda.Universe.from_files(outfile)
         assert_almost_equal(
             u.atoms.total_charge(), self.ref_charmm_totalcharge, 3,
             "Total charge (in CHARMM) does not match expected value.")
@@ -153,7 +153,7 @@ class TestPQRWriterMissingAttrs(object):
         with pytest.warns(UserWarning):
             u.atoms.write(outfile)
 
-        u2 = mda.Universe(outfile)
+        u2 = mda.Universe.from_files(outfile)
 
         assert all(u2.atoms.names == 'X')
 
@@ -165,7 +165,7 @@ class TestPQRWriterMissingAttrs(object):
         with pytest.warns(UserWarning):
             u.atoms.write(outfile)
 
-        u2 = mda.Universe(outfile)
+        u2 = mda.Universe.from_files(outfile)
 
         assert all(u2.residues.resnames == 'UNK')
 
@@ -177,7 +177,7 @@ class TestPQRWriterMissingAttrs(object):
         with pytest.warns(UserWarning):
             u.atoms.write(outfile)
 
-        u2 = mda.Universe(outfile)
+        u2 = mda.Universe.from_files(outfile)
 
         assert all(u2.atoms.radii == 1.0)
 
@@ -189,6 +189,6 @@ class TestPQRWriterMissingAttrs(object):
         with pytest.warns(UserWarning):
             u.atoms.write(outfile)
 
-        u2 = mda.Universe(outfile)
+        u2 = mda.Universe.from_files(outfile)
 
         assert all(u2.atoms.charges == 0.0)

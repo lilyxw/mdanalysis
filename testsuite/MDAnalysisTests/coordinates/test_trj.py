@@ -37,7 +37,7 @@ from MDAnalysisTests.coordinates.base import BaseTimestepTest
 class _TRJReaderTest(object):
     @pytest.fixture(scope='class')
     def universe(self):
-        return mda.Universe(self.topology_file, self.trajectory_file)
+        return mda.Universe.from_files(self.topology_file, self.trajectory_file)
 
     def test_load_prm(self, universe):
         assert_equal(len(universe.atoms), self.ref_n_atoms,

@@ -38,7 +38,7 @@ from MDAnalysis.analysis.hbonds import HydrogenBondAutoCorrel as HBAC
 class TestHydrogenBondAutocorrel(object):
     @pytest.fixture()
     def u(self):
-        return mda.Universe(TRZ_psf, TRZ)
+        return mda.Universe.from_files(TRZ_psf, TRZ)
 
     @pytest.fixture()
     def hydrogens(self, u):

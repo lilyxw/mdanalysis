@@ -35,7 +35,7 @@ from MDAnalysisTests.datafiles import (GMS_ASYMOPT, GMS_ASYMSURF, GMS_SYMOPT)
 class _GMSBase(object):
     @pytest.fixture()
     def u(self):
-        return mda.Universe(self.filename)
+        return mda.Universe.from_files(self.filename)
 
     def test_n_frames(self, u):
         assert_equal(u.trajectory.n_frames,

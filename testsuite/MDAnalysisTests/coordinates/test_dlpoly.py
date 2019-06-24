@@ -94,7 +94,7 @@ class TestConfigMinimal(_DLPConfig):
 class _DLPConfig2(object):
     @pytest.fixture()
     def u(self):
-        return mda.Universe(self.f, format='CONFIG')
+        return mda.Universe.from_files(self.f, format='CONFIG')
 
     def test_names(self, u):
         ref = ['C', 'B', 'A']
@@ -136,7 +136,7 @@ class TestConfigReaderMinimal2(_DLPConfig2):
 class _DLHistory(object):
     @pytest.fixture()
     def u(self):
-        return mda.Universe(self.f, format='HISTORY')
+        return mda.Universe.from_files(self.f, format='HISTORY')
 
 
     def test_len(self, u):

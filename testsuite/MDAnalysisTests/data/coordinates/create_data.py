@@ -26,7 +26,7 @@ def create_test_trj(uni, fname):
 
 def main():
     pdb = 'test_topology.pdb'
-    u = mda.Universe(pdb)
+    u = mda.Universe.from_files(pdb)
 
     create_test_trj(u, 'test.xyz')
     create_test_trj(u, 'test.xtc')

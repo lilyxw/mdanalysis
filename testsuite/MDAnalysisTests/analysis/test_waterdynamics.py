@@ -38,7 +38,7 @@ SELECTION2 = "byres name P1"
 
 @pytest.fixture(scope='module')
 def universe():
-    return MDAnalysis.Universe(waterPSF, waterDCD)
+    return MDAnalysis.Universe.from_files(waterPSF, waterDCD)
 
 
 def test_HydrogenBondLifetimes(universe):

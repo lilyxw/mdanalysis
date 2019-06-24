@@ -80,10 +80,10 @@ def capping(ref, ace, nma, output):
 class TestCapping(object):
 
     def test_capping_file(self, tmpdir):
-        peptide = MDAnalysis.Universe(capping_input)
-        ref = MDAnalysis.Universe(capping_output)
-        ace = MDAnalysis.Universe(capping_ace)
-        nma = MDAnalysis.Universe(capping_nma)
+        peptide = MDAnalysis.Universe.from_files(capping_input)
+        ref = MDAnalysis.Universe.from_files(capping_output)
+        ace = MDAnalysis.Universe.from_files(capping_ace)
+        nma = MDAnalysis.Universe.from_files(capping_nma)
 
         outfile = str(tmpdir.join('test.pdb'))
         u = capping(peptide, ace, nma, outfile)
@@ -91,7 +91,7 @@ class TestCapping(object):
         assert_equal(len(u.select_atoms("not name H*")),
                      len(ref.select_atoms("not name H*")))
 
-        u = MDAnalysis.Universe(outfile)
+        u = MDAnalysis.Universe.from_files(outfile)
 
         ace = u.select_atoms("resname ACE")
         nma = u.select_atoms("resname NMA")
@@ -104,10 +104,10 @@ class TestCapping(object):
                            u.trajectory.ts.dimensions)
 
     def test_capping_inmemory(self, tmpdir):
-        peptide = MDAnalysis.Universe(capping_input)
-        ref = MDAnalysis.Universe(capping_output)
-        ace = MDAnalysis.Universe(capping_ace)
-        nma = MDAnalysis.Universe(capping_nma)
+        peptide = MDAnalysis.Universe.from_files(capping_input)
+        ref = MDAnalysis.Universe.from_files(capping_output)
+        ace = MDAnalysis.Universe.from_files(capping_ace)
+        nma = MDAnalysis.Universe.from_files(capping_nma)
 
         outfile = str(tmpdir.join('test.pdb'))
         u = capping(peptide, ace, nma, outfile)
@@ -127,17 +127,17 @@ class TestCapping(object):
 
 @pytest.fixture()
 def u_protein():
-    return MDAnalysis.Universe(merge_protein)
+    return MDAnalysis.Universe.from_files(merge_protein)
 
 
 @pytest.fixture()
 def u_ligand():
-    return MDAnalysis.Universe(merge_ligand)
+    return MDAnalysis.Universe.from_files(merge_ligand)
 
 
 @pytest.fixture()
 def u_water():
-    return MDAnalysis.Universe(merge_water)
+    return MDAnalysis.Universe.from_files(merge_water)
 
 
 class TestMerge(object):
@@ -175,7 +175,7 @@ class TestMerge(object):
         outfile = str(tmpdir.join('test.pdb'))
 
         u0.atoms.write(outfile)
-        u = MDAnalysis.Universe(outfile)
+        u = MDAnalysis.Universe.from_files(outfile)
         ids_new2 = [a.index for a in u.atoms]
         assert_equal(ids_new, ids_new2)
 

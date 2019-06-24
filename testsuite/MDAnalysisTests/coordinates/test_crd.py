@@ -38,7 +38,7 @@ from MDAnalysisTests import make_Universe
 class TestCRDWriter(object):
     @pytest.fixture()
     def u(self):
-        return mda.Universe(CRD)
+        return mda.Universe.from_files(CRD)
 
     @pytest.fixture()
     def outfile(self, tmpdir):
@@ -48,7 +48,7 @@ class TestCRDWriter(object):
         # Test that written file when read gives same coordinates
         u.atoms.write(outfile)
 
-        u2 = mda.Universe(outfile)
+        u2 = mda.Universe.from_files(outfile)
 
         assert_equal(u.atoms.positions,
                      u2.atoms.positions)
@@ -102,7 +102,7 @@ class TestCRDWriterMissingAttrs(object):
 
         outfile = str(tmpdir) + '/out.crd'
         u.atoms.write(outfile)
-        u2 = mda.Universe(outfile)
+        u2 = mda.Universe.from_files(outfile)
 
         # Check all other attrs aren't disturbed
         for attr in attrs:

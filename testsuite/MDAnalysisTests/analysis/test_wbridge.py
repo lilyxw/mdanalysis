@@ -26,7 +26,7 @@ class TestWaterBridgeAnalysis(object):
     2SOL    HW2    4   0.400   0.000   0.000
     4ALA      O    5   0.600   0.000   0.000
   1.0   1.0   1.0'''
-        u = MDAnalysis.Universe(StringIO(grofile), format='gro')
+        u = MDAnalysis.Universe.from_streams(StringIO(grofile), format='gro')
         wb = WaterBridgeAnalysis(u, 'protein and (resid 1)', 'protein and (resid 4)')
         wb.run(verbose=False)
         timeseries = wb._timeseries
@@ -44,7 +44,7 @@ class TestWaterBridgeAnalysis(object):
     2SOL    HW2    4   0.400   0.000   0.000
     4ALA      O    5   0.600   0.000   0.000
   1.0   1.0   1.0'''
-        u = MDAnalysis.Universe(StringIO(grofile), format='gro')
+        u = MDAnalysis.Universe.from_streams(StringIO(grofile), format='gro')
         wb = WaterBridgeAnalysis(u, 'protein and (resid 1)', 'protein and (resid 4)')
         wb.run(verbose=False)
         timeseries = wb._timeseries
@@ -62,7 +62,7 @@ class TestWaterBridgeAnalysis(object):
     4ALA      H    4   0.500   0.000   0.000
     4ALA      N    5   0.600   0.000   0.000
   1.0   1.0   1.0'''
-        u = MDAnalysis.Universe(StringIO(grofile), format='gro')
+        u = MDAnalysis.Universe.from_streams(StringIO(grofile), format='gro')
         wb = WaterBridgeAnalysis(u, 'protein and (resid 1)', 'protein and (resid 4)')
         wb.run(verbose=False)
         timeseries = wb._timeseries
@@ -80,7 +80,7 @@ class TestWaterBridgeAnalysis(object):
     4ALA      H    4   0.500   0.000   0.000
     4ALA      N    5   0.600   0.000   0.000
   1.0   1.0   1.0'''
-        u = MDAnalysis.Universe(StringIO(grofile), format='gro')
+        u = MDAnalysis.Universe.from_streams(StringIO(grofile), format='gro')
         wb = WaterBridgeAnalysis(u, 'protein and (resid 1)', 'protein and (resid 4)')
         wb.run(verbose=False)
         timeseries = wb._timeseries
@@ -97,7 +97,7 @@ class TestWaterBridgeAnalysis(object):
     4ALA      H    4   0.500   0.000   0.000
     4ALA      N    5   0.600   0.000   0.000
   1.0   1.0   1.0'''
-        u = MDAnalysis.Universe(StringIO(grofile), format='gro')
+        u = MDAnalysis.Universe.from_streams(StringIO(grofile), format='gro')
         wb = WaterBridgeAnalysis(u, 'protein', 'protein')
         wb.run(verbose=False)
         assert_equal(wb._timeseries, [[]])
@@ -115,7 +115,7 @@ class TestWaterBridgeAnalysis(object):
     1ALA      H    2   0.100   0.000   0.000
     2SOL     OW    3   0.300   0.000   0.000
   1.0   1.0   1.0'''
-        u = MDAnalysis.Universe(StringIO(grofile), format='gro')
+        u = MDAnalysis.Universe.from_streams(StringIO(grofile), format='gro')
         wb = WaterBridgeAnalysis(u, 'protein', 'protein')
         wb.run(verbose=False)
         assert_equal(wb._timeseries, [[]])
@@ -133,7 +133,7 @@ class TestWaterBridgeAnalysis(object):
     2SOL    HW2    4   0.400   0.000   0.000
     4ALA      O    5   0.600   0.000   0.000
  1.0   1.0   1.0'''
-        u = MDAnalysis.Universe(StringIO(grofile), format='gro')
+        u = MDAnalysis.Universe.from_streams(StringIO(grofile), format='gro')
         wb = WaterBridgeAnalysis(u, 'protein and (resid 1)', 'protein and (resid 4)')
         wb.run(verbose=False)
         water_network = wb._water_network[0]
@@ -155,7 +155,7 @@ class TestWaterBridgeAnalysis(object):
     2SOL    HW2    4   0.400   0.000   0.000
     4ALA      O    5   0.600   0.000   0.000
  1.0   1.0   1.0'''
-        u = MDAnalysis.Universe(StringIO(grofile), format='gro')
+        u = MDAnalysis.Universe.from_streams(StringIO(grofile), format='gro')
         wb = WaterBridgeAnalysis(u, 'protein and (resid 1)', 'protein and (resid 4)')
         wb.run(verbose=False)
         assert_equal(wb.count_by_type().tolist(), [(1, 4, 'ALA', 1, 'H', 'ALA', 4, 'O',  1.)])
@@ -173,7 +173,7 @@ class TestWaterBridgeAnalysis(object):
     2SOL    HW2    4   0.400   0.000   0.000
     4ALA      O    5   0.600   0.000   0.000
  1.0   1.0   1.0'''
-        u = MDAnalysis.Universe(StringIO(grofile), format='gro')
+        u = MDAnalysis.Universe.from_streams(StringIO(grofile), format='gro')
         wb = WaterBridgeAnalysis(u, 'protein and (resid 1)', 'protein and (resid 4)')
         # Build an dummy WaterBridgeAnalysis object for testing
         wb._timeseries = True
@@ -201,7 +201,7 @@ class TestWaterBridgeAnalysis(object):
     2SOL    HW2    4   0.400   0.000   0.000
     4ALA      O    5   0.600   0.000   0.000
  1.0   1.0   1.0'''
-        u = MDAnalysis.Universe(StringIO(grofile), format='gro')
+        u = MDAnalysis.Universe.from_streams(StringIO(grofile), format='gro')
         wb = WaterBridgeAnalysis(u, 'protein and (resid 1)', 'protein and (resid 4)')
         # Build an dummy WaterBridgeAnalysis object for testing
         wb._timeseries = True

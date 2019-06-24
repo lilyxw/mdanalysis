@@ -71,7 +71,7 @@ class TestXYZWriter(BaseWriterTest):
         return XYZReference()
 
     def test_write_selection(self, ref, reader, tempdir):
-        uni = mda.Universe(ref.topology, ref.trajectory)
+        uni = mda.Universe.from_files(ref.topology, ref.trajectory)
         sel_str = 'name CA'
         sel = uni.select_atoms(sel_str)
         outfile = self.tmp_file('write-selection-test', ref, tempdir)
@@ -136,7 +136,7 @@ class TestXYZWriterNames(object):
         w.write(u.trajectory.ts)
         w.close()
 
-        u2 = mda.Universe(outfile)
+        u2 = mda.Universe.from_files(outfile)
         assert all(u2.atoms.names == 'X')
 
     def test_single_name(self, outfile):
@@ -146,7 +146,7 @@ class TestXYZWriterNames(object):
         w.write(u.trajectory.ts)
         w.close()
 
-        u2 = mda.Universe(outfile)
+        u2 = mda.Universe.from_files(outfile)
         assert all(u2.atoms.names == 'ABC')
 
     def test_list_names(self, outfile):
@@ -158,5 +158,5 @@ class TestXYZWriterNames(object):
         w.write(u.trajectory.ts)
         w.close()
 
-        u2 = mda.Universe(outfile)
+        u2 = mda.Universe.from_files(outfile)
         assert all(u2.atoms.names == names)

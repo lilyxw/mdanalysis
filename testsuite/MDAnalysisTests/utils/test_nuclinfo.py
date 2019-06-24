@@ -44,7 +44,7 @@ PREC = 4
 
 @pytest.fixture()
 def universe():
-    return MDAnalysis.Universe(NUCL)
+    return MDAnalysis.Universe.from_files(NUCL)
 
 
 def test_wc_pair(universe):

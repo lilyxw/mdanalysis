@@ -88,17 +88,17 @@ class TestUniverseCreation(object):
         assert_equal(len(u.atoms), 3341, "Loading universe failed somehow")
 
     def test_load_topology_stringio(self):
-        u = mda.Universe(StringIO(CHOL_GRO), format='GRO')
+        u = mda.Universe.from_streams(StringIO(CHOL_GRO), format='GRO')
         assert_equal(len(u.atoms), 8, "Loading universe from StringIO failed somehow")
         assert_equal(u.trajectory.ts.positions[0], np.array([65.580002, 29.360001, 40.050003], dtype=np.float32))
 
     def test_load_trajectory_stringio(self):
-        u = mda.Universe(StringIO(CHOL_GRO), StringIO(CHOL_GRO),  format='GRO', topology_format='GRO')
+        u = mda.Universe.from_streams(StringIO(CHOL_GRO), StringIO(CHOL_GRO),  format='GRO', topology_format='GRO')
         assert_equal(len(u.atoms), 8, "Loading universe from StringIO failed somehow")
 
     def test_make_universe_no_args(self):
         # universe creation without args should work
-        u = mda.Universe()
+        u = mda.Universe.from_files()
 
         assert isinstance(u, mda.Universe)
         assert u.atoms is None
@@ -106,7 +106,7 @@ class TestUniverseCreation(object):
     def test_make_universe_stringio_no_format(self):
         # Loading from StringIO without format arg should raise TypeError
         with pytest.raises(TypeError):
-            mda.Universe(StringIO(CHOL_GRO))
+            mda.Universe.from_streams(StringIO(CHOL_GRO))
 
     def test_Universe_no_trajectory_AE(self):
         # querying trajectory without a trajectory loaded (only topology)
@@ -116,11 +116,11 @@ class TestUniverseCreation(object):
 
     def test_Universe_topology_unrecognizedformat_VE(self):
         with pytest.raises(ValueError):
-            mda.Universe('some.file.without.parser_or_coordinate_extension')
+            mda.Universe.from_files('some.file.without.parser_or_coordinate_extension')
 
     def test_Universe_topology_unrecognizedformat_VE_msg(self):
         try:
-            mda.Universe('some.file.without.parser_or_coordinate_extension')
+            mda.Universe.from_files('some.file.without.parser_or_coordinate_extension')
         except ValueError as e:
             assert 'isn\'t a valid topology format' in e.args[0]
         else:
@@ -128,12 +128,12 @@ class TestUniverseCreation(object):
 
     def test_Universe_topology_IE(self):
         with pytest.raises(IOError):
-            mda.Universe('thisfile', topology_format = IOErrorParser)
+            mda.Universe.from_files('thisfile', topology_format = IOErrorParser)
 
     def test_Universe_topology_IE_msg(self):
         # should get the original error, as well as Universe error
         try:
-            mda.Universe('thisfile', topology_format=IOErrorParser)
+            mda.Universe.from_files('thisfile', topology_format=IOErrorParser)
         except IOError as e:
             assert 'Failed to load from the topology file' in e.args[0]
             assert 'Useful information' in e.args[0]
@@ -143,7 +143,7 @@ class TestUniverseCreation(object):
     def test_Universe_filename_IE_msg(self):
         # check for non existent file
         try:
-            mda.Universe('thisfile.xml')
+            mda.Universe.from_files('thisfile.xml')
         except IOError as e:
             assert_equal('No such file or directory', e.strerror)
         else:
@@ -155,7 +155,7 @@ class TestUniverseCreation(object):
         with open(os.path.join(temp_dir.name, 'invalid.file.tpr'), 'w') as temp_file:
             temp_file.write('plop')
         try:
-            mda.Universe(os.path.join(temp_dir.name, 'invalid.file.tpr'))
+            mda.Universe.from_files(os.path.join(temp_dir.name, 'invalid.file.tpr'))
         except IOError as e:
             assert 'file or cannot be recognized' in e.args[0]
         else:
@@ -176,7 +176,7 @@ class TestUniverseCreation(object):
         else:
             os.chmod(temp_file, 0o200)
         try:
-            mda.Universe(os.path.join(temp_dir.name, 'permission.denied.tpr'))
+            mda.Universe.from_files(os.path.join(temp_dir.name, 'permission.denied.tpr'))
         except IOError as e:
             assert 'Permission denied' in str(e.strerror)
         else:
@@ -185,7 +185,7 @@ class TestUniverseCreation(object):
             temp_dir.dissolve()
 
     def test_load_new_VE(self):
-        u = mda.Universe()
+        u = mda.Universe.from_files()
 
         with pytest.raises(TypeError):
             u.load_new('thisfile', format = 'soup')
@@ -213,7 +213,7 @@ class TestUniverseCreation(object):
         assert u.kwargs['fake_kwarg']
 
         # initialize new universe from pieces of existing one
-        u2 = mda.Universe(u.filename, u.trajectory.filename,
+        u2 = mda.Universe.from_files(u.filename, u.trajectory.filename,
                           **u.kwargs)
 
         assert u2.kwargs['fake_kwarg']
@@ -221,7 +221,7 @@ class TestUniverseCreation(object):
 
     def test_universe_topology_class_with_coords(self):
         u = mda.Universe.from_files(PSF, PDB_small)
-        u2 = mda.Universe(u._topology, PDB_small)
+        u2 = mda.Universe.from_files(u._topology, PDB_small)
         assert isinstance(u2.trajectory, type(u.trajectory))
         assert_equal(u.trajectory.n_frames, u2.trajectory.n_frames)
         assert u2._topology is u._topology
@@ -330,7 +330,7 @@ class TestGuessMasses(object):
     """Tests the Mass Guesser in topology.guessers
     """
     def test_universe_loading_no_warning(self):
-        assert_nowarns(UserWarning, lambda x: mda.Universe(x), GRO)
+        assert_nowarns(UserWarning, lambda x: mda.Universe.from_files(x), GRO)
 
 
 class TestGuessBonds(object):
@@ -362,25 +362,25 @@ class TestGuessBonds(object):
 
     def test_universe_guess_bonds(self):
         """Test that making a Universe with guess_bonds works"""
-        u = mda.Universe(two_water_gro, guess_bonds=True)
+        u = mda.Universe.from_files(two_water_gro, guess_bonds=True)
         self._check_universe(u)
         assert u.kwargs['guess_bonds']
 
     def test_universe_guess_bonds_no_vdwradii(self):
         """Make a Universe that has atoms with unknown vdwradii."""
         with pytest.raises(ValueError):
-            mda.Universe(two_water_gro_nonames, guess_bonds = True)
+            mda.Universe.from_files(two_water_gro_nonames, guess_bonds = True)
 
     def test_universe_guess_bonds_with_vdwradii(self, vdw):
         """Unknown atom types, but with vdw radii here to save the day"""
-        u = mda.Universe(two_water_gro_nonames, guess_bonds=True,
+        u = mda.Universe.from_files(two_water_gro_nonames, guess_bonds=True,
                                 vdwradii=vdw)
         self._check_universe(u)
         assert u.kwargs['guess_bonds']
         assert_equal(vdw, u.kwargs['vdwradii'])
 
     def test_universe_guess_bonds_off(self):
-        u = mda.Universe(two_water_gro_nonames, guess_bonds=False)
+        u = mda.Universe.from_files(two_water_gro_nonames, guess_bonds=False)
 
         for attr in ('bonds', 'angles', 'dihedrals'):
             assert not hasattr(u, attr)
@@ -405,21 +405,21 @@ class TestGuessBonds(object):
 
     def test_atomgroup_guess_bonds(self):
         """Test an atomgroup doing guess bonds"""
-        u = mda.Universe(two_water_gro)
+        u = mda.Universe.from_files(two_water_gro)
 
         ag = u.atoms[:3]
         ag.guess_bonds()
         self._check_atomgroup(ag, u)
 
     def test_atomgroup_guess_bonds_no_vdwradii(self):
-        u = mda.Universe(two_water_gro_nonames)
+        u = mda.Universe.from_files(two_water_gro_nonames)
 
         ag = u.atoms[:3]
         with pytest.raises(ValueError):
             ag.guess_bonds()
 
     def test_atomgroup_guess_bonds_with_vdwradii(self, vdw):
-        u = mda.Universe(two_water_gro_nonames)
+        u = mda.Universe.from_files(two_water_gro_nonames)
 
         ag = u.atoms[:3]
         ag.guess_bonds(vdwradii=vdw)
@@ -545,13 +545,13 @@ class TestCustomReaders(object):
     """
     def test_custom_reader(self):
         # check that reader passing works
-        u = mda.Universe(TRZ_psf, TRZ, format=MDAnalysis.coordinates.TRZ.TRZReader)
+        u = mda.Universe.from_files(TRZ_psf, TRZ, format=MDAnalysis.coordinates.TRZ.TRZReader)
         assert_equal(len(u.atoms), 8184)
 
     def test_custom_reader_singleframe(self):
         T = MDAnalysis.topology.GROParser.GROParser
         R = MDAnalysis.coordinates.GRO.GROReader
-        u = mda.Universe(two_water_gro, two_water_gro,
+        u = mda.Universe.from_files(two_water_gro, two_water_gro,
                                 topology_format=T, format=R)
         assert_equal(len(u.atoms), 6)
 
@@ -559,18 +559,18 @@ class TestCustomReaders(object):
         # Same as before, but only one argument to Universe
         T = MDAnalysis.topology.GROParser.GROParser
         R = MDAnalysis.coordinates.GRO.GROReader
-        u = mda.Universe(two_water_gro,
+        u = mda.Universe.from_files(two_water_gro,
                                 topology_format=T, format=R)
         assert_equal(len(u.atoms), 6)
 
     def test_custom_parser(self):
         # topology reader passing works
-        u = mda.Universe(TRZ_psf, TRZ, topology_format=MDAnalysis.topology.PSFParser.PSFParser)
+        u = mda.Universe.from_files(TRZ_psf, TRZ, topology_format=MDAnalysis.topology.PSFParser.PSFParser)
         assert_equal(len(u.atoms), 8184)
 
     def test_custom_both(self):
         # use custom for both
-        u = mda.Universe(TRZ_psf, TRZ, format=MDAnalysis.coordinates.TRZ.TRZReader,
+        u = mda.Universe.from_files(TRZ_psf, TRZ, format=MDAnalysis.coordinates.TRZ.TRZReader,
                          topology_format=MDAnalysis.topology.PSFParser.PSFParser)
         assert_equal(len(u.atoms), 8184)
 

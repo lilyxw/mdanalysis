@@ -476,10 +476,10 @@ class _GromacsWriterIssue101(object):
         self._single_frame(CRD, Writer, outfile)
 
     def _single_frame(self, filename, Writer, outfile):
-        u = mda.Universe(filename)
+        u = mda.Universe.from_files(filename)
         with Writer(outfile, u.atoms.n_atoms) as W:
             W.write(u.atoms)
-        w = mda.Universe(filename, outfile)
+        w = mda.Universe.from_files(filename, outfile)
         assert_equal(w.trajectory.n_frames, 1,
                      "single frame trajectory has wrong number of frames")
         assert_almost_equal(
@@ -505,7 +505,7 @@ class _GromacsWriterIssue117(object):
 
     @pytest.fixture()
     def universe(self):
-        return mda.Universe(PRMncdf, NCDF)
+        return mda.Universe.from_files(PRMncdf, NCDF)
 
     def test_write_trajectory(self, universe, tmpdir):
         """Test writing Gromacs trajectories from AMBER NCDF (Issue 117)"""
@@ -514,7 +514,7 @@ class _GromacsWriterIssue117(object):
             for ts in universe.trajectory:
                 W.write_next_timestep(ts)
 
-        uw = mda.Universe(PRMncdf, outfile)
+        uw = mda.Universe.from_files(PRMncdf, outfile)
 
         # check that the coordinates are identical for each time step
         for orig_ts, written_ts in zip(universe.trajectory, uw.trajectory):

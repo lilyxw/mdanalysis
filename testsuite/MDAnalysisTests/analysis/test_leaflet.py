@@ -35,7 +35,7 @@ LIPID_HEAD_STRING = "name PO4"
 
 @pytest.fixture()
 def universe():
-    return MDAnalysis.Universe(Martini_membrane_gro)
+    return MDAnalysis.Universe.from_files(Martini_membrane_gro)
 
 
 @pytest.fixture()

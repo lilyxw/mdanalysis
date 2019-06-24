@@ -182,12 +182,12 @@ class TestGROReader(BaseReaderTest):
                      "by default")
 
     def test_time(self, ref, reader):
-        u = mda.Universe(ref.topology, ref.trajectory)
+        u = mda.Universe.from_files(ref.topology, ref.trajectory)
         assert_equal(u.trajectory.time, 0.0,
                      "wrong time of the frame")
 
     def test_full_slice(self, ref, reader):
-        u = mda.Universe(ref.topology, ref.trajectory)
+        u = mda.Universe.from_files(ref.topology, ref.trajectory)
         trj_iter = u.trajectory[:]
         frames = [ts.frame for ts in trj_iter]
         assert_equal(frames, np.arange(u.trajectory.n_frames))
@@ -200,32 +200,32 @@ class TestGROWriter(BaseWriterTest):
         return GROReference()
 
     def test_write_velocities(self, ref, tempdir):
-        u = mda.Universe(ref.topology, ref.trajectory)
+        u = mda.Universe.from_files(ref.topology, ref.trajectory)
         outfile = self.tmp_file('write-velocities-test', ref, tempdir)
         u.atoms.write(outfile)
 
-        u2 = mda.Universe(outfile)
+        u2 = mda.Universe.from_files(outfile)
         assert_almost_equal(u.atoms.velocities,
                             u2.atoms.velocities)
 
     def test_write_no_resnames(self, u_no_resnames, ref, tempdir):
         outfile = self.tmp_file('write-no-resnames-test', ref, tempdir)
         u_no_resnames.atoms.write(outfile)
-        u = mda.Universe(outfile)
+        u = mda.Universe.from_files(outfile)
         expected = np.array(['UNK'] * u_no_resnames.atoms.n_atoms)
         assert_equal(u.atoms.resnames, expected)
 
     def test_write_no_resids(self, u_no_resids, ref, tempdir):
         outfile = self.tmp_file('write-no-resids-test', ref, tempdir)
         u_no_resids.atoms.write(outfile)
-        u = mda.Universe(outfile)
+        u = mda.Universe.from_files(outfile)
         expected = np.ones((25,))
         assert_equal(u.residues.resids, expected)
 
     def test_writer_no_atom_names(self, u_no_names, ref, tempdir):
         outfile = self.tmp_file('write-no-names-test', ref, tempdir)
         u_no_names.atoms.write(outfile)
-        u = mda.Universe(outfile)
+        u = mda.Universe.from_files(outfile)
         expected = np.array(['X'] * u_no_names.atoms.n_atoms)
         assert_equal(u.atoms.names, expected)
 
@@ -380,7 +380,7 @@ class TestGROLargeWriter(BaseWriterTest):
         GRO files (Issue 550).
         """
         outfile = self.tmp_file('outfile1.gro', ref, tempdir)
-        u = mda.Universe(ref.topology, ref.trajectory)
+        u = mda.Universe.from_files(ref.topology, ref.trajectory)
         u.atoms.write(outfile)
 
         with open(outfile, 'rt') as mda_output:
@@ -398,7 +398,7 @@ class TestGROLargeWriter(BaseWriterTest):
         GRO files (Issue 886).
         """
         outfile = self.tmp_file('outfile2.gro', ref, tempdir)
-        u = mda.Universe(ref.topology, ref.trajectory)
+        u = mda.Universe.from_files(ref.topology, ref.trajectory)
         target_resname = u.residues[-1].resname
         resid_value = 9999999
         u.residues[-1].resid = resid_value
@@ -435,7 +435,7 @@ class TestGrowriterReindex(object):
 1
     2CL      CL20850   0.000   0.000   0.000
 7.29748 7.66094 9.82962'''
-        u = mda.Universe(StringIO(gro), format='gro')
+        u = mda.Universe.from_streams(StringIO(gro), format='gro')
         u.atoms[0].id = 3
         return u
 

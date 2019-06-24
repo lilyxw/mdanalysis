@@ -39,7 +39,7 @@ class TestPersistenceLength(object):
     @staticmethod
     @pytest.fixture()
     def u():
-        return MDAnalysis.Universe(Plength)
+        return MDAnalysis.Universe.from_files(Plength)
 
     @staticmethod
     @pytest.fixture()

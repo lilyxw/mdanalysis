@@ -35,7 +35,7 @@ import os
 
 @pytest.fixture(scope="session")
 def univ():
-    u = MDAnalysis.Universe(Martini_membrane_gro)
+    u = MDAnalysis.Universe.from_files(Martini_membrane_gro)
     return u
 
 @pytest.fixture(scope="session")

@@ -113,14 +113,14 @@ def test_transform_mismatch(pca, u):
 
 
 def test_transform_universe():
-    u1 = mda.Universe(waterPSF, waterDCD)
-    u2 = mda.Universe(waterPSF, waterDCD)
+    u1 = mda.Universe.from_files(waterPSF, waterDCD)
+    u2 = mda.Universe.from_files(waterPSF, waterDCD)
     pca_test = PCA(u1).run()
     pca_test.transform(u2)
 
 
 def test_cosine_content():
-    rand = mda.Universe(RANDOM_WALK_TOPO, RANDOM_WALK)
+    rand = mda.Universe.from_files(RANDOM_WALK_TOPO, RANDOM_WALK)
     pca_random = PCA(rand).run()
     dot = pca_random.transform(rand.atoms)
     content = cosine_content(dot, 0)

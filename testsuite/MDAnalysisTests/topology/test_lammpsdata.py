@@ -88,7 +88,7 @@ class LammpsBase(ParserBase):
             assert self.ref_improper in top.impropers.values
 
     def test_creates_universe(self, filename):
-        u = mda.Universe(filename, format='DATA')
+        u = mda.Universe.from_files(filename, format='DATA')
 
 
 class TestLammpsData(LammpsBase):
@@ -156,13 +156,13 @@ class TestLAMMPSDeletedAtoms(LammpsBase):
     ref_n_impropers = 0
 
     def test_atom_ids(self, filename):
-        u = mda.Universe(filename)
+        u = mda.Universe.from_files(filename)
 
         assert_equal(u.atoms.ids,
                      [1, 10, 1002, 2003, 2004, 2005, 2006, 2007, 2008, 2009])
 
     def test_traj(self, filename):
-        u = mda.Universe(filename)
+        u = mda.Universe.from_files(filename)
 
         assert_equal(u.atoms.positions,
                      np.array([[11.8998565674, 48.4455718994, 19.0971984863],
@@ -202,7 +202,7 @@ Atoms # atomic
 """
 
 def test_noresid():
-    u = mda.Universe(StringIO(LAMMPS_NORESID), format='data',
+    u = mda.Universe.from_streams(StringIO(LAMMPS_NORESID), format='data',
                      atom_style='id type x y z')
     assert len(u.atoms) == 1
 
@@ -217,7 +217,7 @@ def test_noresid_failure():
             ValueError,
             match='.+?You can supply a description of the atom_style.+?',
     ):
-        u = mda.Universe(StringIO(LAMMPS_NORESID), format='data')
+        u = mda.Universe.from_streams(StringIO(LAMMPS_NORESID), format='data')
 
 
 def test_interpret_atom_style():
@@ -251,7 +251,7 @@ class TestDumpParser(ParserBase):
     ref_filename = LAMMPSDUMP
 
     def test_creates_universe(self):
-        u = mda.Universe(self.ref_filename, format='LAMMPSDUMP')
+        u = mda.Universe.from_files(self.ref_filename, format='LAMMPSDUMP')
 
         assert isinstance(u, mda.Universe)
         assert len(u.atoms) == 24
@@ -265,6 +265,6 @@ class TestDumpParser(ParserBase):
             
     def test_id_ordering(self):
         # ids are nonsequential in file, but should get rearranged
-        u = mda.Universe(self.ref_filename, format='LAMMPSDUMP')
+        u = mda.Universe.from_files(self.ref_filename, format='LAMMPSDUMP')
         # the 4th in file has id==13, but should have been sorted
         assert u.atoms[3].id == 4

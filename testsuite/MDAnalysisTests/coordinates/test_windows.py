@@ -50,14 +50,14 @@ import MDAnalysis as mda
 class TestWinLammpsDump(TestLammpsDumpReader):
     @pytest.fixture
     def u(self):
-        return mda.Universe(WIN_LAMMPSDUMP, format='LAMMPSDUMP')
+        return mda.Universe.from_files(WIN_LAMMPSDUMP, format='LAMMPSDUMP')
 
 
 class TestWinPDB(object):
     @staticmethod
     @pytest.fixture(scope='class')
     def multiverse():
-        return mda.Universe(WIN_PDB_multiframe, guess_bonds=True)
+        return mda.Universe.from_files(WIN_PDB_multiframe, guess_bonds=True)
 
     def test_n_frames(self, multiverse):
         assert_equal(multiverse.trajectory.n_frames, 24,
@@ -108,7 +108,7 @@ class TestWinARC(object):
     @staticmethod
     @pytest.fixture
     def WIN_ARC_U():
-        return mda.Universe(WIN_ARC)
+        return mda.Universe.from_files(WIN_ARC)
 
     def test_n_frames(self, WIN_ARC_U):
         assert len(WIN_ARC_U.trajectory) == 2

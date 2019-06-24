@@ -70,7 +70,7 @@ class MemoryReference(BaseReference):
         self.jump_to_frame.time = self.jump_to_frame.frame*self.dt
 
     def reader(self, trajectory):
-        return mda.Universe(self.topology,
+        return mda.Universe.from_files(self.topology,
                             trajectory, in_memory=True).trajectory
 
     def iter_ts(self, i):
@@ -191,7 +191,7 @@ class TestMemoryReader(MultiframeReaderTest):
     def test_float32(self, ref):
         # Check that we get float32 positions even when initializing with float64
         coordinates = np.random.uniform(size=(100, ref.universe.atoms.n_atoms, 3)).cumsum(0)
-        universe = mda.Universe(ref.universe.filename, coordinates, format=MemoryReader)
+        universe = mda.Universe.from_files(ref.universe.filename, coordinates, format=MemoryReader)
         assert_equal(universe.trajectory.get_array().dtype, np.dtype('float32'))
 
     def test_position_assignation(self, reader):

@@ -103,7 +103,7 @@ class TestHydrogenBondAnalysis(object):
 ATOM      1  N   LEU     1      32.310  13.778  14.372  1.00  0.00      SYST N 0
 ATOM      2  OW  SOL     2       3.024   4.456   4.147  1.00  0.00      SYST H 0'''
 
-        u = MDAnalysis.Universe(StringIO(pdb), format="pdb")
+        u = MDAnalysis.Universe.from_streams(StringIO(pdb), format="pdb")
         h = MDAnalysis.analysis.hbonds.HydrogenBondAnalysis(u, 'resname SOL', 'protein')
         h.run(verbose=False)
         assert h.timeseries == [[]]
@@ -116,7 +116,7 @@ ATOM      2  OW  SOL     2       3.024   4.456   4.147  1.00  0.00      SYST H 0
     2ALA     H1    3   0.200   0.000   0.000
 7.29748 7.66094 9.82962'''
 
-        u = MDAnalysis.Universe(StringIO(gro), format="gro")
+        u = MDAnalysis.Universe.from_streams(StringIO(gro), format="gro")
         h = MDAnalysis.analysis.hbonds.HydrogenBondAnalysis(u)
         h.run(verbose=False)
         assert h.timeseries[0][0][2] == 'ALA2:H1'
@@ -309,7 +309,7 @@ class TestHydrogenBondAnalysisTIP3P(object):
     @staticmethod
     @pytest.fixture()
     def universe():
-        return MDAnalysis.Universe(waterPSF, waterDCD)
+        return MDAnalysis.Universe.from_files(waterPSF, waterDCD)
 
     kwargs = {
         'selection1': 'all',

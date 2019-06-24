@@ -53,7 +53,7 @@ class TestPSFParser(ParserBase):
         assert len(top.bonds.values) == 3365
 
     def test_bonds_atom_counts(self, filename):
-        u = mda.Universe(filename)
+        u = mda.Universe.from_files(filename)
         assert len(u.atoms[[0]].bonds) == 4
         assert len(u.atoms[[42]].bonds) == 1
 
@@ -66,7 +66,7 @@ class TestPSFParser(ParserBase):
         assert len(top.angles.values) == 6123
 
     def test_angles_atom_counts(self, filename):
-        u = mda.Universe(filename)
+        u = mda.Universe.from_files(filename)
         assert len(u.atoms[[0]].angles), 9
         assert len(u.atoms[[42]].angles), 2
 
@@ -79,7 +79,7 @@ class TestPSFParser(ParserBase):
         assert len(top.dihedrals.values) == 8921
 
     def test_dihedrals_atom_counts(self, filename):
-        u = mda.Universe(filename)
+        u = mda.Universe.from_files(filename)
         assert len(u.atoms[[0]].dihedrals) == 14
 
     def test_dihedrals_identity(self, top):
@@ -120,7 +120,7 @@ class TestPSFParser2(ParserBase):
     expected_n_segments = 4
 
     def test_as_universe_resids(self):
-        u = mda.Universe(XYZ_psf, XYZ)
+        u = mda.Universe.from_files(XYZ_psf, XYZ)
 
         # each segment has [380, 381, 382, 383] as the first
         # 4 residues

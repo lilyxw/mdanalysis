@@ -29,7 +29,7 @@ from MDAnalysisTests.datafiles import (TPR, XTC)
 
 @pytest.fixture()
 def universe():
-    return mda.Universe(TPR, XTC)
+    return mda.Universe.from_files(TPR, XTC)
 
 
 def test_NullWriter(universe):

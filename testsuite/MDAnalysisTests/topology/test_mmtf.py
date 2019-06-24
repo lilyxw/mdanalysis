@@ -36,7 +36,7 @@ class TestMMTFParser_gz(TestMMTFParser):
 class TestMMTFUniverse(object):
     @pytest.fixture()
     def u(self):
-        return mda.Universe(MMTF)
+        return mda.Universe.from_files(MMTF)
 
     def test_bonds(self, u):
         assert len(u.bonds) == 458
@@ -79,13 +79,13 @@ class TestMMTFUniverse(object):
 class TestMMTFUniverseFromDecoder(TestMMTFUniverse):
     @pytest.fixture()
     def u(self):
-        return mda.Universe(mmtf.parse(MMTF))
+        return mda.Universe.from_files(mmtf.parse(MMTF))
 
 
 class TestMMTFgzUniverse(object):
     @pytest.fixture()
     def u(self):
-        return mda.Universe(MMTF_gz)
+        return mda.Universe.from_files(MMTF_gz)
 
     def test_models(self, u):
         # has 2 models
@@ -103,7 +103,7 @@ class TestMMTFgzUniverseFromDecoder(TestMMTFgzUniverse):
     @pytest.fixture()
     def u(self):
         top = mmtf.parse_gzip(MMTF_gz)
-        return mda.Universe(top)
+        return mda.Universe.from_files(top)
 
 
 class TestMMTFFetch(TestMMTFUniverse):
@@ -120,7 +120,7 @@ class TestSelectModels(object):
     # tests for 'model' keyword in select_atoms   
     @pytest.fixture()
     def u(self):
-        return mda.Universe(MMTF_gz)
+        return mda.Universe.from_files(MMTF_gz)
 
     def test_model_selection(self, u):
         m1 = u.select_atoms('model 0')

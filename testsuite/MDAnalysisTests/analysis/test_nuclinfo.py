@@ -33,7 +33,7 @@ from numpy.testing import (
 
 @pytest.fixture(scope='module')
 def u():
-    return mda.Universe(NUCL)
+    return mda.Universe.from_files(NUCL)
 
 
 @pytest.mark.parametrize('i, bp, seg1, seg2, expected_value', (

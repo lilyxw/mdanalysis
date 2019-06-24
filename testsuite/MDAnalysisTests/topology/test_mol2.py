@@ -66,6 +66,6 @@ def test_bond_orders():
                   '1 1 1 1 1 1 1 1 1 1 1 1 1 1 '
                   'ar ar ar 1 ar 1 ar 1 ar 1 1 1 '
                   '2 1 1 1 1 2 1 1 2 1 1').split()
-    u = mda.Universe(mol2_molecule)
+    u = mda.Universe.from_files(mol2_molecule)
     orders = [bond.order for bond in u.atoms.bonds]
     assert_equal(orders, ref_orders)

@@ -248,14 +248,14 @@ class TestMakeWhole(object):
 
     @pytest.fixture()
     def universe(self):
-        universe = mda.Universe(Make_Whole)
+        universe = mda.Universe.from_files(Make_Whole)
         bondlist = [(0, 1), (1, 2), (1, 3), (1, 4), (4, 5), (4, 6), (4, 7)]
         universe.add_TopologyAttr(Bonds(bondlist))
         return universe
 
     def test_single_atom_no_bonds(self):
         # Call make_whole on single atom with no bonds, shouldn't move
-        u = mda.Universe(Make_Whole)
+        u = mda.Universe.from_files(Make_Whole)
         # Atom0 is isolated
         bondlist = [(1, 2), (1, 3), (1, 4), (4, 5), (4, 6), (4, 7)]
         u.add_TopologyAttr(Bonds(bondlist))
@@ -283,7 +283,7 @@ class TestMakeWhole(object):
 
     def test_no_bonds(self):
         # NoData caused by no bonds
-        universe = mda.Universe(Make_Whole)
+        universe = mda.Universe.from_files(Make_Whole)
         ag = universe.residues[0].atoms
         with pytest.raises(NoDataError):
             mdamath.make_whole(ag)
@@ -372,7 +372,7 @@ class TestMakeWhole(object):
             mdamath.make_whole(universe.atoms)
 
     def test_make_whole_triclinic(self):
-        u = mda.Universe(TPR, GRO)
+        u = mda.Universe.from_files(TPR, GRO)
         thing = u.select_atoms('not resname SOL NA+')
         mdamath.make_whole(thing)
 
@@ -382,7 +382,7 @@ class TestMakeWhole(object):
 
     def test_make_whole_fullerene(self):
         # lots of circular bonds as a nice pathological case
-        u = mda.Universe(fullerene)
+        u = mda.Universe.from_files(fullerene)
 
         bbox = u.atoms.bbox()
         u.dimensions[:3] = bbox[1] - bbox[0]
@@ -398,7 +398,7 @@ class TestMakeWhole(object):
         assert_array_almost_equal(u.atoms.bonds.values(), blengths, decimal=self.prec)
 
     def test_make_whole_multiple_molecules(self):
-        u = mda.Universe(two_water_gro, guess_bonds=True)
+        u = mda.Universe.from_files(two_water_gro, guess_bonds=True)
 
         for f in u.atoms.fragments:
             mdamath.make_whole(f)

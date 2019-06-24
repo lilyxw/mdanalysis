@@ -706,7 +706,7 @@ class TestTopologyGroup_Cython(object):
 
 
 def test_bond_length_pbc():
-    u = mda.Universe(TRZ_psf, TRZ)
+    u = mda.Universe.from_files(TRZ_psf, TRZ)
 
     ref = u.bonds[0].length()
 

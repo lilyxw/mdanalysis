@@ -93,7 +93,7 @@ class TestPDBQTWriter(object):
     def test_roundtrip_writing_coords(self, outfile):
         u = mda.Universe.from_files(PDBQT_input)
         u.atoms.write(outfile)
-        u2 = mda.Universe(outfile)
+        u2 = mda.Universe.from_files(outfile)
 
         assert_equal(u2.atoms.positions, u.atoms.positions,
                      "Round trip does not preserve coordinates")
@@ -123,7 +123,7 @@ class TestPDBQTWriter(object):
 
         self.assert_writing_warns(u, outfile)
 
-        u2 = mda.Universe(outfile)
+        u2 = mda.Universe.from_files(outfile)
 
         assert all(u2.atoms.charges == 0.0)
 
@@ -133,7 +133,7 @@ class TestPDBQTWriter(object):
         u = make_Universe(attrs, trajectory=True)
 
         u.atoms.write(outfile)
-        u2 = mda.Universe(outfile)
+        u2 = mda.Universe.from_files(outfile)
 
         # Should have used last letter of segid as chainid
         assert all(u2.atoms[:25].segids == 'A')

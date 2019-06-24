@@ -175,7 +175,7 @@ class TestChainReaderCommonDt(object):
 
     @pytest.fixture()
     def trajectory(self):
-        universe = mda.Universe(
+        universe = mda.Universe.from_files(
             PSF, [DCD, CRD, DCD, CRD, DCD, CRD, CRD], dt=self.common_dt)
         return universe.trajectory
 
@@ -231,7 +231,7 @@ def build_trajectories(folder, sequences, fmt='xtc'):
     fnames = []
     for index, subseq in enumerate(sequences):
         coords = np.zeros((len(subseq), 1, 3), dtype=np.float32) + index
-        u = mda.Universe(utop._topology, coords)
+        u = mda.Universe.from_files(utop._topology, coords)
         out_traj = mda.Writer(template.format(index), n_atoms=len(u.atoms))
         fnames.append(out_traj.filename)
         with out_traj:
@@ -283,7 +283,7 @@ class TestChainReaderContinuous(object):
     def test_order(self, seq_info, tmpdir, fmt):
         folder = str(tmpdir)
         utop, fnames = build_trajectories(folder, sequences=seq_info.seq, fmt=fmt)
-        u = mda.Universe(utop._topology, fnames, continuous=True)
+        u = mda.Universe.from_files(utop._topology, fnames, continuous=True)
         assert u.trajectory.n_frames == seq_info.n_frames
         for i, ts in enumerate(u.trajectory):
             assert_almost_equal(i, ts.time, decimal=4)
@@ -294,14 +294,14 @@ class TestChainReaderContinuous(object):
         folder = str(tmpdir)
         sequences = ([0, 1, 2, 3], [2, 3, 4, 5], [4, 5, 6, 7])
         utop, fnames = build_trajectories(folder, sequences=sequences,)
-        u = mda.Universe(utop._topology, fnames, continuous=True)
+        u = mda.Universe.from_files(utop._topology, fnames, continuous=True)
         assert_equal(u.trajectory._start_frames, [0, 2, 4])
 
     def test_missing(self, tmpdir):
         folder = str(tmpdir)
         sequences = ([0, 1, 2, 3], [5, 6, 7, 8, 9])
         utop, fnames = build_trajectories(folder, sequences=sequences,)
-        u = mda.Universe(utop._topology, fnames, continuous=True)
+        u = mda.Universe.from_files(utop._topology, fnames, continuous=True)
         assert u.trajectory.n_frames == 9
 
     def test_warning(self, tmpdir):
@@ -310,7 +310,7 @@ class TestChainReaderContinuous(object):
         sequences = ([0, 1, 2, 3], [5, 6, 7])
         utop, fnames = build_trajectories(folder, sequences=sequences,)
         with pytest.warns(UserWarning):
-            mda.Universe(utop._topology, fnames, continuous=True)
+            mda.Universe.from_files(utop._topology, fnames, continuous=True)
 
     def test_interleaving_error(self, tmpdir):
         folder = str(tmpdir)
@@ -318,7 +318,7 @@ class TestChainReaderContinuous(object):
         sequences = ([0, 2, 4, 6], [1, 3, 5, 7])
         utop, fnames = build_trajectories(folder, sequences=sequences,)
         with pytest.raises(RuntimeError):
-            mda.Universe(utop._topology, fnames, continuous=True)
+            mda.Universe.from_files(utop._topology, fnames, continuous=True)
 
     def test_easy_trigger_warning(self, tmpdir):
         folder = str(tmpdir)
@@ -326,14 +326,14 @@ class TestChainReaderContinuous(object):
         sequences = ([0, 1, 2, 3], [2, 3, 4, 5], [4, 5, 6, 7])
         utop, fnames = build_trajectories(folder, sequences=sequences,)
         with no_warning(UserWarning):
-            mda.Universe(utop._topology, fnames, continuous=True)
+            mda.Universe.from_files(utop._topology, fnames, continuous=True)
 
     def test_single_frames(self, tmpdir):
         folder = str(tmpdir)
         sequences = ([0, 1, 2, 3], [5, ])
         utop, fnames = build_trajectories(folder, sequences=sequences,)
         with pytest.raises(RuntimeError):
-            mda.Universe(utop._topology, fnames, continuous=True)
+            mda.Universe.from_files(utop._topology, fnames, continuous=True)
 
     def test_mixed_filetypes(self):
         with pytest.raises(ValueError):

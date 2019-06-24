@@ -88,7 +88,7 @@ class TestDuecredit(object):
 
     def test_duecredit_mmtf(self):
         # doesn't trigger on import but on use of either parser or reader
-        u = mda.Universe(MMTF)
+        u = mda.Universe.from_files(MMTF)
 
         assert mda.due.citations[('MDAnalysis.coordinates.MMTF',
                                   '10.1371/journal.pcbi.1005575')].cites_module

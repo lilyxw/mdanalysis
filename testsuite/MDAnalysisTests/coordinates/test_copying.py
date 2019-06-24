@@ -191,7 +191,7 @@ def test_positions_share_memory(original_and_copy):
 
 def test_auxiliary_NIE():
     # Aux's not implemented, check for sane error message
-    u = mda.Universe(XYZ_mini)
+    u = mda.Universe.from_files(XYZ_mini)
 
     u.trajectory.add_auxiliary('myaux', AUX_XVG)
 

@@ -42,7 +42,7 @@ class TestTRZReader(RefTRZ):
 
     @pytest.fixture()
     def universe(self):
-        return mda.Universe(TRZ_psf, TRZ)
+        return mda.Universe.from_files(TRZ_psf, TRZ)
 
     def test_load_trz(self, universe):
         U = universe
@@ -139,7 +139,7 @@ class TestTRZWriter(RefTRZ):
 
     @pytest.fixture()
     def universe(self):
-        return mda.Universe(TRZ_psf, TRZ)
+        return mda.Universe.from_files(TRZ_psf, TRZ)
 
     @pytest.fixture()
     def outfile(self, tmpdir):
@@ -155,7 +155,7 @@ class TestTRZWriter(RefTRZ):
             writer.write_next_timestep(ts)
         writer.close()
 
-        uw = mda.Universe(TRZ_psf, outfile)
+        uw = mda.Universe.from_files(TRZ_psf, outfile)
 
         assert_equal(uw.trajectory.title, self.title_to_write,
                      "Title mismatch between original and written files.")
@@ -190,7 +190,7 @@ class TestTRZWriter(RefTRZ):
 class TestTRZWriter2(object):
     @pytest.fixture()
     def u(self):
-        return mda.Universe(two_water_gro)
+        return mda.Universe.from_files(two_water_gro)
 
     def test_writer_trz_from_other(self, u, tmpdir):
         outfile = os.path.join(str(tmpdir), 'trz-writer-2.trz')
@@ -198,7 +198,7 @@ class TestTRZWriter2(object):
             W.write(u.trajectory.ts)
             W.close()
 
-            u2 = mda.Universe(two_water_gro, outfile)
+            u2 = mda.Universe.from_files(two_water_gro, outfile)
 
             assert_almost_equal(u.atoms.positions,
                                 u2.atoms.positions, 3)
@@ -216,7 +216,7 @@ class TestWrite_Partial_Timestep(object):
 
     @pytest.fixture()
     def universe(self):
-        return mda.Universe(TRZ_psf, TRZ)
+        return mda.Universe.from_files(TRZ_psf, TRZ)
 
     def test_write_trajectory(self, universe, tmpdir):
         ag = universe.select_atoms('name N')
@@ -225,7 +225,7 @@ class TestWrite_Partial_Timestep(object):
         writer.write(ag)
         writer.close()
 
-        u_ag = mda.Universe(outfile)
+        u_ag = mda.Universe.from_files(outfile)
 
         assert_almost_equal(ag.positions,
                             u_ag.atoms.positions,
