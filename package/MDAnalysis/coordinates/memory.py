@@ -100,10 +100,10 @@ extracted from a DCD
     from MDAnalysisTests.datafiles import DCD, PSF
     from MDAnalysis.coordinates.memory import MemoryReader
 
-    universe = mda.Universe(PSF, DCD)
+    universe = mda.Universe.from_files(PSF, DCD)
 
     coordinates = universe.trajectory.timeseries(universe.atoms)
-    universe2 = mda.Universe(PSF, coordinates, format=MemoryReader, order='afc')
+    universe2 = mda.Universe.from_files(PSF, coordinates, format=MemoryReader, order='afc')
 
 
 .. _create-in-memory-trajectory-with-AnalysisFromFunction:

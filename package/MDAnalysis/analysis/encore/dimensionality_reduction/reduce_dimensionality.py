@@ -113,8 +113,8 @@ def reduce_dimensionality(ensembles,
         >>> from MDAnalysis import Universe
         >>> import MDAnalysis.analysis.encore as encore
         >>> from MDAnalysis.tests.datafiles import PSF, DCD, DCD2
-        >>> ens1 = Universe(PSF, DCD)
-        >>> ens2 = Universe(PSF, DCD2)
+        >>> ens1 = Universe.from_files(PSF, DCD)
+        >>> ens2 = Universe.from_files(PSF, DCD2)
         >>> coordinates, details = encore.reduce_dimensionality([ens1,ens2])
         >>> plt.scatter(coordinates[0], coordinates[1],
                         color=[["red", "blue"][m-1] for m

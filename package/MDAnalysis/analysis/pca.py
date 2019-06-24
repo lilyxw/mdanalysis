@@ -76,7 +76,7 @@ Given a universe containing trajectory data we can perform Principal Component
 Analyis by using the class :class:`PCA` and retrieving the principal
 components.
 
-    >>> u = mda.Universe(PSF, DCD)
+    >>> u = mda.Universe.from_files(PSF, DCD)
     >>> PSF_pca = pca.PCA(u, select='backbone')
     >>> PSF_pca.run()
 

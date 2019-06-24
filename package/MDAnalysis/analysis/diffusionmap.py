@@ -63,7 +63,7 @@ Given a universe or atom group, we can create and eigenvalue decompose
 the Diffusion Matrix from that trajectory using :class:`DiffusionMap`:: and get
 the corresponding eigenvalues and eigenvectors.
 
-   >>> u = mda.Universe(PSF,DCD)
+   >>> u = mda.Universe.from_files(PSF,DCD)
 
 We leave determination of the appropriate scale parameter epsilon to the user,
 [Clementi1]_ uses a complex method involving the k-nearest-neighbors of a
@@ -123,7 +123,7 @@ as an initialization argument for :class:`DiffusionMap`.
 Now create the distance matrix and pass it as an argument to
 :class:`DiffusionMap`.
 
-    >>> u = mda.Universe(PSF,DCD)
+    >>> u = mda.Universe.from_files(PSF,DCD)
     >>> dist_matrix = diffusionmap.DistanceMatrix(u, select='all')
     >>> dist_matrix.run()
     >>> dmap = diffusionmap.DiffusionMap(dist_matrix)

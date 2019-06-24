@@ -42,7 +42,7 @@ An example is provided in the MDAnalysis Cookbook_, listed as GNMExample_.
 The basic approach is to pass a trajectory to :class:`GNMAnalysis` and then run
 the analysis::
 
-    u = MDAnalysis.Universe(PSF, DCD)
+    u = MDAnalysis.Universe.from_files(PSF, DCD)
     C = MDAnalysis.analysis.gnm.GNMAnalysis(u, ReportVector="output.txt")
 
     C.run()

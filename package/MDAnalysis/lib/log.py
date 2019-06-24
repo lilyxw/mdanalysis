@@ -276,7 +276,7 @@ class ProgressMeter(object):
     The typical use case is to show progress as frames of a trajectory are
     processed::
 
-       u = Universe(PSF, DCD)
+       u = Universe.from_files(PSF, DCD)
        pm = ProgressMeter(u.trajectory.n_frames, interval=100)
        for ts in u.trajectory:
            pm.echo(ts.frame)

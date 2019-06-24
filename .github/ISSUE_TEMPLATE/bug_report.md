@@ -22,7 +22,7 @@ Show us how to reproduce the failiure. If you can, use trajectory files from the
 import MDAnalysis as mda
 from MDAnalysis.tests.datafiles import PSF, DCD,  GRO, PDB, TPR, XTC, TRR,  PRMncdf, NCDF
 
-u = mda.Universe(PSF, DCD)
+u = mda.Universe.from_files(PSF, DCD)
 
 ....
 

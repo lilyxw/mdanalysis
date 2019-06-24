@@ -27,7 +27,7 @@ class SimpleRmsBench(object):
 
     def setup(self, num_atoms, weights, center, superposition):
         # mimic rmsd docstring example code
-        self.u = MDAnalysis.Universe(PSF, DCD)
+        self.u = MDAnalysis.Universe.from_files(PSF, DCD)
         # ag.positions is the new syntax
         # but older commit hashes will need to use
         # ag.coordinates()
@@ -67,7 +67,7 @@ class RmsdTrajBench(object):
                    'weights']
 
     def setup(self, select, weights):
-        self.u = MDAnalysis.Universe(PSF, DCD)
+        self.u = MDAnalysis.Universe.from_files(PSF, DCD)
         self.RMSD_inst = rms.RMSD(atomgroup=self.u,
                                   reference=None,
                                   select=select,
@@ -93,7 +93,7 @@ class RmsfTrajBench(object):
                    'weights']
 
     def setup(self, n_atoms, step, weights):
-        self.u = MDAnalysis.Universe(PSF, DCD)
+        self.u = MDAnalysis.Universe.from_files(PSF, DCD)
         self.ag = self.u.atoms[:n_atoms]
         self.RMSF_inst = rms.RMSF(atomgroup=self.ag,
                                   weights=weights)

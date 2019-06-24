@@ -409,7 +409,7 @@ def hausdorff(P, Q):
     Calculate the Hausdorff distance between two halves of a trajectory:
 
      >>> from MDAnalysis.tests.datafiles import PSF, DCD
-     >>> u = Universe(PSF,DCD)
+     >>> u = Universe.from_files(PSF,DCD)
      >>> mid = len(u.trajectory)/2
      >>> ca = u.select_atoms('name CA')
      >>> P = numpy.array([
@@ -480,7 +480,7 @@ def hausdorff_wavg(P, Q):
 
      >>> from MDAnalysis import Universe
      >>> from MDAnalysis.tests.datafiles import PSF, DCD
-     >>> u = Universe(PSF,DCD)
+     >>> u = Universe.from_files(PSF,DCD)
      >>> mid = len(u.trajectory)/2
      >>> ca = u.select_atoms('name CA')
      >>> P = numpy.array([
@@ -535,7 +535,7 @@ def hausdorff_avg(P, Q):
     -------
 
      >>> from MDAnalysis.tests.datafiles import PSF, DCD
-     >>> u = Universe(PSF,DCD)
+     >>> u = Universe.from_files(PSF,DCD)
      >>> mid = len(u.trajectory)/2
      >>> ca = u.select_atoms('name CA')
      >>> P = numpy.array([
@@ -629,7 +629,7 @@ def discrete_frechet(P, Q):
     Calculate the discrete Fréchet distance between two halves of a
     trajectory.
 
-     >>> u = Universe(PSF,DCD)
+     >>> u = Universe.from_files(PSF,DCD)
      >>> mid = len(u.trajectory)/2
      >>> ca = u.select_atoms('name CA')
      >>> P = np.array([

@@ -27,7 +27,7 @@ of a protein and the radius of gyration of the backbone atoms are calculated::
     import MDAnalysis
     from MDAnalysis.tests.datafiles import PSF,DCD  # test trajectory
     import numpy.linalg
-    u = MDAnalysis.Universe(PSF,DCD)  # always start with a Universe
+    u = MDAnalysis.Universe.from_files(PSF,DCD)  # always start with a Universe
     nterm = u.select_atoms('segid 4AKE and name N')[0]  # can access structure via segid (s4AKE) and atom name
     cterm = u.select_atoms('segid 4AKE and name C')[-1]  # ... takes the last atom named 'C'
     bb = u.select_atoms('protein and backbone')  # a selection (a AtomGroup)
@@ -95,7 +95,7 @@ trajectory is loaded with ::
 
   >>> from MDAnalysis import Universe
   >>> from MDAnalysis.tests.datafiles import PSF,DCD
-  >>> u = Universe(PSF, DCD)
+  >>> u = Universe.from_files(PSF, DCD)
 
 (The ``>>>`` signs are the Python input prompt and are not to be typed; they
 just make clear in the examples what is input and what is output.)
@@ -147,7 +147,7 @@ everything is working properly::
 
   from MDAnalysis import *
   from MDAnalysis.tests.datafiles import PSF,DCD, PDB,XTC
-  u_dims_adk = Universe(PSF,DCD)
+  u_dims_adk = Universe.from_files(PSF,DCD)
   u_eq_adk = Universe(PDB, XTC)
 
 The PSF and DCD file are a closed-form-to-open-form transition of

@@ -10,6 +10,6 @@ When loading topology information from a file, as with ::
 
   >>> from MDAnalysis import Universe
   >>> from MDAnalysis.tests.datafiles import PSF
-  >>> u = Universe(PSF)
+  >>> u = Universe.from_files(PSF)
 
 the file is read, the contents parsed, and a :class:`~MDAnalysis.core.topology.Topology` object is constructed from these contents.

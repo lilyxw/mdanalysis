@@ -63,7 +63,7 @@ in MDAnalysis. ::
     from MDAnalysis.tests.datafiles import PSF,DCD
     import matplotlib.pyplot as plt
     # example trajectory (transition of AdK from closed to open)
-    u = mda.Universe(PSF,DCD)
+    u = mda.Universe.from_files(PSF,DCD)
     # crude definition of salt bridges as contacts between NH/NZ in ARG/LYS and
     # OE*/OD* in ASP/GLU. You might want to think a little bit harder about the
     # problem before using this for real work.
@@ -116,7 +116,7 @@ conformation and plot the trajectory projected on q1-q2 [Franklin2007]_ ::
     import MDAnalysis as mda
     from MDAnalysis.analysis import contacts
     from MDAnalysisTests.datafiles import PSF, DCD
-    u = mda.Universe(PSF, DCD)
+    u = mda.Universe.from_files(PSF, DCD)
     q1q2 = contacts.q1q2(u, 'name CA', radius=8)
     q1q2.run()
 

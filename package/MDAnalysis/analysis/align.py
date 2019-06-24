@@ -73,7 +73,7 @@ In the simplest case, we can simply calculate the C-alpha RMSD between
 two structures, using :func:`rmsd`::
 
    >>> ref = mda.Universe(PDB_small)
-   >>> mobile = mda.Universe(PSF,DCD)
+   >>> mobile = mda.Universe.from_files(PSF,DCD)
    >>> rmsd(mobile.select_atoms('name CA').positions, ref.select_atoms('name CA').positions)
    16.282308620224068
 
@@ -119,8 +119,8 @@ Common usage
 
 To **fit a single structure** with :func:`alignto`::
 
-   >>> ref = mda.Universe(PSF, PDB_small)
-   >>> mobile = mda.Universe(PSF, DCD)     # we use the first frame
+   >>> ref = mda.Universe.from_files(PSF, PDB_small)
+   >>> mobile = mda.Universe.from_files(PSF, DCD)     # we use the first frame
    >>> align.alignto(mobile, ref, select="protein and name CA", weights="mass")
 
 This will change *all* coordinates in *mobile* so that the protein
@@ -129,8 +129,8 @@ C-alpha atoms are optimally superimposed (translation and rotation).
 To **fit a whole trajectory** to a reference structure with the
 :class:`AlignTraj` class::
 
-   >>> ref = mda.Universe(PSF, PDB_small)   # reference structure 1AKE
-   >>> trj = mda.Universe(PSF, DCD)         # trajectory of change 1AKE->4AKE
+   >>> ref = mda.Universe.from_files(PSF, PDB_small)   # reference structure 1AKE
+   >>> trj = mda.Universe.from_files(PSF, DCD)         # trajectory of change 1AKE->4AKE
    >>> alignment = align.AlignTraj(trj, ref, filename='rmsfit.dcd')
    >>> alignment.run()
 

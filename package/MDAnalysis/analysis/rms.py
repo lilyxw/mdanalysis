@@ -76,9 +76,9 @@ The trajectory is included with the test data files. The data in
 
    import MDAnalysis
    from MDAnalysis.tests.datafiles import PSF,DCD,CRD
-   u = MDAnalysis.Universe(PSF,DCD)
-   ref = MDAnalysis.Universe(PSF,DCD)     # reference closed AdK (1AKE) (with the default ref_frame=0)
-   #ref = MDAnalysis.Universe(PSF,CRD)    # reference open AdK (4AKE)
+   u = MDAnalysis.Universe.from_files(PSF,DCD)
+   ref = MDAnalysis.Universe.from_files(PSF,DCD)     # reference closed AdK (1AKE) (with the default ref_frame=0)
+   #ref = MDAnalysis.Universe.from_files(PSF,CRD)    # reference open AdK (4AKE)
 
    import MDAnalysis.analysis.rms
 
@@ -212,7 +212,7 @@ def rmsd(a, b, weights=None, center=False, superposition=False):
 
     Example
     -------
-    >>> u = Universe(PSF,DCD)
+    >>> u = Universe.from_files(PSF,DCD)
     >>> bb = u.select_atoms('backbone')
     >>> A = bb.positions.copy()  # coordinates of first frame
     >>> u.trajectory[-1]         # forward to last frame

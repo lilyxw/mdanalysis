@@ -61,7 +61,7 @@ For example::
    import MDAnalysis as mda
    from MDAnalysisTests.datafiles import PSF, DCD
 
-   u = mda.Universe(PSF, DCD)
+   u = mda.Universe.from_files(PSF, DCD)
    u.select_atoms('segid 4AKE')  # selects all segments with segid 4AKE
 
 If only a single segment has that segid then a Segment object will
@@ -129,95 +129,6 @@ from .topology import Topology
 from .topologyattrs import AtomAttr, ResidueAttr, SegmentAttr
 
 logger = logging.getLogger("MDAnalysis.core.universe")
-
-def load_new(self, filenames, format=None, in_memory=False, **kwargs):
-    """Load coordinates from `filename`.
-
-    The file format of `filename` is autodetected from the file name suffix
-    or can be explicitly set with the `format` keyword. A sequence of files
-    can be read as a single virtual trajectory by providing a list of
-    filenames.
-
-
-    Parameters
-    ----------
-    filename : str or list
-        the coordinate file (single frame or trajectory) *or* a list of
-        filenames, which are read one after another.
-    format : str or list or object (optional)
-        provide the file format of the coordinate or trajectory file;
-        ``None`` guesses it from the file extension. Note that this
-        keyword has no effect if a list of file names is supplied because
-        the "chained" reader has to guess the file format for each
-        individual list member [``None``]. Can also pass a subclass of
-        :class:`MDAnalysis.coordinates.base.ProtoReader` to define a custom
-        reader to be used on the trajectory file.
-    in_memory : bool (optional)
-        Directly load trajectory into memory with the
-        :class:`~MDAnalysis.coordinates.memory.MemoryReader`
-
-        .. versionadded:: 0.16.0
-
-    **kwargs : dict
-        Other kwargs are passed to the trajectory reader (only for
-        advanced use)
-
-    Returns
-    -------
-    universe : Universe
-
-    Raises
-    ------
-    TypeError if trajectory format can not be
-                determined or no appropriate trajectory reader found
-
-
-    .. versionchanged:: 0.8
-        If a list or sequence that is provided for `filename` only contains
-        a single entry then it is treated as single coordinate file. This
-        has the consequence that it is not read by the
-        :class:`~MDAnalysis.coordinates.chain.ChainReader` but directly by
-        its specialized file format reader, which typically has more
-        features than the
-        :class:`~MDAnalysis.coordinates.chain.ChainReader`.
-
-    .. versionchanged:: 0.17.0
-        Now returns a :class:`Universe` instead of the tuple of file/array
-        and detected file type.
-    """
-    if not filenames:
-        return
-    
-    if len(filenames) == 1:
-        filenames = filenames[0]
-    
-    logger.debug("Universe.load_new(): loading {0}...".format(filenames))
-
-    try:
-        reader = get_reader_for(filenames, format=format)
-    except ValueError as err:
-        raise TypeError(
-            "Cannot find an appropriate coordinate reader for file '{0}'.\n"
-            "           {1}".format(filename, err))
-
-    # supply number of atoms for readers that cannot do it for themselves
-    kwargs['n_atoms'] = self.atoms.n_atoms
-
-    self.trajectory = reader(filename, **kwargs)
-    if self.trajectory.n_atoms != len(self.atoms):
-        raise ValueError("The topology and {form} trajectory files don't"
-                            " have the same number of atoms!\n"
-                            "Topology number of atoms {top_n_atoms}\n"
-                            "Trajectory: {fname} Number of atoms {trj_n_atoms}".format(
-                                form=self.trajectory.format,
-                                top_n_atoms=len(self.atoms),
-                                fname=filename,
-                                trj_n_atoms=self.trajectory.n_atoms))
-
-    if in_memory:
-        self.transfer_to_memory(step=kwargs.get("in_memory_step", 1))
-
-    return self
 
 class Universe(object):
     """The MDAnalysis Universe contains all the information describing the system.
@@ -1135,7 +1046,7 @@ def as_Universe(*args, **kwargs):
        and second argument::
 
          as_Universe(PDB, **kwargs) --> Universe(PDB, **kwargs)
-         as_Universe(PSF, DCD, **kwargs) --> Universe(PSF, DCD, **kwargs)
+         as_Universe.from_files(PSF, DCD, **kwargs) --> Universe.from_files(PSF, DCD, **kwargs)
          as_Universe(*args, **kwargs) --> Universe(*args, **kwargs)
 
     Returns

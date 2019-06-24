@@ -73,7 +73,7 @@ here we are assuming that PSF, DCD, etc contain file names. If you don't have
 trajectories at hand you can play with the ones that come with MDAnalysis for
 testing (see below under `Examples`_)::
 
-  >>> u = MDAnalysis.Universe(PSF, DCD)
+  >>> u = MDAnalysis.Universe.from_files(PSF, DCD)
 
 Select the C-alpha atoms and store them as a group of atoms::
 
@@ -127,7 +127,7 @@ everything is working properly::
 
   from MDAnalysis import *
   from MDAnalysis.tests.datafiles import PSF,DCD, PDB,XTC
-  u_dims_adk = Universe(PSF,DCD)
+  u_dims_adk = Universe.from_files(PSF,DCD)
   u_eq_adk = Universe(PDB, XTC)
 
 The PSF and DCD file are a closed-form-to-open-form transition of
