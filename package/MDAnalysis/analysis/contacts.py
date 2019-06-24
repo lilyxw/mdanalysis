@@ -461,7 +461,7 @@ class Contacts(AnalysisBase):
 
 def _new_selections(u_orig, selections, frame):
     """create stand alone AGs from selections at frame"""
-    u = MDAnalysis.Universe(u_orig.filename, u_orig.trajectory.filename)
+    u = MDAnalysis.Universe.from_files(u_orig.filename, u_orig.trajectory.filename)
     u.trajectory[frame]
     return [u.select_atoms(s) for s in selections]
 

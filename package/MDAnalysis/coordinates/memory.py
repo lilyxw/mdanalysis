@@ -123,11 +123,11 @@ same functionality for any supported trajectory format::
   from MDAnalysis.coordinates.memory import MemoryReader
   from MDAnalysis.analysis.base import AnalysisFromFunction
 
-  u = mda.Universe(PDB, XTC)
+  u = mda.Universe.from_files(PDB, XTC)
 
   coordinates = AnalysisFromFunction(lambda ag: ag.positions.copy(),
                                      u.atoms).run().results
-  u2 = mda.Universe(PDB, coordinates, format=MemoryReader)
+  u2 = mda.Universe.from_files(PDB, coordinates, format=MemoryReader)
 
 .. _creating-in-memory-trajectory-label:
 
@@ -149,7 +149,7 @@ only the protein is created::
   from MDAnalysis.coordinates.memory import MemoryReader
   from MDAnalysis.analysis.base import AnalysisFromFunction
 
-  u = mda.Universe(PDB, XTC)
+  u = mda.Universe.from_files(PDB, XTC)
   protein = u.select_atoms("protein")
 
   coordinates = AnalysisFromFunction(lambda ag: ag.positions.copy(),

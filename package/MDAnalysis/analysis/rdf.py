@@ -263,7 +263,7 @@ class InterRDF_s(AnalysisBase):
     method::
 
       from MDAnalysisTests.datafiles import GRO_MEMPROT, XTC_MEMPROT
-      u = mda.Universe(GRO_MEMPROT, XTC_MEMPROT)
+      u = mda.Universe.from_files(GRO_MEMPROT, XTC_MEMPROT)
 
       s1 = u.select_atoms('name ZND and resid 289')
       s2 = u.select_atoms('(name OD1 or name OD2) and resid 51 and sphzone 5.0 (resid 289)')

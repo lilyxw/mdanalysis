@@ -245,7 +245,7 @@ class Universe(object):
     """
 
     @classmethod
-    def from_stream(cls, topology, **kwargs):
+    def from_streams(cls, topology, **kwargs):
         if isinstance(topology, NamedStream):
             filename = topology
         elif isstream(topology):
@@ -300,7 +300,7 @@ class Universe(object):
                 " with parser {1}.\n"
                 "Error: {2}".format(topology_file, parser, err))
         
-        if all_coordinates:
+        if all_coordinates or not coordinates:
             try:
                 get_reader_for(topology_file, format)
             except ValueError:
@@ -329,6 +329,13 @@ class Universe(object):
         is_anchor: bool
             Universe are anchors by default.
         """
+
+        if type(topology) is not Topology:
+            raise ValueError('The new API only supports passing'
+                             'MDAnalysis.Topology objects through __init__. '
+                             'Please use Universe.from_files or '
+                             'Universe.from_streams')
+
         self._instant_selectors = {}  # for storing segments. Deprecated?
         self._trajectory = None  # managed attribute holding Reader
         self._cache = {}
@@ -592,7 +599,7 @@ class Universe(object):
            and detected file type.
         """
         # filename==None happens when only a topology is provided
-        if filename is None:
+        if not filename:
             return self
 
         if len(util.asiterable(filename)) == 1:
@@ -1045,7 +1052,7 @@ def as_Universe(*args, **kwargs):
     2. Otherwise try to build a universe from the first or the first
        and second argument::
 
-         as_Universe(PDB, **kwargs) --> Universe(PDB, **kwargs)
+         as_Universe.from_files(PDB, **kwargs) --> Universe.from_files(PDB, **kwargs)
          as_Universe.from_files(PSF, DCD, **kwargs) --> Universe.from_files(PSF, DCD, **kwargs)
          as_Universe(*args, **kwargs) --> Universe(*args, **kwargs)
 

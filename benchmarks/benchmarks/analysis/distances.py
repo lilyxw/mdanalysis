@@ -33,7 +33,7 @@ class DistancesBench(object):
         self.array_shape_1D = int(num_atoms * (num_atoms - 1) / 2.)
         self.allocated_array_1D = np.empty(self.array_shape_1D,
                                            dtype=np.float64)
-        self.u = MDAnalysis.Universe(GRO)
+        self.u = MDAnalysis.Universe.from_files(GRO)
         self.ag1 = self.u.atoms[:num_atoms]
         self.ag2 = self.u.atoms[num_atoms: 2 * num_atoms]
         self.ag3 = self.u.atoms[-num_atoms:]

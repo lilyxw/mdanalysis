@@ -108,7 +108,7 @@ class can choose an appropriate reader automatically.
 A typical approach is to generate a new trajectory from an old one, e.g., to
 only keep the protein::
 
-  u = MDAnalysis.Universe(PDB, XTC)
+  u = MDAnalysis.Universe.from_files(PDB, XTC)
   protein = u.select_atoms("protein")
   with MDAnalysis.Writer("protein.xtc", protein.n_atoms) as W:
       for ts in u.trajectory:

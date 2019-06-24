@@ -57,7 +57,7 @@ the test data files::
 
    import MDAnalysis as mda
    from MDAnalysisTests.datafiles import GRO, XTC
-   u = mda.Universe(GRO, XTC)
+   u = mda.Universe.from_files(GRO, XTC)
 
    # selection of atomgroups
    ags = [res.phi_selection() for res in u.residues[4:9]]
@@ -75,7 +75,7 @@ quick calculation of phi and psi angles. Unlike the :class:`~MDanalysis.analysis
 class which takes a list of `atomgroups`, this class only needs a list of
 residues or atoms from those residues. The previous example can repeated with::
 
-   u = mda.Universe(GRO, XTC)
+   u = mda.Universe.from_files(GRO, XTC)
    r = u.select_atoms("resid 5-10")
 
    R = Ramachandran(r).run()

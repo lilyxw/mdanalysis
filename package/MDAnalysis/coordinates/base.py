@@ -1712,7 +1712,7 @@ class ProtoReader(six.with_metaclass(_Readermeta, IOBase)):
         stored in the current timestep in the ``ts.aux`` namespace under *auxname*;
         e.g. to add additional pull force data stored in pull-force.xvg::
 
-            u = MDAnalysis.Universe(PDB, XTC)
+            u = MDAnalysis.Universe.from_files(PDB, XTC)
             u.trajectory.add_auxiliary('pull', 'pull-force.xvg')
 
         The representative value for the current timestep may then be accessed

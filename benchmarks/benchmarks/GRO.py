@@ -18,4 +18,4 @@ class GROReadBench(object):
 
     def time_create_GRO_universe(self):
         """Time to create MDA Universe of GRO"""
-        u = mda.Universe(GRO)
+        u = mda.Universe.from_files(GRO)

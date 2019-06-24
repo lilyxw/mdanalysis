@@ -21,7 +21,7 @@ class AtomGroupMethodsBench(object):
     param_names = ['num_atoms']
 
     def setup(self, num_atoms):
-        self.u = MDAnalysis.Universe(GRO)
+        self.u = MDAnalysis.Universe.from_files(GRO)
         self.ag = self.u.atoms[:num_atoms]
         self.weights = np.ones(num_atoms)
         self.vdwradii = {'H':1.0,
@@ -212,7 +212,7 @@ class AtomGroupAttrsBench(object):
     param_names = ['num_atoms']
 
     def setup(self, num_atoms):
-        self.u = MDAnalysis.Universe(GRO)
+        self.u = MDAnalysis.Universe.from_files(GRO)
         self.ag = self.u.atoms[:num_atoms]
 
     def time_angle(self, num_atoms):

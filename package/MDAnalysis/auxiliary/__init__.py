@@ -127,7 +127,7 @@ may be passed in as a AuxReader instance, or directly as e.g. a filename, in
 which case :func:`~MDAnalysis.auxiliary.core.get_auxreader_for` is used to 
 guess an appropriate reader. e.g.::
 
-    u = MDAnalysis.Universe(PDB, XTC)
+    u = MDAnalysis.Universe.from_files(PDB, XTC)
     u.trajectory.add_auxiliary('pullforce', './pull_force.xvg')
 
 As the trajectory frame is updated, the auxiliary data will be read 

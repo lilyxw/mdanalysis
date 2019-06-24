@@ -24,7 +24,7 @@ class SimpleSelectionBench(object):
     param_names = ['selection_string']
 
     def setup(self, selection_string):
-        self.u = MDAnalysis.Universe(GRO)
+        self.u = MDAnalysis.Universe.from_files(GRO)
 
     def time_simple_selections(self, selection_string):
         """Benchmark simple selections on the protein-based
@@ -67,7 +67,7 @@ class GeoSelectionBench(object):
               selection_string,
               dynamic_selection,
               periodic_selection):
-        self.u = MDAnalysis.Universe(GRO)
+        self.u = MDAnalysis.Universe.from_files(GRO)
 
     def time_geometric_selections(self,
                                   selection_string,

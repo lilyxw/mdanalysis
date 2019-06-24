@@ -109,7 +109,7 @@ order parameter :math:`\rho`. ::
    from MDAnalysis.tests.datafiles import PDB_HOLE, MULTIPDB_HOLE
 
    mda.start_logging()
-   ref = mda.Universe(PDB_HOLE)    # reference structure
+   ref = mda.Universe.from_files(PDB_HOLE)    # reference structure
    u = mda.Universe(MULTIPDB_HOLE) # trajectory
 
    # calculate RMSD
