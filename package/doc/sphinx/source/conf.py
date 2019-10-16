@@ -15,8 +15,8 @@ import sys
 import os
 import platform
 
-# http://alabaster.readthedocs.io/en/latest/
-import alabaster
+# https://sphinx-rtd-theme.readthedocs.io/en/stable/
+import sphinx_rtd_theme
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -37,7 +37,10 @@ extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx',
               'sphinx.ext.mathjax', 'sphinx.ext.viewcode',
               'sphinx.ext.napoleon', 'sphinx.ext.todo',
               'sphinx_sitemap',
-              'alabaster']
+              'sphinx_rtd_theme',
+              'sphinx.ext.autosummary']
+
+autosummary_generate = True
 
 mathjax_path = 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML'
 
@@ -68,7 +71,7 @@ master_doc = 'index'
 author_list = __import__('MDAnalysis').__authors__
 authors = u', '.join(author_list[:-1]) + u', and ' + author_list[-1]
 project = u'MDAnalysis'
-copyright = u'2005-2017, ' + authors
+copyright = u'2005-2019, ' + authors
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -122,7 +125,7 @@ autoclass_content = 'both'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'alabaster'
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -141,34 +144,25 @@ color = {'orange': '#FF9200',
          'black': '#000000',}
 
 html_theme_options = {
-    'logo' : "logos/mdanalysis-logo-200x150.png",
-    'github_user': "MDAnalysis",
-    'github_repo': "mdanalysis",
-    #'travis_button': "MDAnalysis/mdanalysis",
-    'travis_button': False,
-    'github_type': 'star',
-    'github_banner': True,
-    'show_related': True,
-    'fixed_sidebar': False,
-    'sidebar_includehidden': True,
-    'sidebar_collapse': True,
-    # style
-    'link': color['orange'],
-    'link_hover': color['orange'],
-    'gray_1': color['gray'],
-    'narrow_sidebar_bg': color['gray'],
-    'narrow_sidebar_fg': color['white'],
-    # typography
-    #'font_size': 17,
-    'font_family': "'PT Sans', Helvetica, Arial, 'sans-serif'",
-    'head_font_family': "",
-    'code_font_size': "smaller",
-    'code_font_family': "Menlo, Monaco, 'Courier New', monospace",
-    'caption_font_size': "smaller",
+    'canonical_url': '',
+    'logo_only': True,
+    'display_version': True,
+    'prev_next_buttons_location': 'bottom',
+    'style_external_links': False,
+    'style_nav_header_background': 'white', #'#e76900', # dark orange
+    # Toc options
+    'collapse_navigation': True,
+    'sticky_navigation': True,
+    'navigation_depth': 5,
+    'includehidden': True,
+    'titles_only': False,
 }
 
+html_favicon = "_static/logos/mdanalysis-logo.ico"
+html_logo =  '_static/logos/mdanalysis-logo-200x150.png'
+
 # Add any paths that contain custom themes here, relative to this directory.
-html_theme_path = [alabaster.get_path()]
+# html_theme_path = [alabaster.get_path()]
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -191,6 +185,7 @@ html_favicon = "_static/logos/mdanalysis-logo.ico"
 # so a file named "default.css" will overwrite the builtin "default.css".
 # For alabaster: custom.css to override theme defaults.
 html_static_path = ['_static']
+html_css_files = ['custom.css']
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.

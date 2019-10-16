@@ -1,4 +1,5 @@
 .. Contains the formatted docstrings for the core modules located in 'mdanalysis/MDAnalysis/core'
+.. currentmodule:: MDAnalysis
 
 **************************
 Core modules
@@ -10,23 +11,25 @@ MDAnalysis, such as the central data structures in
 the selection definitions and parsing in
 :mod:`MDAnalysis.core.selection`.
 
+Constructing
+============
 
-Important objects for users
-===========================
+.. autosummary::
 
-All users of MDAnalysis need to understand the two most important
-classes in this section, namely the
-:class:`~MDAnalysis.core.universe.Universe` and the
-:class:`~MDAnalysis.core.groups.AtomGroup`.
+  :toctree: generated/
 
-.. toctree::
-   :maxdepth: 1
+  Universe
+  Merge
 
-   core/universe
-   core/groups
+Attributes 
+==========
 
+.. autosummary::
 
-.. _topology-system-label:
+  :toctree: generated/
+
+  AtomGroup
+  ResidueGroup
 
 Topology system
 ===============
