@@ -56,7 +56,7 @@ class TopologyObject(object):
     .. versionadded:: 0.11.0
        Added the `value` method to return the size of the object
     """
-    __slots__ = ("_ix", "_u", "btype", "_bondtype", "_guessed", "order")
+    __slots__ = ("_ix", "_u", "btype", "_bondtype", "_guessed", "order", "tags")
 
     def __init__(self, ix, universe, type=None, guessed=False, order=None):
         """Create a topology object
@@ -552,12 +552,19 @@ class TopologyGroup(object):
             order = np.repeat(None, nbonds).reshape(nbonds, 1)
 
         if nbonds > 0:
-            uniq, uniq_idx = util.unique_rows(bondidx, return_index=True)
+            # uniq, uniq_idx = util.unique_rows(bondidx, return_index=True)
+            m = bondidx.shape[1]
+            arr = bondidx.view(dtype=np.dtype([(str(i), bondidx.dtype)
+                                               for i in range(m)]))
+            # arr = arr.view(bondidx.dtype).reshape(-1, m)
+            bond_idx = np.argsort(arr, axis=0)
+            arr = arr[bond_idx].view(bondidx.dtype).reshape(-1, m)
+            bond_idx = bond_idx.reshape(bond_idx.shape[0])
 
-            self._bix = uniq
-            self._bondtypes = type[uniq_idx]
-            self._guessed = guessed[uniq_idx]
-            self._order = order[uniq_idx]
+            self._bix = arr
+            self._bondtypes = type[bond_idx]
+            self._guessed = guessed[bond_idx]
+            self._order = order[bond_idx]
 
             # Create vertical AtomGroups
             self._ags = [universe.atoms[self._bix[:, i]]

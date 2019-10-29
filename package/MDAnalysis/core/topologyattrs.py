@@ -1641,7 +1641,10 @@ class Segids(SegmentAttr):
 
 class _Connection(AtomAttr):
     """Base class for connectivity between atoms"""
-    def __init__(self, values, types=None, guessed=False, order=None):
+    topology_tags = {}
+
+    def __init__(self, values, types=None, guessed=False, order=None,
+                 tags=None, **kwargs):
         values = [tuple(x) for x in values]
         if not all(len(x) == self._n_atoms 
                    and all(isinstance(y, (int, np.integer)) for y in x)
@@ -1662,6 +1665,16 @@ class _Connection(AtomAttr):
             order = [None] * len(values)
         self.order = order
         self._cache = dict()
+
+        for attr, atype in self.topology_tags.items():
+            val = kwargs.pop(attr, None)
+            if val is not None and not isinstance(val, atype):
+                val = atype(val)
+            setattr(self, attr, val)
+
+        if tags is None:
+            tags = {}
+        self.tags = tags
 
     def copy(self):
         """Return a deepcopy of this attribute"""
@@ -1751,6 +1764,23 @@ class Bonds(_Connection):
     singular = 'bonds'
     transplants = defaultdict(list)
     _n_atoms = 2
+    topology_tags = {
+        'fc': float,
+        'eq': float,
+    }
+
+    def __init__(self, *args, fc=None, eq=None, tags=None, **kwargs):
+        super(Bonds, self).__init__(*args, **kwargs)
+        if fc is not None and not isinstance(fc, (float, np.float)):
+            fc = float(fc)
+        if eq is not None and not isinstance(fc, (float, np.float)):
+            eq = float(eq)
+        if tags is None:
+            tags = {}
+        self.fc = fc
+        self.eq = eq
+        self.tags = tags
+        
 
     def bonded_atoms(self):
         """An :class:`~MDAnalysis.core.groups.AtomGroup` of all
@@ -1901,6 +1931,11 @@ class Angles(_Connection):
     transplants = defaultdict(list)
     _n_atoms = 3
 
+    topology_tags = {
+        'fc': float,
+        'eq': float,
+    }
+
 
 class Dihedrals(_Connection):
     """A connection between four sequential atoms"""
@@ -1908,6 +1943,11 @@ class Dihedrals(_Connection):
     singular = 'dihedrals'
     transplants = defaultdict(list)
     _n_atoms = 4
+    topology_tags = {
+        'fc': float,
+        'phase': float,
+        'multiplicity': int
+    }
 
 
 class Impropers(_Connection):
@@ -1916,3 +1956,67 @@ class Impropers(_Connection):
     singular = 'impropers'
     transplants = defaultdict(list)
     _n_atoms = 4
+
+    topology_tags = {
+        'fc': float,
+        'eq': float,
+    }
+
+class Pairs(_Connection):
+    attrname = 'pairs'
+    singular = 'pairs'
+    transplants = defaultdict(list)
+    _n_atoms = 2
+
+    topology_tags = {
+        'c6': float,
+        'c12': float,
+    }
+
+class PairsNB(_Connection):
+    attrname = 'pairs_nb'
+    singular = 'pairs_nb'
+    transplants = defaultdict(list)
+    _n_atoms = 2
+
+    topology_tags = {
+        'qi': float,
+        'qj': float,
+        'c6': float,
+        'c12': float,
+    }
+
+class Constraints(_Connection):
+    attrname = 'constraints'
+    singular = 'constraints'
+    transplants = defaultdict(list)
+    _n_atoms = 2
+
+    topology_tags = {
+        'eq': float,
+    }
+
+class Exclusions(_Connection):
+    attrname = 'exclusions'
+    singular = 'exclusions'
+    transplants = defaultdict(list)
+
+    def __init__(self, values, types=None, guessed=False, order=None,
+                 tags=None, **kwargs):
+        values = [tuple(x) for x in values]
+        if not all(isinstance(y, (int, np.integer)) for x in values for y in x):
+            raise ValueError(("{} must be an iterable of tuples with"
+                              " atom indices").format(self.attrname))
+        self.values = values
+        if types is None:
+            types = [None] * len(values)
+        self.types = types
+        if guessed in (True, False):
+            # if single value passed, multiply this across
+            # all bonds
+            guessed = [guessed] * len(values)
+        self._guessed = guessed
+        if order is None:
+            order = [None] * len(values)
+        self.order = order
+        self._cache = dict()
