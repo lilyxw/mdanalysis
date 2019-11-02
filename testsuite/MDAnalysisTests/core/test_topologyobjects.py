@@ -494,6 +494,59 @@ class TestTopologyGroup(object):
         ag = PSFDCD.atoms[:10]  # AtomGroup
         with pytest.raises(TypeError):
             this = tg + ag
+    
+    def test_subtract_TopologyGroups(self, PSFDCD):
+        tg1 = PSFDCD.bonds[:10]
+        tg2 = PSFDCD.bonds[[2, 3, 4]]
+
+        new_tg = tg1 - tg2  # subtract tgs
+        assert len(new_tg) == len(tg1)-len(tg2)
+
+        outside_tg = PSFDCD.bonds[[12, 33]]
+        new_tg -= outside_tg  # try and subtract bonds not in group
+        assert len(new_tg) == 7  # check len doesn't change
+
+    def test_subtract_empty_from_TG(self, PSFDCD):
+        tg1 = PSFDCD.bonds[10:15]
+        tg2 = PSFDCD.bonds[:0]  # empty
+        tg3 = tg1 - tg2
+
+        assert tg1 == tg3
+
+    def test_subtract_TO_from_empty_TG(self, PSFDCD):
+        tg1 = PSFDCD.bonds[:0]  # empty
+        to = PSFDCD.bonds[5]
+        tg3 = tg1 - to
+
+        assert len(tg1) == 0
+
+    def test_subtract_TG_from_empty_TG(self, PSFDCD):
+        tg1 = PSFDCD.bonds[:0]  # empty
+        tg2 = PSFDCD.bonds[5:7]
+        tg3 = tg1 - tg2
+
+        assert tg1 == tg3
+
+    def test_subtract_singleitem(self, PSFDCD):
+        tg = PSFDCD.atoms.bonds[:10]
+        to = PSFDCD.atoms.bonds[0]
+
+        assert len(tg - to) == 9
+
+    def test_subtract_wrongtype_TopologyGroup(self, PSFDCD):
+        tg = PSFDCD.atoms.bonds[:10]  # TG of bonds
+        ang = PSFDCD.atoms.angles[9]  # single angle
+        angg = PSFDCD.atoms.angles[:10]  # TG of angles
+
+        for other in [ang, angg]:
+            with pytest.raises(TypeError):
+                this = tg - other
+
+    def test_bad_subtract_TopologyGroup(self, PSFDCD):
+        tg = PSFDCD.atoms.bonds[:10]  # TopologyGroup
+        ag = PSFDCD.atoms[:10]  # AtomGroup
+        with pytest.raises(TypeError):
+            this = tg - ag
 
     def test_TG_getitem_single(self, PSFDCD):
         tg = PSFDCD.atoms.bonds[:10]

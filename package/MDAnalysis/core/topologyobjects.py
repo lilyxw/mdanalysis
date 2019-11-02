@@ -749,6 +749,59 @@ class TopologyGroup(object):
                     guessed=np.concatenate([self._guessed, other._guessed]),
                     order=np.concatenate([self._order, other._order]),
                 )
+    
+    def __sub__(self, other):
+        """Subtract a TopologyGroup from this one.
+
+        Can apply to two TopologyGroup of the same type, or subtract a single
+        TopologyObject from a TopologyGroup.
+        """
+        # check other is sane
+        if not isinstance(other, (TopologyObject, TopologyGroup)):
+            raise TypeError("Can only subtract TopologyObject or "
+                            "TopologyGroup from TopologyGroup, not {0}"
+                            "".format(type(other)))
+
+        # cases where either other or self is empty TG
+        if not other or not self:
+            return self
+
+        else:
+            if not other.btype == self.btype:
+                raise TypeError("Cannot subtract different types of "
+                                "TopologyObjects")
+            if isinstance(other, TopologyObject):
+                # ignore if not in self
+                ix = other._ix
+                if ix not in self._bix:
+                    return self
+                # remove TO from me
+                i = np.where((self._bix == ix).all(1))[0][0]
+                not_i = np.arange(len(self.indices))!= i
+                return TopologyGroup(
+                    self.indices[not_i],
+                    self.universe,
+                    btype=self.btype,
+                    type=self._bondtypes[not_i],
+                    guessed=self._guessed[not_i],
+                    order=self._order[not_i],
+                )
+            else:
+                # remove TG from me
+                nrows, ncols = self._bix.shape
+                dtype = {'names': ['f{}'.format(i) for i in range(ncols)],
+                         'formats': ncols * [self._bix.dtype]}
+                i = np.where(np.in1d(self._bix.view(dtype), 
+                              other._bix.view(dtype)))[0]
+                not_i = ~np.in1d(np.arange(len(self.indices)), i)
+                return TopologyGroup(
+                    self.indices[not_i],
+                    self.universe,
+                    btype=self.btype,
+                    type=self._bondtypes[not_i],
+                    guessed=self._guessed[not_i],
+                    order=self._order[not_i],
+                )
 
     def __getitem__(self, item):
         """Returns a particular bond as single object or a subset of
