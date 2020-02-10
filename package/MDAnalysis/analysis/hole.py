@@ -22,7 +22,6 @@
 #
 
 r"""Generation and Analysis of HOLE pore profiles --- :mod:`MDAnalysis.analysis.hole`
-=================================================================================
 
 :Author: Lukas Stelzl, Oliver Beckstein
 :Year: 2011-2012
