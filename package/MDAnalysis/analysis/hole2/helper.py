@@ -1,12 +1,50 @@
+# -*- Mode: python; tab-width: 4; indent-tabs-mode:nil; coding:utf-8 -*-
+# vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
+#
+# MDAnalysis --- https://www.mdanalysis.org
+# Copyright (c) 2006-2020 The MDAnalysis Development Team and contributors
+# (see the file AUTHORS for the full list of names)
+#
+# Released under the GNU Public Licence, v2 or any higher version
+#
+# Please cite your use of MDAnalysis in published work:
+#
+# R. J. Gowers, M. Linke, J. Barnoud, T. J. E. Reddy, M. N. Melo, S. L. Seyler,
+# D. L. Dotson, J. Domanski, S. Buchoux, I. M. Kenney, and O. Beckstein.
+# MDAnalysis: A Python package for the rapid analysis of molecular dynamics
+# simulations. In S. Benthall and S. Rostrup editors, Proceedings of the 15th
+# Python in Science Conference, pages 102-109, Austin, TX, 2016. SciPy.
+# doi: 10.25080/majora-629e541a-00e
+#
+# N. Michaud-Agrawal, E. J. Denning, T. B. Woolf, and O. Beckstein.
+# MDAnalysis: A Toolkit for the Analysis of Molecular Dynamics Simulations.
+# J. Comput. Chem. 32 (2011), 2319--2327, doi:10.1002/jcc.21787
+#
+
+
+"""HOLE Analysis --- :mod:`MDAnalysis.analysis.hole2.helper`
+=====================================================================================
+
+:Author: Lily Wang
+:Year: 2020
+:Copyright: GNU Public License v3
+
+.. versionadded:: 1.0
+
+Helper functions used in :mod:`MDAnalysis.analysis.hole2.hole`
+"""
+
 import logging
 import tempfile
 import subprocess
 import os
 import numpy as np
+import six
+import errno
 
-from MDAnalysis.lib.util import FORTRANReader
+from MDAnalysis.lib import util
 from .templates import (SIMPLE2_RAD, IGNORE_RESIDUES, hole_input,
-                        hole_lines)
+                        hole_lines, exe_err)
 
 logger = logging.getLogger(__name__)
 
@@ -384,7 +422,7 @@ def collect_hole(outfile='hole.out'):
     dict
         Dictionary of HOLE profiles as record arrays
     """
-    fmt = FORTRANReader('3F12')
+    fmt = util.FORTRANReader('3F12')
     recarrays = {}
 
     with open(outfile, 'r') as output:
@@ -466,8 +504,22 @@ def create_vmd_surface(sphpdb='hole.sph',
     """
     fd, tmp_sos = tempfile.mkstemp(suffix=".sos", text=True)
     os.close(fd)
+
+    sph_process_path = util.which(sph_process)
+    if sph_process_path is None:
+        raise OSError(errno.ENOENT, exe_err.format(name=sph_process,
+                                                   kw='sph_process'))
+    base_path = os.path.dirname(sph_process_path)
+
+    sos_triangle_path = util.which(sos_triangle)
+    if sos_triangle_path is None:
+        path = os.path.join(base_path, sos_triangle)
+        sos_triangle_path = util.which(path)
+    if sos_triangle_path is None:
+        raise OSError(errno.ENOENT, exe_err.format(name=sos_triangle,
+                                                   kw='sos_triangle'))
     try:
-        output = subprocess.check_output([sph_process, "-sos", "-dotden",
+        output = subprocess.check_output([sph_process_path, "-sos", "-dotden",
                                           str(dot_density), "-color", sphpdb,
                                           tmp_sos], stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as err:
@@ -487,7 +539,7 @@ def create_vmd_surface(sphpdb='hole.sph',
         with open(tmp_sos) as sos, open(filename, "w") as triangles, \
                 open(os.devnull, 'w') as FNULL:
             subprocess.check_call(
-                [sos_triangle, "-s"], stdin=sos, stdout=triangles,
+                [sos_triangle_path, "-s"], stdin=sos, stdout=triangles,
                 stderr=FNULL)
     except subprocess.CalledProcessError as err:
         logger.fatal("sos_triangle failed ({0})".format(err.returncode))

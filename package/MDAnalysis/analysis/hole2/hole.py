@@ -1,3 +1,124 @@
+# -*- Mode: python; tab-width: 4; indent-tabs-mode:nil; coding:utf-8 -*-
+# vim: tabstop=4 expandtab shiftwidth=4 softtabstop=4
+#
+# MDAnalysis --- https://www.mdanalysis.org
+# Copyright (c) 2006-2020 The MDAnalysis Development Team and contributors
+# (see the file AUTHORS for the full list of names)
+#
+# Released under the GNU Public Licence, v2 or any higher version
+#
+# Please cite your use of MDAnalysis in published work:
+#
+# R. J. Gowers, M. Linke, J. Barnoud, T. J. E. Reddy, M. N. Melo, S. L. Seyler,
+# D. L. Dotson, J. Domanski, S. Buchoux, I. M. Kenney, and O. Beckstein.
+# MDAnalysis: A Python package for the rapid analysis of molecular dynamics
+# simulations. In S. Benthall and S. Rostrup editors, Proceedings of the 15th
+# Python in Science Conference, pages 102-109, Austin, TX, 2016. SciPy.
+# doi: 10.25080/majora-629e541a-00e
+#
+# N. Michaud-Agrawal, E. J. Denning, T. B. Woolf, and O. Beckstein.
+# MDAnalysis: A Toolkit for the Analysis of Molecular Dynamics Simulations.
+# J. Comput. Chem. 32 (2011), 2319--2327, doi:10.1002/jcc.21787
+#
+
+"""HOLE Analysis --- :mod:`MDAnalysis.analysis.hole2.hole`
+=====================================================================================
+
+:Author: Lily Wang
+:Year: 2020
+:Copyright: GNU Public License v3
+
+.. versionadded:: 1.0
+
+This module contains the tools to interface with HOLE_ [Smart1993]_
+[Smart1996]_ to analyse an ion channel pore or transporter pathway [Stelzl2014]_ .
+
+Using HOLE on a PDB file
+------------------------
+
+Use the :func:``hole`` function to run `HOLE`_ on a single PDB file. For example, 
+the code below runs the `HOLE`_ program installed at '~/hole2/exe/hole' ::
+
+    from MDAnalysis.tests.datafiles import PDB_HOLE
+    from MDAnalysis.analysis import hole2
+    profiles = hole2.hole(PDB_HOLE, executable='~/hole2/exe/hole')
+    # to create a VMD surface of the pore
+    hole2.create_vmd_surface(filename='hole.vmd')
+
+``profiles`` is a dictionary of HOLE profiles, indexed by the frame number. If only 
+a PDB file is passed to the function, there will only be one profile at frame 0. 
+You can visualise the pore by loading your PDB file into VMD, and in 
+Extensions > Tk Console, type::
+
+    source hole.vmd
+
+You can also pass a DCD trajectory with the same atoms in the same order as 
+your PDB file with the ``dcd`` keyword argument. In that case, ``profiles`` will 
+contain multiple HOLE profiles, indexed by frame.
+
+The HOLE program will create some output files:
+
+    * an output file (default name: hole.out)
+    * an sphpdb file (default name: hole.sph)
+    * a file of van der Waals' radii 
+      (if not specified with ``vdwradii_file``. Default name: simple2.rad)
+    * a symlink of your PDB or DCD files (if the original name is too long)
+    * the input text (if you specify ``infile``)
+
+By default (`keep_files=True`), these files are kept. If you would like to 
+delete the files after the function is wrong, set `keep_files=False`. Keep in 
+mind that if you delete the sphpdb file, you cannot then create a VMD surface.
+
+
+Using HOLE on a trajectory
+--------------------------
+
+You can also run HOLE on a trajectory through the :class:`HoleAnalysis` class. 
+This behaves similarly to the ``hole`` function, although arguments such as ``cpoint`` 
+and ``cvect`` become runtime arguments for the :meth:`~HoleAnalysis.run` function.
+
+The class can be set-up and run like a normal MDAnalysis analysis class::
+
+    import MDAnalysis as mda
+    from MDAnalysis.tests.datafiles import MULTIPDB_HOLE
+    from MDAnalysis.analysis import hole2
+
+    ha = hole2.HoleAnalysis(u, executable='~/hole2/exe/hole') as h2:
+    ha.run()
+    ha.create_vmd_surface(filename='hole.vmd')
+
+The VMD surface created by the class updates the pore for each frame of the trajectory.
+Use it as normal by loading your trajectory in VMD and sourcing the file in the Tk Console.
+
+Again, HOLE writes out files for each frame. If you would like to delete these files 
+after the analysis, you can call :meth:`~HoleAnalysis.delete_temporary_files`::
+
+    ha.delete_temporary_files()
+
+Alternatively, you can use HoleAnalysis as a context manager that deletes temporary 
+files when you are finished with the context manager::
+
+    import MDAnalysis as mda
+    from MDAnalysis.tests.datafiles import MULTIPDB_HOLE
+    from MDAnalysis.analysis import hole2
+
+    with hole2.HoleAnalysis(u, executable='~/hole2/exe/hole') as h2:
+        h2.run()
+        h2.create_vmd_surface()
+
+
+.. _HOLE: http://www.holeprogram.org
+
+
+Functions and classes
+---------------------
+
+.. autofunction:: hole
+
+.. autoclass:: HoleAnalysis
+   :members:
+
+"""
 
 from __future__ import absolute_import, division
 
@@ -52,32 +173,27 @@ def hole(pdbfile,
     :program:`hole` is part of the HOLE_ suite of programs. It is used to
     analyze channels and cavities in proteins, especially ion channels.
 
-    Only a subset of all `HOLE control parameters`_ is supported and can be set
-    with keyword arguments. 
+    Only a subset of all `HOLE control parameters <http://www.holeprogram.org/doc/old/hole_d03.html>`_ 
+    is supported and can be set with keyword arguments.
 
     Parameters
     ----------
+
     pdbfile : str
         The `filename` is used as input for HOLE in the "COORD" card of the
         input file.  It specifies the name of a PDB coordinate file to be
         used. This must be in Brookhaven protein databank format or
         something closely approximating this. Both ATOM and HETATM records
         are read.
-
     infile_text: str, optional
         HOLE input text or template. If set to ``None``, the function will 
         create the input text from the other parameters.
-        Default: ``None``
-
     infile: str, optional
-        File to write the HOLE input text for later inspection. If set to 
-        ``None``, the input text is not written out. 
-        Default: ``None``
-
+        File to write the HOLE input text for later inspection. If set to
+        ``None``, the input text is not written out.
     outfile : str, optional
         file name of the file collecting HOLE's output (which can be
-        parsed using :meth:`collect_hole(outfile)`. Default: 'hole.out'
-
+        parsed using :meth:`collect_hole(outfile)`.
     sphpdb_file : str, optional
         path to the HOLE sph file, a PDB-like file containing the
         coordinates of the pore centers.
@@ -90,27 +206,20 @@ def hole(pdbfile,
         distance of particular atoms from the sphere-centre line.
         .sph files can be used to produce molecular graphical
         output from a hole run, by using the
-        :program:`sph_process` program to read the .sph file. 
-        Default: 'hole.sph'
-
+        :program:`sph_process` program to read the .sph file.
     vdwradii_file: str, optional
         path to the file specifying van der Waals radii for each atom. If
         set to ``None``, then a set of default radii,
         :data:`SIMPLE2_RAD`, is used (an extension of ``simple.rad`` from
-        the HOLE distribution). Default: ``None``
-
-
+        the HOLE distribution). 
     executable: str, optional
         Path to the :program:`hole` executable.
         (e.g. ``~/hole2/exe/hole``). If
         :program:`hole` is found on the :envvar:`PATH`, then the bare
-        executable name is sufficient. Default: 'hole'
-
+        executable name is sufficient.
     tmpdir: str, optional
         The temporary directory that files can be symlinked to, to shorten 
         the path name. HOLE can only read filenames up to a certain length.
-        Default: current working directory
-
     sample : float, optional
         distance of sample points in Å.
         Specifies the distance between the planes used in the HOLE
@@ -118,27 +227,25 @@ def hole(pdbfile,
         purposes. However, if you wish to visualize a very tight
         constriction then specify a smaller value.
         This value determines how many points in the pore profile are
-        calculated. Default: 0.2 
-
+        calculated.
     end_radius : float, optional
         Radius in Å, which is considered to be the end of the pore. This
         keyword can be used to specify the radius above which the
         program regards a result as indicating that the end of the pore
+<<<<<<< HEAD
         has been reached. This may need to be increased for large channels, 
         or reduced for small channels. Default: 22.0
 
-    cpoint : array_like, 'center_of_geometry' or None, optional
-        coordinates of a point inside the pore, e.g. ``[12.3, 0.7,
+=======
         18.55]``. If set to ``None`` (the default) then HOLE's own search
         algorithm is used.
-        ``cpoint`` specifies a point which lies within the channel. For
         simple channels (e.g. gramicidin), results do not show great
         sensitivity to the exact point taken. An easy way to produce an
         initial point is to use molecular graphics to find two atoms which
         lie either side of the pore and to average their coordinates. Or
         if the channel structure contains water molecules or counter ions
         then take the coordinates of one of these (and use the
-        `ignore_residues` keyword to ignore them in the pore radius
+        ``ignore_residues`` keyword to ignore them in the pore radius
         calculation).
         If this card is not specified, then HOLE (from version 2.2)
         attempts to guess where the channel will be. The procedure
@@ -148,8 +255,6 @@ def hole(pdbfile,
         Å from the original position. This procedure works most of the
         time but is far from infallible — results should be
         carefully checked (with molecular graphics) if it is used.
-        Default: None
-
     cvect : array_like, optional
         Search direction, should be parallel to the pore axis,
         e.g. ``[0,0,1]`` for the z-axis. 
@@ -159,22 +264,18 @@ def hole(pdbfile,
         (1,0,0), Y axis (0,1,0) or Z axis (0,0,1). If the structure is not
         aligned on one of these axis the results will clearly be
         approximate. If a guess is used then results should be carefully
-        checked. Default: None
-
+        checked. 
     random_seed : int, optional
         integer number to start the random number generator.
         By default,
-        :program:`hole` will use the time of the day. 
-        For reproducible runs (e.g., for testing) set ``random_seed`` 
-        to an integer. Default: ``None``
-
+        :program:`hole` will use the time of the day.
+        For reproducible runs (e.g., for testing) set ``random_seed``
+        to an integer. 
     ignore_residues : array_like, optional
         sequence of three-letter residues that are not taken into
         account during the calculation; wildcards are *not*
-        supported. Note that all residues must have 3 letters. Pad 
-        with space on the right-hand side if necessary. 
-        Default: {}.
-
+        supported. Note that all residues must have 3 letters. Pad
+        with space on the right-hand side if necessary.
     output_level : int, optional
         Determines the output of output in the ``outfile``.
         For automated processing, this must be < 3.
@@ -184,13 +285,12 @@ def hole(pdbfile,
         2: Ditto plus no graph type output - only leaving minimum
         radius and conductance calculations.
         3: All text output other than input card mirroring and error messages
-        turned off. 
-        Default: 0
-
+        turned off.
     dcd : str, optional
-        File name of DCD trajectory (must be supplied together with a
+        File name of CHARMM-style DCD trajectory (must be supplied together with a
         matching PDB file `filename`) and then HOLE runs its analysis on
-        each frame.
+        each frame. HOLE can *not* read DCD trajectories written by MDAnalysis, 
+        which are NAMD-style.
         It does multiple HOLE runs on positions taken from a CHARMM binary
         dynamics format DCD trajectory file. The ``dcd`` file must have
         exactly the same number of atoms in exactly the same order as the
@@ -203,11 +303,9 @@ def hole(pdbfile,
         controlled by the ``dcd_step`` keyword and/or setting
         ``dcd_iniskip`` to the number of frames to be skipped
         initially.
-
     dcd_step : int, optional
         step size for going through the trajectory (skips ``dcd_step-1``
-        frames). Default: 1
-
+        frames). 
     keep_files : bool, optional
         Whether to keep the HOLE output files and possible temporary 
         symlinks after running the function. Default: ``True``
@@ -215,13 +313,14 @@ def hole(pdbfile,
 
     Returns
     -------
+
     dict
         A dictionary of :class:`numpy.recarray`\ s, indexed by frame.
 
 
     .. versionadded:: 1.0
 
-    """.format(IGNORE_RESIDUES)
+    """
 
     if output_level > 3:
         msg = 'output_level ({}) needs to be < 3 in order to extract a HOLE profile!'
@@ -252,7 +351,7 @@ def hole(pdbfile,
         vdwradii_file = write_simplerad2()
         tmp_files.append(vdwradii_file)
 
-    infile_text = set_up_hole_input(pdbfile,
+    infile_text = set_up_hole_input(short_filename,
                                     infile_text=infile_text,
                                     infile=infile,
                                     sphpdb_file=sphpdb_file,
@@ -287,147 +386,104 @@ class HoleAnalysis(AnalysisBase):
     :program:`hole` is part of the HOLE_ suite of programs. It is used to
     analyze channels and cavities in proteins, especially ion channels.
 
-    Only a subset of all `HOLE control parameters`_ is supported and can be set
-    with keyword arguments. 
+    Only a subset of all `HOLE control parameters <http://www.holeprogram.org/doc/old/hole_d03.html>`_ 
+    is supported and can be set with keyword arguments.
 
     This class creates temporary PDB files for each frame and runs HOLE on 
     the frame. It can be used normally, or as a context manager. If used as a 
     context manager, the class will try to delete any temporary files created 
     by HOLE, e.g. sphpdb files and logfiles. ::
 
-    with 
+        with hole2.HoleAnalysis(u, executable='~/hole2/exe/hole') as h2:
+            h2.run()
+            h2.create_vmd_surface()
 
     Parameters
     ----------
-    pdbfile : str
-        The `filename` is used as input for HOLE in the "COORD" card of the
-        input file.  It specifies the name of a PDB coordinate file to be
-        used. This must be in Brookhaven protein databank format or
-        something closely approximating this. Both ATOM and HETATM records
-        are read.
 
-    infile_text: str, optional
-        HOLE input text or template. If set to ``None``, the function will 
-        create the input text from the other parameters.
-        Default: ``None``
-
-    infile: str, optional
-        File to write the HOLE input text for later inspection. If set to 
-        ``None``, the input text is not written out. 
-        Default: ``None``
-
-    outfile : str, optional
-        file name of the file collecting HOLE's output (which can be
-        parsed using :meth:`collect_hole(outfile)`. Default: 'hole.out'
-
-    sphpdb_file : str, optional
-        path to the HOLE sph file, a PDB-like file containing the
-        coordinates of the pore centers.
-        The coordinates are set to the sphere centres and the occupancies
-        are the sphere radii. All centres are assigned the atom name QSS and
-        residue name SPH and the residue number is set to the storage
-        number of the centre. In VMD, sph
-        objects are best displayed as "Points". Displaying .sph objects
-        rather than rendered or dot surfaces can be useful to analyze the
-        distance of particular atoms from the sphere-centre line.
-        .sph files can be used to produce molecular graphical
-        output from a hole run, by using the
-        :program:`sph_process` program to read the .sph file. 
-        Default: 'hole.sph'
-
+    universe: Universe or AtomGroup
+        The Universe or AtomGroup to apply the analysis to.
+    select: string, optional
+        The selection string to create an atom selection that the HOLE
+        analysis is applied to.
     vdwradii_file: str, optional
         path to the file specifying van der Waals radii for each atom. If
         set to ``None``, then a set of default radii,
         :data:`SIMPLE2_RAD`, is used (an extension of ``simple.rad`` from
-        the HOLE distribution). Default: ``None``
-
-
+        the HOLE distribution).
     executable: str, optional
         Path to the :program:`hole` executable.
         (e.g. ``~/hole2/exe/hole``). If
         :program:`hole` is found on the :envvar:`PATH`, then the bare
-        executable name is sufficient. Default: 'hole'
-
+        executable name is sufficient.
     tmpdir: str, optional
         The temporary directory that files can be symlinked to, to shorten 
         the path name. HOLE can only read filenames up to a certain length.
-        Default: current working directory
-
-            cpoint : array_like, 'center_of_geometry' or None, optional
-            coordinates of a point inside the pore, e.g. ``[12.3, 0.7,
-            18.55]``. If set to ``None`` (the default) then HOLE's own search
-            algorithm is used.
-            ``cpoint`` specifies a point which lies within the channel. For
-            simple channels (e.g. gramicidin), results do not show great
-            sensitivity to the exact point taken. An easy way to produce an
-            initial point is to use molecular graphics to find two atoms which
-            lie either side of the pore and to average their coordinates. Or
-            if the channel structure contains water molecules or counter ions
-            then take the coordinates of one of these (and use the
-            `ignore_residues` keyword to ignore them in the pore radius
-            calculation).
-            If this card is not specified, then HOLE (from version 2.2)
-            attempts to guess where the channel will be. The procedure
-            assumes the channel is reasonably symmetric. The initial guess on
-            cpoint will be the centroid of all alpha carbon atoms (name 'CA'
-            in pdb file). This is then refined by a crude grid search up to 5
-            Å from the original position. This procedure works most of the
-            time but is far from infallible — results should be
-            carefully checked (with molecular graphics) if it is used.
-            Default: None
-
-        cvect : array_like, optional
-            Search direction, should be parallel to the pore axis,
-            e.g. ``[0,0,1]`` for the z-axis. 
-            If this keyword is ``None`` (the default), then HOLE attempts to guess
-            where the channel will be. The procedure assumes that the channel is
-            reasonably symmetric. The guess will be either along the X axis
-            (1,0,0), Y axis (0,1,0) or Z axis (0,0,1). If the structure is not
-            aligned on one of these axis the results will clearly be
-            approximate. If a guess is used then results should be carefully
-            checked. Default: None
-
-        sample : float, optional
-            distance of sample points in Å.
-            Specifies the distance between the planes used in the HOLE
-            procedure. The default value should be reasonable for most
-            purposes. However, if you wish to visualize a very tight
-            constriction then specify a smaller value.
-            This value determines how many points in the pore profile are
-            calculated. Default: 0.2 
-
-        end_radius : float, optional
-            Radius in Å, which is considered to be the end of the pore. This
-            keyword can be used to specify the radius above which the
-            program regards a result as indicating that the end of the pore
-            has been reached. This may need to be increased for large channels, 
-            or reduced for small channels. Default: 22.0
-
-        output_level : int, optional
-            Determines the output of output in the ``outfile``.
-            For automated processing, this must be < 3.
-            0: Full text output,
-            1: All text output given except "run in progress" (i.e.,
-            detailed contemporary description of what HOLE is doing).
-            2: Ditto plus no graph type output - only leaving minimum
-            radius and conductance calculations.
-            3: All text output other than input card mirroring and error messages
-            turned off. 
-            Default: 0
-
-        ignore_residues : array_like, optional
-            sequence of three-letter residues that are not taken into
-            account during the calculation; wildcards are *not*
-            supported. Note that all residues must have 3 letters. Pad 
-            with space on the right-hand side if necessary. 
-            Default: {}.
-
-        prefix: str, optional
-            Prefix for HOLE output files. Default: None
-
-        write_input_files: bool, optional
-            Whether to write out the input HOLE text as files. 
-            Files are called `hole.inp`. Default: ``False``
+    cpoint : array_like, 'center_of_geometry' or None, optional
+        coordinates of a point inside the pore, e.g. ``[12.3, 0.7,
+        18.55]``. If set to ``None`` (the default) then HOLE's own search
+        algorithm is used.
+        ``cpoint`` specifies a point which lies within the channel. For
+        simple channels (e.g. gramicidin), results do not show great
+        sensitivity to the exact point taken. An easy way to produce an
+        initial point is to use molecular graphics to find two atoms which
+        lie either side of the pore and to average their coordinates. Or
+        if the channel structure contains water molecules or counter ions
+        then take the coordinates of one of these (and use the
+        ``ignore_residues`` keyword to ignore them in the pore radius
+        calculation).
+        If this card is not specified, then HOLE (from version 2.2)
+        attempts to guess where the channel will be. The procedure
+        assumes the channel is reasonably symmetric. The initial guess on
+        cpoint will be the centroid of all alpha carbon atoms (name 'CA'
+        in pdb file). This is then refined by a crude grid search up to 5
+        Å from the original position. This procedure works most of the
+        time but is far from infallible — results should be
+        carefully checked (with molecular graphics) if it is used.
+    cvect : array_like, optional
+        Search direction, should be parallel to the pore axis,
+        e.g. ``[0,0,1]`` for the z-axis. 
+        If this keyword is ``None`` (the default), then HOLE attempts to guess
+        where the channel will be. The procedure assumes that the channel is
+        reasonably symmetric. The guess will be either along the X axis
+        (1,0,0), Y axis (0,1,0) or Z axis (0,0,1). If the structure is not
+        aligned on one of these axis the results will clearly be
+        approximate. If a guess is used then results should be carefully
+        checked. 
+    sample : float, optional
+        distance of sample points in Å.
+        Specifies the distance between the planes used in the HOLE
+        procedure. The default value should be reasonable for most
+        purposes. However, if you wish to visualize a very tight
+        constriction then specify a smaller value.
+        This value determines how many points in the pore profile are
+        calculated. 
+    end_radius : float, optional
+        Radius in Å, which is considered to be the end of the pore. This
+        keyword can be used to specify the radius above which the
+        program regards a result as indicating that the end of the pore
+        has been reached. This may need to be increased for large channels,
+        or reduced for small channels. 
+    output_level : int, optional
+        Determines the output of output in the ``outfile``.
+        For automated processing, this must be < 3.
+        0: Full text output,
+        1: All text output given except "run in progress" (i.e.,
+        detailed contemporary description of what HOLE is doing).
+        2: Ditto plus no graph type output - only leaving minimum
+        radius and conductance calculations.
+        3: All text output other than input card mirroring and error messages
+        turned off.
+    ignore_residues : array_like, optional
+        sequence of three-letter residues that are not taken into
+        account during the calculation; wildcards are *not*
+        supported. Note that all residues must have 3 letters. Pad
+        with space on the right-hand side if necessary.
+    prefix: str, optional
+        Prefix for HOLE output files. 
+    write_input_files: bool, optional
+        Whether to write out the input HOLE text as files.
+        Files are called `hole.inp`. 
 
 
     Returns
@@ -438,14 +494,19 @@ class HoleAnalysis(AnalysisBase):
 
     .. versionadded:: 1.0
 
-    """.format(IGNORE_RESIDUES)
+    """
 
+    input_file = '{prefix}hole{i:03d}.inp'
+    output_file = '{prefix}hole{i:03d}.out'
+    sphpdb_file = '{prefix}hole{i:03d}.sph'
+
+    input_file = '{prefix}hole{i:03d}.inp'
     output_file = '{prefix}hole{i:03d}.out'
     sphpdb_file = '{prefix}hole{i:03d}.sph'
 
     hole_header = textwrap.dedent("""
         ! Input file for Oliver Smart's HOLE program
-        ! written by MDAnalysis.analysis.hole.HOLE
+        ! written by MDAnalysis.analysis.hole2.HoleAnalysis
         ! for a Universe
         ! u = mda.Universe({}
         !   )
@@ -496,7 +557,7 @@ class HoleAnalysis(AnalysisBase):
             prefix = ''
 
         if isinstance(cpoint, str):
-            if 'geometry' in self.cpoint.lower():
+            if 'geometry' in cpoint.lower():
                 self._guess_cpoint = True
                 self.cpoint = ['{cpoint[0]}', '{cpoint[1]}', '{cpoint[2]}']
         else:
@@ -590,6 +651,7 @@ class HoleAnalysis(AnalysisBase):
             to an integer. Default: ``None``
         """
         self.random_seed = random_seed
+        self.write_input_files = write_input_files
         super(HoleAnalysis, self).run(start=start, stop=stop,
                                       step=step, verbose=verbose)
 
@@ -659,6 +721,11 @@ class HoleAnalysis(AnalysisBase):
             fmt_kwargs['cpoint'] = self.guess_cpoint()
         infile_text = self.infile_text.format(**fmt_kwargs)
 
+        if self.write_input_files:
+            infile = self.input_file.format(prefix=self.prefix, i=frame)
+            with open(infile, 'w') as f:
+                f.write(infile_text)
+
         try:
             self.ag.write(pdbfile)
             run_hole(outfile=outfile, infile_text=infile_text,
@@ -677,29 +744,26 @@ class HoleAnalysis(AnalysisBase):
                            double_water_color='blue'):
         """Process HOLE output to create a smooth pore surface suitable for VMD.
 
-        Takes the ``sphpdb`` file for each frame and feeds it to `sph_process`_
-        and `sos_triangle`_ as described under `Visualization of HOLE
-        results`_.
+        Takes the ``sphpdb`` file for each frame and feeds it to `sph_process <http://www.holeprogram.org/doc/old/hole_d04.html#sph_process>`_
+        and `sos_triangle <http://www.holeprogram.org/doc/old/hole_d04.html#sos_triangle>`_ as described under `Visualization of HOLE
+        results <http://www.holeprogram.org/doc/index.html>`_.
 
         Load the output file *filename* into VMD in Extensions > Tk Console ::
 
            source hole.vmd
 
         The level of detail is determined by ``dot_density``.
-        The surface will be colored by the ``color``. You can change this in the 
+        The surface will be colored by ``no_water_color``, ``one_water_color``, and 
+        ``double_water_color``. You can change these in the
         Tk Console::
 
-            set surface_color blue
-
-        .. _`Visualization of HOLE results`: http://www.holeprogram.org/doc/index.html#_producing_a_triangulated_surface_and_visualizing_in_vmd
-        .. _`sph_process`: http://www.holeprogram.org/doc/old/hole_d04.html#sph_process
-        .. _`sos_triangle`: http://www.holeprogram.org/doc/old/hole_d04.html#sos_triangle
+            set no_water_color blue
 
 
         Parameters
         ----------
         filename: str, optional
-            file to write the pore surfaces to. Default: 'hole.vmd'
+            file to write the pore surfaces to.
 
         dot_density: int, optional
             density of facets for generating a 3D pore representation.
@@ -709,10 +773,17 @@ class HoleAnalysis(AnalysisBase):
             controlled by ``dot_density`` and the ``sample`` level of the 
             original analysis. ``dot_density`` should be set between 5 
             (few dots per sphere) and 35 (many dots per sphere).
-            Default: 15
 
-        color: str, optional
-            Color of the resulting surface. Default: 'green'
+        no_water_color: str, optional
+            Color of the surface where the pore radius is too tight for a 
+            water molecule.
+
+        one_water_color: str, optional
+            Color of the surface where the pore can fit one water molecule.
+
+        double_water_color: str, optional
+            Color of the surface where the radius is at least double the 
+            minimum radius for one water molecule.
 
 
         Returns
@@ -767,7 +838,7 @@ class HoleAnalysis(AnalysisBase):
             f.write(vmd_text)
 
         return filename
-    
+
     def min_radius(self):
         """Return the minimum radius over all profiles as a function of q"""
         if not self.profiles:
@@ -783,7 +854,7 @@ class HoleAnalysis(AnalysisBase):
         
     def delete_temporary_files(self):
         """Delete temporary files"""
-        for f in self.tmp_files:
+        for f in self.tmp_files + list(self.outfiles) + list(self.sphpdbs):
             try:
                 os.unlink(f)
             except OSError:
@@ -791,6 +862,13 @@ class HoleAnalysis(AnalysisBase):
         self.tmp_files = []
         self.outfiles = []
         self.sphpdbs = []
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Delete temporary files on exit"""
+        self.delete_temporary_files()
 
     def _process_plot_kwargs(self, frames=None,
                              color=None, cmap='viridis',
