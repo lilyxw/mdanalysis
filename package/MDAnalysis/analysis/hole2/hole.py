@@ -4,12 +4,8 @@ from __future__ import absolute_import, division
 from six.moves import zip, cPickle
 import six
 
-import glob
 import os
 import errno
-import shutil
-import warnings
-import os.path
 import tempfile
 import textwrap
 import logging
@@ -19,7 +15,6 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 
-from MDAnalysis import Universe
 from MDAnalysis.exceptions import ApplicationError
 from ..base import AnalysisBase
 from ...lib import util
@@ -52,8 +47,7 @@ def hole(pdbfile,
          dcd_iniskip=0,
          dcd_step=1,
          keep_files=True):
-    """
-    Run :program:`hole` on a single frame or a DCD trajectory.
+    """Run :program:`hole` on a single frame or a DCD trajectory.
 
     :program:`hole` is part of the HOLE_ suite of programs. It is used to
     analyze channels and cavities in proteins, especially ion channels.
@@ -228,6 +222,10 @@ def hole(pdbfile,
     .. versionadded:: 1.0
 
     """.format(IGNORE_RESIDUES)
+
+    if output_level > 3:
+        msg = 'output_level ({}) needs to be < 3 in order to extract a HOLE profile!'
+        logger.warning(msg.format(output_level))
 
     # get executable
     exe = util.which(executable)
@@ -642,6 +640,12 @@ class HoleAnalysis(AnalysisBase):
         sphpdb = self.sphpdb_file.format(prefix=self.prefix, i=frame)
         self.sphpdbs[i] = sphpdb
         self.outfiles[i] = outfile
+        if outfile not in self.tmp_files:
+            self.tmp_files.append(outfile)
+        if sphpdb not in self.tmp_files:
+            self.tmp_files.append(sphpdb)
+        else:
+            self.tmp_files.append(sphpdb + '.old')
         self.frames[i] = frame
 
         # temp pdb
@@ -763,13 +767,23 @@ class HoleAnalysis(AnalysisBase):
             f.write(vmd_text)
 
         return filename
+    
+    def min_radius(self):
+        """Return the minimum radius over all profiles as a function of q"""
+        if not self.profiles:
+            raise ValueError('No profiles available. Try calling run()')
+        return np.array([[q, p.radius.min()] for q, p in self.profiles.items()])
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Delete temporary files on exit"""
-        for f in self.tmp_files + list(self.outfiles) + list(self.sphpdbs):
+        self.delete_temporary_files()
+        
+    def delete_temporary_files(self):
+        """Delete temporary files"""
+        for f in self.tmp_files:
             try:
                 os.unlink(f)
             except OSError:
@@ -929,7 +943,7 @@ class HoleAnalysis(AnalysisBase):
 
         Returns
         -------
-        ax : :class:`~matplotlib.axes.Axes`
+        ax : :class:`~mpl_toolkits.mplot3d.Axes3D`
              Axes with the plot, either `ax` or the current axes.
 
         """
@@ -1121,7 +1135,7 @@ class HoleAnalysis(AnalysisBase):
 
         Returns
         -------
-        ax : :class:`~matplotlib.axes.Axes`
+        ax : :class:`~mpl_toolkits.mplot3d.Axes3D`
              Axes with the plot, either `ax` or the current axes.
 
         """
