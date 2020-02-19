@@ -28,7 +28,7 @@
 :Year: 2020
 :Copyright: GNU Public License v3
 
-.. versionadded:: 1.0
+.. versionadded:: 1.0.0
 
 This module contains the tools to interface with HOLE_ [Smart1993]_
 [Smart1996]_ to analyse an ion channel pore or transporter pathway [Stelzl2014]_ .
@@ -36,7 +36,7 @@ This module contains the tools to interface with HOLE_ [Smart1993]_
 Using HOLE on a PDB file
 ------------------------
 
-Use the :func:``hole`` function to run `HOLE`_ on a single PDB file. For example, 
+Use the :func:``hole`` function to run `HOLE`_ on a single PDB file. For example,
 the code below runs the `HOLE`_ program installed at '~/hole2/exe/hole' ::
 
     from MDAnalysis.tests.datafiles import PDB_HOLE
@@ -45,36 +45,36 @@ the code below runs the `HOLE`_ program installed at '~/hole2/exe/hole' ::
     # to create a VMD surface of the pore
     hole2.create_vmd_surface(filename='hole.vmd')
 
-``profiles`` is a dictionary of HOLE profiles, indexed by the frame number. If only 
-a PDB file is passed to the function, there will only be one profile at frame 0. 
-You can visualise the pore by loading your PDB file into VMD, and in 
+``profiles`` is a dictionary of HOLE profiles, indexed by the frame number. If only
+a PDB file is passed to the function, there will only be one profile at frame 0.
+You can visualise the pore by loading your PDB file into VMD, and in
 Extensions > Tk Console, type::
 
     source hole.vmd
 
-You can also pass a DCD trajectory with the same atoms in the same order as 
-your PDB file with the ``dcd`` keyword argument. In that case, ``profiles`` will 
+You can also pass a DCD trajectory with the same atoms in the same order as
+your PDB file with the ``dcd`` keyword argument. In that case, ``profiles`` will
 contain multiple HOLE profiles, indexed by frame.
 
 The HOLE program will create some output files:
 
     * an output file (default name: hole.out)
     * an sphpdb file (default name: hole.sph)
-    * a file of van der Waals' radii 
+    * a file of van der Waals' radii
       (if not specified with ``vdwradii_file``. Default name: simple2.rad)
     * a symlink of your PDB or DCD files (if the original name is too long)
     * the input text (if you specify ``infile``)
 
-By default (`keep_files=True`), these files are kept. If you would like to 
-delete the files after the function is wrong, set `keep_files=False`. Keep in 
+By default (`keep_files=True`), these files are kept. If you would like to
+delete the files after the function is wrong, set `keep_files=False`. Keep in
 mind that if you delete the sphpdb file, you cannot then create a VMD surface.
 
 
 Using HOLE on a trajectory
 --------------------------
 
-You can also run HOLE on a trajectory through the :class:`HoleAnalysis` class. 
-This behaves similarly to the ``hole`` function, although arguments such as ``cpoint`` 
+You can also run HOLE on a trajectory through the :class:`HoleAnalysis` class.
+This behaves similarly to the ``hole`` function, although arguments such as ``cpoint``
 and ``cvect`` become runtime arguments for the :meth:`~HoleAnalysis.run` function.
 
 The class can be set-up and run like a normal MDAnalysis analysis class::
@@ -90,12 +90,12 @@ The class can be set-up and run like a normal MDAnalysis analysis class::
 The VMD surface created by the class updates the pore for each frame of the trajectory.
 Use it as normal by loading your trajectory in VMD and sourcing the file in the Tk Console.
 
-Again, HOLE writes out files for each frame. If you would like to delete these files 
+Again, HOLE writes out files for each frame. If you would like to delete these files
 after the analysis, you can call :meth:`~HoleAnalysis.delete_temporary_files`::
 
     ha.delete_temporary_files()
 
-Alternatively, you can use HoleAnalysis as a context manager that deletes temporary 
+Alternatively, you can use HoleAnalysis as a context manager that deletes temporary
 files when you are finished with the context manager::
 
     import MDAnalysis as mda
@@ -186,7 +186,7 @@ def hole(pdbfile,
         something closely approximating this. Both ATOM and HETATM records
         are read.
     infile_text: str, optional
-        HOLE input text or template. If set to ``None``, the function will 
+        HOLE input text or template. If set to ``None``, the function will
         create the input text from the other parameters.
     infile: str, optional
         File to write the HOLE input text for later inspection. If set to
@@ -218,7 +218,7 @@ def hole(pdbfile,
         :program:`hole` is found on the :envvar:`PATH`, then the bare
         executable name is sufficient.
     tmpdir: str, optional
-        The temporary directory that files can be symlinked to, to shorten 
+        The temporary directory that files can be symlinked to, to shorten
         the path name. HOLE can only read filenames up to a certain length.
     sample : float, optional
         distance of sample points in Å.
@@ -233,7 +233,11 @@ def hole(pdbfile,
         keyword can be used to specify the radius above which the
         program regards a result as indicating that the end of the pore
 <<<<<<< HEAD
+<<<<<<< HEAD
         has been reached. This may need to be increased for large channels, 
+=======
+        has been reached. This may need to be increased for large channels,
+>>>>>>> 5173ef9fd... added binning functions
         or reduced for small channels. Default: 22.0
 
 =======
@@ -257,7 +261,7 @@ def hole(pdbfile,
         carefully checked (with molecular graphics) if it is used.
     cvect : array_like, optional
         Search direction, should be parallel to the pore axis,
-        e.g. ``[0,0,1]`` for the z-axis. 
+        e.g. ``[0,0,1]`` for the z-axis.
         If this keyword is ``None`` (the default), then HOLE attempts to guess
         where the channel will be. The procedure assumes that the channel is
         reasonably symmetric. The guess will be either along the X axis
@@ -270,12 +274,22 @@ def hole(pdbfile,
         By default,
         :program:`hole` will use the time of the day.
         For reproducible runs (e.g., for testing) set ``random_seed``
+<<<<<<< HEAD
         to an integer. 
+=======
+        to an integer. Default: ``None``
+
+>>>>>>> 5173ef9fd... added binning functions
     ignore_residues : array_like, optional
         sequence of three-letter residues that are not taken into
         account during the calculation; wildcards are *not*
         supported. Note that all residues must have 3 letters. Pad
         with space on the right-hand side if necessary.
+<<<<<<< HEAD
+=======
+        Default: {}.
+
+>>>>>>> 5173ef9fd... added binning functions
     output_level : int, optional
         Determines the output of output in the ``outfile``.
         For automated processing, this must be < 3.
@@ -286,6 +300,11 @@ def hole(pdbfile,
         radius and conductance calculations.
         3: All text output other than input card mirroring and error messages
         turned off.
+<<<<<<< HEAD
+=======
+        Default: 0
+
+>>>>>>> 5173ef9fd... added binning functions
     dcd : str, optional
         File name of CHARMM-style DCD trajectory (must be supplied together with a
         matching PDB file `filename`) and then HOLE runs its analysis on
@@ -307,7 +326,7 @@ def hole(pdbfile,
         step size for going through the trajectory (skips ``dcd_step-1``
         frames). 
     keep_files : bool, optional
-        Whether to keep the HOLE output files and possible temporary 
+        Whether to keep the HOLE output files and possible temporary
         symlinks after running the function. Default: ``True``
 
 
@@ -386,12 +405,17 @@ class HoleAnalysis(AnalysisBase):
     :program:`hole` is part of the HOLE_ suite of programs. It is used to
     analyze channels and cavities in proteins, especially ion channels.
 
+<<<<<<< HEAD
     Only a subset of all `HOLE control parameters <http://www.holeprogram.org/doc/old/hole_d03.html>`_ 
     is supported and can be set with keyword arguments.
+=======
+    Only a subset of all `HOLE control parameters`_ is supported and can be set
+    with keyword arguments.
+>>>>>>> 5173ef9fd... added binning functions
 
-    This class creates temporary PDB files for each frame and runs HOLE on 
-    the frame. It can be used normally, or as a context manager. If used as a 
-    context manager, the class will try to delete any temporary files created 
+    This class creates temporary PDB files for each frame and runs HOLE on
+    the frame. It can be used normally, or as a context manager. If used as a
+    context manager, the class will try to delete any temporary files created
     by HOLE, e.g. sphpdb files and logfiles. ::
 
         with hole2.HoleAnalysis(u, executable='~/hole2/exe/hole') as h2:
@@ -403,9 +427,17 @@ class HoleAnalysis(AnalysisBase):
 
     universe: Universe or AtomGroup
         The Universe or AtomGroup to apply the analysis to.
+<<<<<<< HEAD
     select: string, optional
         The selection string to create an atom selection that the HOLE
         analysis is applied to.
+=======
+
+    select: string, optional
+        The selection string to create an atom selection that the HOLE
+        analysis is applied to. Default: 'protein'
+
+>>>>>>> 5173ef9fd... added binning functions
     vdwradii_file: str, optional
         path to the file specifying van der Waals radii for each atom. If
         set to ``None``, then a set of default radii,
@@ -417,7 +449,7 @@ class HoleAnalysis(AnalysisBase):
         :program:`hole` is found on the :envvar:`PATH`, then the bare
         executable name is sufficient.
     tmpdir: str, optional
-        The temporary directory that files can be symlinked to, to shorten 
+        The temporary directory that files can be symlinked to, to shorten
         the path name. HOLE can only read filenames up to a certain length.
     cpoint : array_like, 'center_of_geometry' or None, optional
         coordinates of a point inside the pore, e.g. ``[12.3, 0.7,
@@ -442,7 +474,7 @@ class HoleAnalysis(AnalysisBase):
         carefully checked (with molecular graphics) if it is used.
     cvect : array_like, optional
         Search direction, should be parallel to the pore axis,
-        e.g. ``[0,0,1]`` for the z-axis. 
+        e.g. ``[0,0,1]`` for the z-axis.
         If this keyword is ``None`` (the default), then HOLE attempts to guess
         where the channel will be. The procedure assumes that the channel is
         reasonably symmetric. The guess will be either along the X axis
@@ -457,13 +489,23 @@ class HoleAnalysis(AnalysisBase):
         purposes. However, if you wish to visualize a very tight
         constriction then specify a smaller value.
         This value determines how many points in the pore profile are
+<<<<<<< HEAD
         calculated. 
+=======
+        calculated. Default: 0.2
+
+>>>>>>> 5173ef9fd... added binning functions
     end_radius : float, optional
         Radius in Å, which is considered to be the end of the pore. This
         keyword can be used to specify the radius above which the
         program regards a result as indicating that the end of the pore
         has been reached. This may need to be increased for large channels,
+<<<<<<< HEAD
         or reduced for small channels. 
+=======
+        or reduced for small channels. Default: 22.0
+
+>>>>>>> 5173ef9fd... added binning functions
     output_level : int, optional
         Determines the output of output in the ``outfile``.
         For automated processing, this must be < 3.
@@ -474,16 +516,30 @@ class HoleAnalysis(AnalysisBase):
         radius and conductance calculations.
         3: All text output other than input card mirroring and error messages
         turned off.
+<<<<<<< HEAD
+=======
+        Default: 0
+
+>>>>>>> 5173ef9fd... added binning functions
     ignore_residues : array_like, optional
         sequence of three-letter residues that are not taken into
         account during the calculation; wildcards are *not*
         supported. Note that all residues must have 3 letters. Pad
         with space on the right-hand side if necessary.
+<<<<<<< HEAD
+=======
+        Default: {}.
+
+>>>>>>> 5173ef9fd... added binning functions
     prefix: str, optional
         Prefix for HOLE output files. 
     write_input_files: bool, optional
         Whether to write out the input HOLE text as files.
+<<<<<<< HEAD
         Files are called `hole.inp`. 
+=======
+        Files are called `hole.inp`. Default: ``False``
+>>>>>>> 5173ef9fd... added binning functions
 
 
     Returns
@@ -646,14 +702,19 @@ class HoleAnalysis(AnalysisBase):
         random_seed : int, optional
             integer number to start the random number generator.
             By default,
-            :program:`hole` will use the time of the day. 
-            For reproducible runs (e.g., for testing) set ``random_seed`` 
+            :program:`hole` will use the time of the day.
+            For reproducible runs (e.g., for testing) set ``random_seed``
             to an integer. Default: ``None``
         """
         self.random_seed = random_seed
+<<<<<<< HEAD
         self.write_input_files = write_input_files
         super(HoleAnalysis, self).run(start=start, stop=stop,
                                       step=step, verbose=verbose)
+=======
+        return super(HoleAnalysis, self).run(start=start, stop=stop,
+                                             step=step, verbose=verbose)
+>>>>>>> 5173ef9fd... added binning functions
 
     def _prepare(self):
         """Set up containers and generate input file text"""
@@ -753,11 +814,23 @@ class HoleAnalysis(AnalysisBase):
            source hole.vmd
 
         The level of detail is determined by ``dot_density``.
+<<<<<<< HEAD
         The surface will be colored by ``no_water_color``, ``one_water_color``, and 
         ``double_water_color``. You can change these in the
         Tk Console::
 
             set no_water_color blue
+=======
+        The surface will be colored by the ``color``. You can change this in the
+        Tk Console::
+
+            set surface_color blue
+
+        #_producing_a_triangulated_surface_and_visualizing_in_vmd
+        .. _`Visualization of HOLE results`: http://www.holeprogram.org/doc/index.html
+        .. _`sph_process`: http://www.holeprogram.org/doc/old/hole_d04.html#sph_process
+        .. _`sos_triangle`: http://www.holeprogram.org/doc/old/hole_d04.html#sos_triangle
+>>>>>>> 5173ef9fd... added binning functions
 
 
         Parameters
@@ -768,10 +841,10 @@ class HoleAnalysis(AnalysisBase):
         dot_density: int, optional
             density of facets for generating a 3D pore representation.
             The number controls the density of dots that will be used.
-            A sphere of dots is placed on each centre determined in the 
-            Monte Carlo procedure. The actual number of dots written is 
-            controlled by ``dot_density`` and the ``sample`` level of the 
-            original analysis. ``dot_density`` should be set between 5 
+            A sphere of dots is placed on each centre determined in the
+            Monte Carlo procedure. The actual number of dots written is
+            controlled by ``dot_density`` and the ``sample`` level of the
+            original analysis. ``dot_density`` should be set between 5
             (few dots per sphere) and 35 (many dots per sphere).
 
         no_water_color: str, optional
@@ -878,14 +951,14 @@ class HoleAnalysis(AnalysisBase):
         Parameters
         ----------
         frames: array-like, optional
-            Frames to plot. If ``None``, plots all of them. 
+            Frames to plot. If ``None``, plots all of them.
             Default: ``None``
         color: str or array-like, optional
-            Color or colors for the plot. If ``None``, colors are 
+            Color or colors for the plot. If ``None``, colors are
             drawn from ``cmap``. Default: ``None``
         cmap: str, optional
-            color map to make colors for the plot if ``color`` is 
-            not given. Names should be from the ``matplotlib.pyplot.cm`` 
+            color map to make colors for the plot if ``color`` is
+            not given. Names should be from the ``matplotlib.pyplot.cm``
             module. Default: 'viridis'
         linestyle: str or array-like, optional
             Line style for the plot. Default: '-'
@@ -921,21 +994,21 @@ class HoleAnalysis(AnalysisBase):
              legend_loc='best', **kwargs):
         """Plot HOLE profiles :math:`R(\zeta)` in a 1D graph.
 
-        Lines are colored according to the specified ``color`` or 
+        Lines are colored according to the specified ``color`` or
         drawn from the color map ``cmap``. One line is
         plotted for each trajectory frame.
 
         Parameters
         ----------
         frames: array-like, optional
-            Frames to plot. If ``None``, plots all of them. 
+            Frames to plot. If ``None``, plots all of them.
             Default: ``None``
         color: str or array-like, optional
-            Color or colors for the plot. If ``None``, colors are 
+            Color or colors for the plot. If ``None``, colors are
             drawn from ``cmap``. Default: ``None``
         cmap: str, optional
-            color map to make colors for the plot if ``color`` is 
-            not given. Names should be from the ``matplotlib.pyplot.cm`` 
+            color map to make colors for the plot if ``color`` is
+            not given. Names should be from the ``matplotlib.pyplot.cm``
             module. Default: 'viridis'
         linestyle: str or array-like, optional
             Line style for the plot. Default: '-'
@@ -989,26 +1062,26 @@ class HoleAnalysis(AnalysisBase):
                ylabel='Frames', **kwargs):
         """Stacked 3D graph of profiles :math:`R(\zeta)`.
 
-        Lines are colored according to the specified ``color`` or 
+        Lines are colored according to the specified ``color`` or
         drawn from the color map ``cmap``. One line is
         plotted for each trajectory frame.
 
         Parameters
         ----------
         frames: array-like, optional
-            Frames to plot. If ``None``, plots all of them. 
+            Frames to plot. If ``None``, plots all of them.
             Default: ``None``
         color: str or array-like, optional
-            Color or colors for the plot. If ``None``, colors are 
+            Color or colors for the plot. If ``None``, colors are
             drawn from ``cmap``. Default: ``None``
         cmap: str, optional
-            color map to make colors for the plot if ``color`` is 
-            not given. Names should be from the ``matplotlib.pyplot.cm`` 
+            color map to make colors for the plot if ``color`` is
+            not given. Names should be from the ``matplotlib.pyplot.cm``
             module. Default: 'viridis'
         linestyle: str or array-like, optional
             Line style for the plot. Default: '-'
         r_max : float, optional
-            only display radii up to ``r_max``. If ``None``, all radii are 
+            only display radii up to ``r_max``. If ``None``, all radii are
             plotted. Default: ``None``
         ax : :class:`matplotlib.axes.Axes`
             If no `ax` is supplied or set to ``None`` then the plot will
@@ -1068,7 +1141,7 @@ class HoleAnalysis(AnalysisBase):
         ----------
         order_parameters: array-like or string
             Sequence or text file containing order parameters (float
-            numbers) corresponding to the frames in the trajectory. Must 
+            numbers) corresponding to the frames in the trajectory. Must
             be same length as trajectory.
         frames: array-like, optional
             Selected frames to return. If ``None``, returns all of them.
@@ -1115,21 +1188,21 @@ class HoleAnalysis(AnalysisBase):
                               ylabel=r'Minimum HOLE pore radius $r$ ($\AA$)',
                               xlabel='Order parameter',
                               **kwargs):
-        r"""Plot HOLE radii over order parameters. This function needs 
-        an ``aggregator`` function to reduce the ``radius`` array to a 
+        r"""Plot HOLE radii over order parameters. This function needs
+        an ``aggregator`` function to reduce the ``radius`` array to a
         single value, e.g. ``min``, ``max``, or ``np.mean``.
 
         Parameters
         ----------
         order_parameters: array-like or string
             Sequence or text file containing order parameters (float
-            numbers) corresponding to the frames in the trajectory. Must 
+            numbers) corresponding to the frames in the trajectory. Must
             be same length as trajectory.
         aggregator: callable, optional
-            Function applied to the radius array of each profile to 
+            Function applied to the radius array of each profile to
             reduce it to one representative value. Default: ``min``
         frames: array-like, optional
-            Frames to plot. If ``None``, plots all of them. 
+            Frames to plot. If ``None``, plots all of them.
             Default: ``None``
         color: str or array-like, optional
             Color for the plot. Default: 'blue'
@@ -1167,6 +1240,211 @@ class HoleAnalysis(AnalysisBase):
         ax.set_ylabel(ylabel)
         return ax
 
+    def gather(self, frames=None, flat=False):
+        """Gather the fields of each profile recarray together.
+
+        Parameters
+        ----------
+        frames: int or iterable of ints, optional
+            Profiles to include by frame. If ``None``, includes
+            all frames. Default: ``None``
+
+        flat: bool, optional
+            Whether to flatten the list of field arrays into a
+            single array. Default: ``False``
+
+
+        Returns
+        -------
+        dict
+            dictionary of fields
+        """
+        if frames is None:
+            frames = self.frames
+        frames = util.asiterable(frames)
+        profiles = [self.profiles[k] for k in frames]
+
+        rxncoords = [p.rxn_coord for p in profiles]
+        radii = [p.radius for p in profiles]
+        cen_line_Ds = [p.cen_line_D for p in profiles]
+
+        if flat:
+            rxncoords = np.concatenate(rxncoords)
+            radii = np.concatenate(radii)
+            cen_line_Ds = np.concatenate(cen_line_Ds)
+
+        dct = {'rxn_coord': rxncoords,
+               'radius': radii,
+               'cen_line_D': cen_line_Ds}
+        return dct
+
+    def bin_radii(self, frames=None, bins=100, range=None):
+        """Collects the pore radii into bins by reaction coordinate.
+
+        Parameters
+        ----------
+        frames: int or iterable of ints, optional
+            Profiles to include by frame. If ``None``, includes
+            all frames. Default: ``None``
+
+        bins: int or iterable of edges, optional
+            If bins is an int, it defines the number of equal-width bins in the given range. If bins is a sequence, it defines a monotonically increasing array of bin edges, including the rightmost edge, allowing for non-uniform bin widths. Default: 100
+
+        range : (float, float), optional
+            The lower and upper range of the bins.
+            If not provided, ``range`` is simply ``(a.min(), a.max())``,
+            where ``a`` is the array of reaction coordinates.
+            Values outside the range are ignored. The first element of the range must be less than or equal to the second.
+
+
+        Returns
+        -------
+        list of arrays of floats
+            List of radii present in each bin
+        array of (float, float)
+            Edges of each bin
+        """
+        agg = self.gather(frames=frames, flat=True)
+        coords = agg['rxn_coord']
+
+        if not util.iterable(bins):
+            if range is None:
+                range = (coords.min(), coords.max())
+            xmin, xmax = range
+            if xmin == xmax:
+                xmin -= 0.5
+                xmax += 0.5
+            bins = np.linspace(xmin, xmax, bins+1, endpoint=True)
+        else:
+            bins = np.asarray(bins)
+            bins = bins[np.argsort[bins]]
+
+        idx = np.argsort(coords)
+        coords = coords[idx]
+        radii = agg['radius'][idx]
+        # left: inserts at i where coords[:i] < edge
+        # right: inserts at i where coords[:i] <= edge
+        # r_ concatenates
+        bin_idx = np.r_[coords.searchsorted(bins[:-1], side='left'),
+                        radii.searchsorted(bins[-1], side='right')]
+        binned = [radii[i:j] for i, j in zip(bin_idx[:-1], bin_idx[1:])]
+        return binned, bins
+
+    def histogram_radii(self, aggregator=np.mean, frames=None,
+                        bins=100, range=None):
+        """Histograms the pore radii into bins by reaction coordinate,
+        aggregate the radii with an `aggregator` function, and returns the 
+        aggregated radii and bin edges.
+
+        Parameters
+        ----------
+        aggregator: callable, optional
+            this function must take an iterable of floats and return a 
+            single value. Default: np.mean
+
+        frames: int or iterable of ints, optional
+            Profiles to include by frame. If ``None``, includes
+            all frames. Default: ``None``
+
+        bins: int or iterable of edges, optional
+            If bins is an int, it defines the number of equal-width bins in the given range. If bins is a sequence, it defines a monotonically increasing array of bin edges, including the rightmost edge, allowing for non-uniform bin widths. Default: 100
+
+        range : (float, float), optional
+            The lower and upper range of the bins.
+            If not provided, ``range`` is simply ``(a.min(), a.max())``,
+            where ``a`` is the array of reaction coordinates.
+            Values outside the range are ignored. The first element of the range must be less than or equal to the second.
+
+
+        Returns
+        -------
+        array of floats
+            histogrammed, aggregate value of radii
+        array of (float, float)
+            Edges of each bin
+        """
+        binned, bins = self.bin_radii(frames=frames, bins=bins, range=range)
+        return np.array(list(map(aggregator, binned))), bins
+
+    def plot_mean_profile(self, bins=100, range=None,
+                          frames=None, color='blue',
+                          linestyle='-', ax=None,
+                          xlabel='Frame', fill_alpha=0.3,
+                          n_std=1, legend=True,
+                          legend_loc='best',
+                          **kwargs):
+        """Collects the pore radii into bins by reaction coordinate.
+
+        Parameters
+        ----------
+        frames: int or iterable of ints, optional
+            Profiles to include by frame. If ``None``, includes
+            all frames. Default: ``None``
+
+        bins: int or iterable of edges, optional
+            If bins is an int, it defines the number of equal-width bins in the given range. If bins is a sequence, it defines a monotonically increasing array of bin edges, including the rightmost edge, allowing for non-uniform bin widths. Default: 100
+
+        range : (float, float), optional
+            The lower and upper range of the bins.
+            If not provided, ``range`` is simply ``(a.min(), a.max())``,
+            where ``a`` is the array of reaction coordinates.
+            Values outside the range are ignored. The first element of the range must be less than or equal to the second.
+
+        color: str or array-like, optional
+            Color for the plot. Default: 'blue'
+
+        linestyle: str or array-like, optional
+            Line style for the plot. Default: '-'
+
+        ax : :class:`matplotlib.axes.Axes`
+            If no `ax` is supplied or set to ``None`` then the plot will
+            be added to the current active axes. Default: ``None``
+
+        xlabel : str, optional
+            X-axis label. Default: 'Order parameter'
+
+        fill_alpha: float, optional
+            Opacity of filled standard deviation area Default: 0.3
+
+        n_std: int, optional
+            Number of standard deviations from the mean to fill between.
+            Default: 1
+
+        legend: bool, optional
+            Whether to plot a legend. Default: True
+
+        legend_loc: str, optional
+            Location of legend. Default: 'best'
+
+        **kwargs :
+            All other `kwargs` are passed to :func:`matplotlib.pyplot.plot`.
+
+
+        Returns
+        -------
+        ax : :class:`~matplotlib.axes.Axes`
+             Axes with the plot, either `ax` or the current axes.
+
+        """
+
+        binned, bins = self.bin_radii(frames=frames, bins=bins, range=range)
+        mean = np.array(list(map(np.mean, binned)))
+        midpoints = 0.5 * bins[1:] + bins[:-1]
+
+        fig, ax = plt.subplots()
+        if n_std:
+            std = np.array(list(map(np.std, binned)))
+            ax.fill_between(midpoints, mean-(n_std*std), mean+(n_std*std),
+                            color=color, alpha=fill_alpha,
+                            label='{} std'.format(n_std))
+        ax.plot(midpoints, mean, color=color,
+                linestyle=linestyle, label='mean', **kwargs)
+        ax.set_xlabel(r"Pore coordinate $\zeta$ ($\AA$)")
+        ax.set_ylabel(r"HOLE radius $R$ ($\AA$)")
+        if legend:
+            ax.legend(loc=legend_loc)
+        return ax
+
     def plot3D_order_parameters(self, order_parameters,
                                 frames=None,
                                 color=None,
@@ -1177,43 +1455,42 @@ class HoleAnalysis(AnalysisBase):
                                 **kwargs):
         """Plot HOLE radii over order parameters as a 3D graph.
 
-        Lines are colored according to the specified ``color`` or 
+        Lines are colored according to the specified ``color`` or
         drawn from the color map ``cmap``. One line is
         plotted for each trajectory frame.
 
         Parameters
         ----------
         order_parameters: array-like or string
-            Sequence or text file containing order parameters (float
-            numbers) corresponding to the frames in the trajectory. Must 
+            Sequence or text file containing order parameters(float
+            numbers) corresponding to the frames in the trajectory. Must
             be same length as trajectory.
         frames: array-like, optional
-            Frames to plot. If ``None``, plots all of them. 
+            Frames to plot. If ``None``, plots all of them.
             Default: ``None``
         color: str or array-like, optional
-            Color or colors for the plot. If ``None``, colors are 
+            Color or colors for the plot. If ``None``, colors are
             drawn from ``cmap``. Default: ``None``
         cmap: str, optional
-            color map to make colors for the plot if ``color`` is 
-            not given. Names should be from the ``matplotlib.pyplot.cm`` 
+            color map to make colors for the plot if ``color`` is
+            not given. Names should be from the ``matplotlib.pyplot.cm``
             module. Default: 'viridis'
         linestyle: str or array-like, optional
             Line style for the plot. Default: '-'
-        ax : :class:`matplotlib.axes.Axes`
+        ax: : class: `matplotlib.axes.Axes`
             If no `ax` is supplied or set to ``None`` then the plot will
             be added to the current active axes. Default: ``None``
-        r_max : float, optional
-            only display radii up to ``r_max``. If ``None``, all radii are 
+        r_max: float, optional
+            only display radii up to ``r_max``. If ``None``, all radii are
             plotted. Default: ``None``
-        ylabel : str, optional
+        ylabel: str, optional
             Y-axis label. Default: 'Order parameter'
-        **kwargs :
-            All other `kwargs` are passed to :func:`matplotlib.pyplot.plot`.
-
+        **kwargs:
+            All other `kwargs` are passed to: func: `matplotlib.pyplot.plot`.
 
         Returns
         -------
-        ax : :class:`~mpl_toolkits.mplot3d.Axes3D`
+        ax: : class: `~mpl_toolkits.mplot3d.Axes3D`
              Axes with the plot, either `ax` or the current axes.
 
         """

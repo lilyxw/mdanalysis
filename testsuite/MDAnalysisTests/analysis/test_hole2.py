@@ -110,7 +110,7 @@ class TestHole(object):
             IGNORE SOL WAT TIP HOH K   NA  CL 
             SHORTO 0
             RASEED 31415
-            CPOINT -0.018096150716659255 -0.012273058309577978 4.149799994321969
+            CPOINT -0.0180961507 -0.0122730583 4.1497999943
             """)
 
         # don't check filenames
@@ -131,7 +131,7 @@ class TestHole(object):
 
 @pytest.mark.skipif(executable_not_found("hole"),
                     reason="Test skipped because HOLE not found")
-class TestHoleAnalysis(object):
+class BaseTestHole(object):
     filename = MULTIPDB_HOLE
     start = 5
     stop = 7
@@ -153,6 +153,9 @@ class TestHoleAnalysis(object):
     @pytest.fixture()
     def frames(self, universe):
         return [ts.frame for ts in universe.trajectory[self.start:self.stop]]
+
+
+class TestHoleAnalysis(BaseTestHole):
 
     def test_correct_profile_values(self, hole, frames):
         assert_equal(sorted(hole.profiles.keys()), frames,
@@ -208,6 +211,93 @@ class TestHoleAnalysis(object):
         vmd_file = tmpdir.join('hole.vmd')
         assert len(glob.glob(str(vmd_file))) == 1
 
+
+class TestHoleAnalysisLong(BaseTestHole):
+
+    start = 0
+    stop = 11
+
+    def test_gather(self, hole):
+        gd = hole.gather(flat=False)
+        for i, p in enumerate(hole.profiles.values()):
+            assert_almost_equal(p.rxn_coord, gd['rxn_coord'][i])
+            assert_almost_equal(p.radius, gd['radius'][i])
+            assert_almost_equal(p.cen_line_D, gd['cen_line_D'][i])
+
+    def test_gather_flat(self, hole):
+        gd = hole.gather(flat=True)
+        i = 0
+        for p in hole.profiles.values():
+            j = i+len(p.rxn_coord)
+            assert_almost_equal(p.rxn_coord, gd['rxn_coord'][i:j])
+            assert_almost_equal(p.radius, gd['radius'][i:j])
+            assert_almost_equal(p.cen_line_D, gd['cen_line_D'][i:j])
+            i = j
+        assert_equal(i, len(gd['rxn_coord']))
+
+    def test_min_radius(self, hole):
+        rad = hole.min_radius()
+        for (f1, p), (f2, r) in zip(hole.profiles.items(), rad):
+            assert_equal(f1, f2)
+            assert_almost_equal(min(p.radius), r)
+
+    def test_over_order_parameters(self, hole):
+        op = np.array([6.10501252e+00, 4.88398472e+00, 3.66303524e+00, 2.44202454e+00,
+                       1.22100521e+00, 1.67285541e-07, 1.22100162e+00, 2.44202456e+00,
+                       3.66303410e+00, 4.88398478e+00, 6.10502262e+00])
+        profiles = hole.over_order_parameters(op, frames=None)
+        assert len(op) == len(profiles)
+
+        for key, rmsd in zip(profiles.keys(), np.sort(op)):
+            assert key == rmsd
+
+        idx = np.argsort(op)
+        arr = np.array(list(hole.profiles.values()))
+        for op_prof, arr_prof in zip(profiles.values(), arr[idx]):
+            assert op_prof is arr_prof
+
+    def test_over_order_parameters_frames(self, hole):
+        op = np.array([6.10501252e+00, 4.88398472e+00, 3.66303524e+00, 2.44202454e+00,
+                       1.22100521e+00, 1.67285541e-07, 1.22100162e+00, 2.44202456e+00,
+                       3.66303410e+00, 4.88398478e+00, 6.10502262e+00])
+        profiles = hole.over_order_parameters(op, frames=np.arange(7))
+        assert len(profiles) == 7
+        for key, rmsd in zip(profiles.keys(), np.sort(op[:7])):
+            assert key == rmsd
+
+        idx = np.argsort(op[:7])
+        values = list(hole.profiles.values())[:7]
+        arr = np.array(values)
+        for op_prof, arr_prof in zip(profiles.values(), arr[idx]):
+            assert op_prof is arr_prof
+
+    def test_bin_radii(self, hole):
+        radii, bins = hole.bin_radii(bins=100)
+        dct = hole.gather(flat=True)
+        coords = dct['rxn_coord']
+        assert len(bins) == 101
+        assert_almost_equal(bins[0], coords.min())
+        assert_almost_equal(bins[-1], coords.max())
+        assert len(radii) == (len(bins)-1)
+        # check first frame profile
+        first = hole.profiles[0]
+        for row in first:
+            coord = row.rxn_coord
+            rad = row.radius
+            for i, (lower, upper) in enumerate(zip(bins[:-1], bins[1:])):
+                if coord > lower and coord <= upper:
+                    assert rad in radii[i]
+                    break
+            else:
+                raise AssertionError('Radius not in binned radii')
+
+    def test_histogram_radii(self, hole):
+        means, _ = hole.histogram_radii(aggregator=np.mean,
+                                        bins=100)
+        radii, _ = hole.bin_radii(bins=100)
+        assert means.shape == (100,)
+        for r, m in zip(radii, means):
+            assert_almost_equal(r.mean(), m)
 
 @pytest.mark.skipif(executable_not_found("hole"),
                     reason="Test skipped because HOLE not found")

@@ -34,6 +34,8 @@
 Helper functions used in :mod:`MDAnalysis.analysis.hole2.hole`
 """
 
+from __future__ import absolute_import
+
 import logging
 import tempfile
 import subprocess
@@ -341,7 +343,10 @@ def set_up_hole_input(pdbfile,
                     "runs.".format(random_seed))
 
     if cpoint is not None:
-        infile_text += hole_lines['cpoint'].format(*cpoint)
+        try:
+            infile_text += hole_lines['cpoint'].format(*cpoint)
+        except ValueError:
+            infile_text += 'CPOINT {} {} {}\n'.format(*cpoint)
     else:
         logger.info("HOLE will guess CPOINT")
 
