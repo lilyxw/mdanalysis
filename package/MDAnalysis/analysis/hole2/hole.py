@@ -131,17 +131,19 @@ import tempfile
 import textwrap
 import logging
 import itertools
+import warnings
 
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+from collections import OrderedDict
 
-from MDAnalysis.exceptions import ApplicationError
+from ...exceptions import ApplicationError
 from ..base import AnalysisBase
 from ...lib import util
-from .helper import (check_and_fix_long_filename, write_simplerad2,
-                     set_up_hole_input, run_hole, collect_hole,
-                     create_vmd_surface)
+from .utils import (check_and_fix_long_filename, write_simplerad2,
+                    set_up_hole_input, run_hole, collect_hole,
+                    create_vmd_surface)
 from .templates import (hole_input, hole_lines, vmd_script_array,
                         vmd_script_function,
                         IGNORE_RESIDUES)
@@ -343,7 +345,7 @@ def hole(pdbfile,
 
     if output_level > 3:
         msg = 'output_level ({}) needs to be < 3 in order to extract a HOLE profile!'
-        logger.warning(msg.format(output_level))
+        warnings.warn(msg.format(output_level))
 
     # get executable
     exe = util.which(executable)
@@ -382,7 +384,8 @@ def hole(pdbfile,
                                     ignore_residues=ignore_residues,
                                     output_level=output_level,
                                     dcd=dcd,
-                                    dcd_iniskip=dcd_iniskip)
+                                    dcd_iniskip=dcd_iniskip,
+                                    dcd_step=dcd_step-1)
 
     run_hole(outfile=outfile, infile_text=infile_text, executable=exe)
     recarrays = collect_hole(outfile=outfile)
@@ -607,7 +610,7 @@ class HoleAnalysis(AnalysisBase):
                                            verbose=verbose)
         if output_level > 3:
             msg = 'output_level ({}) needs to be < 3 in order to extract a HOLE profile!'
-            logger.warning(msg.format(output_level))
+            warnings.warn(msg.format(output_level))
 
         if prefix is None:
             prefix = ''
@@ -615,7 +618,7 @@ class HoleAnalysis(AnalysisBase):
         if isinstance(cpoint, str):
             if 'geometry' in cpoint.lower():
                 self._guess_cpoint = True
-                self.cpoint = ['{cpoint[0]}', '{cpoint[1]}', '{cpoint[2]}']
+                self.cpoint = '{cpoint[0]:.10f} {cpoint[1]:.10f} {cpoint[2]:.10f}'
         else:
             self._guess_cpoint = False
             self.cpoint = cpoint
@@ -798,7 +801,11 @@ class HoleAnalysis(AnalysisBase):
                 pass
 
         recarrays = collect_hole(outfile=outfile)
-        self.profiles[frame] = recarrays[0]
+        try:
+            self.profiles[frame] = recarrays[0]
+        except KeyError:
+            msg = 'No profile found in HOLE output. Output level: {}'
+            logger.info(msg.format(self.output_level))
 
     def create_vmd_surface(self, filename='hole.vmd', dot_density=15,
                            no_water_color='red', one_water_color='green',
@@ -1038,7 +1045,7 @@ class HoleAnalysis(AnalysisBase):
             raise ValueError('No profiles available. Try calling run()')
 
         if ax is None:
-            ax = plt.gca()
+            fig, ax = plt.subplots()
 
         fcl = self._process_plot_kwargs(frames=frames,
                                         color=color, cmap=cmap, linestyle=linestyle)
@@ -1105,8 +1112,8 @@ class HoleAnalysis(AnalysisBase):
         from mpl_toolkits.mplot3d import Axes3D
 
         if ax is None:
-            fig = plt.gcf()
-            ax = fig.add_subplot(1, 1, 1, projection='3d')
+            fig = plt.figure()
+            ax = fig.add_subplot(111, projection='3d')
 
         fcl = self._process_plot_kwargs(frames=frames,
                                         color=color, cmap=cmap,
@@ -1149,14 +1156,24 @@ class HoleAnalysis(AnalysisBase):
 
         Returns
         -------
-        dict
+        collections.OrderedDict
             sorted dictionary of {order_parameter:profile}
 
         """
         if not self.profiles:
             raise ValueError('No profiles available. Try calling run()')
         if isinstance(order_parameters, six.string_types):
-            order_parameters = np.loadtxt(order_parameters)
+            try:
+                order_parameters = np.loadtxt(order_parameters)
+            except IOError:
+                raise ValueError('Data file not found: {}'.format(order_parameters))
+            except (ValueError, TypeError):
+                msg = ('Could not parse given file: {}. '
+                       '`order_parameters` must be array-like '
+                       'or a filename with array data '
+                       'that can be read by np.loadtxt')
+                raise ValueError(msg.format(order_parameters))
+            
 
         order_parameters = np.asarray(order_parameters)
 
@@ -1174,7 +1191,7 @@ class HoleAnalysis(AnalysisBase):
         idx = np.argsort(order_parameters[frames])
         sorted_frames = frames[idx]
 
-        profiles = {}
+        profiles = OrderedDict()
         for frame in sorted_frames:
             profiles[order_parameters[frame]] = self.profiles[frame]
 
@@ -1230,7 +1247,7 @@ class HoleAnalysis(AnalysisBase):
                                                  frames=frames)
 
         if ax is None:
-            ax = plt.gca()
+            fig, ax = plt.subplots()
 
         data = [[x, aggregator(p.radius)] for x, p in op_profiles.items()]
         arr = np.array(data)
@@ -1317,7 +1334,7 @@ class HoleAnalysis(AnalysisBase):
             bins = np.linspace(xmin, xmax, bins+1, endpoint=True)
         else:
             bins = np.asarray(bins)
-            bins = bins[np.argsort[bins]]
+            bins = bins[np.argsort(bins)]
 
         idx = np.argsort(coords)
         coords = coords[idx]
@@ -1325,8 +1342,7 @@ class HoleAnalysis(AnalysisBase):
         # left: inserts at i where coords[:i] < edge
         # right: inserts at i where coords[:i] <= edge
         # r_ concatenates
-        bin_idx = np.r_[coords.searchsorted(bins[:-1], side='left'),
-                        radii.searchsorted(bins[-1], side='right')]
+        bin_idx = np.r_[coords.searchsorted(bins, side='right')]
         binned = [radii[i:j] for i, j in zip(bin_idx[:-1], bin_idx[1:])]
         return binned, bins
 
@@ -1500,8 +1516,8 @@ class HoleAnalysis(AnalysisBase):
         from mpl_toolkits.mplot3d import Axes3D
 
         if ax is None:
-            fig = plt.gcf()
-            ax = fig.add_subplot(1, 1, 1, projection='3d')
+            fig = plt.figure()
+            ax = fig.add_subplot(111, projection='3d')
 
         ocl = self._process_plot_kwargs(frames=list(op_profiles.keys()),
                                         color=color, cmap=cmap,
