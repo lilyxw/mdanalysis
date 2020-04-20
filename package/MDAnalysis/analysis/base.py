@@ -130,7 +130,8 @@ class AnalysisBase(object):
         self.start = start
         self.stop = stop
         self.step = step
-        self.n_frames = len(range(start, stop, step))
+        self.frame_indices = np.arange(start, stop, step, dtype=int)
+        self.n_frames = len(self.frame_indices)
 
     def _single_frame(self):
         """Calculate data from a single frame of trajectory
@@ -171,11 +172,9 @@ class AnalysisBase(object):
         self._setup_frames(self._trajectory, start, stop, step)
         logger.info("Starting preparation")
         self._prepare()
-        for i, ts in enumerate(ProgressBar(
-                self._trajectory[self.start:self.stop:self.step],
-                verbose=verbose)):
+        for i, frame in enumerate(ProgressBar(self.frame_indices, verbose=verbose)):
             self._frame_index = i
-            self._ts = ts
+            self._ts = self._trajectory[frame]
             # logger.info("--> Doing frame {} of {}".format(i+1, self.n_frames))
             self._single_frame()
         logger.info("Finishing up")
