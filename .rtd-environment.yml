@@ -1,0 +1,7 @@
+name: mdanalysis-docs
+
+dependencies:
+    - python>=3
+    - numpy
+    - cython
+    - tqdm
