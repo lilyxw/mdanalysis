@@ -6,6 +6,7 @@ try:
 except ImportError:
     from urllib2 import urlopen
 
+# ========= WRITE JSON =========
 URL = "https://lilyminium.github.io/mdanalysis/"
 
 VERSION = os.environ['VERSION']
@@ -39,3 +40,40 @@ if not already_exists:
 with open("versions.json", 'w') as f:
     json.dump(versions, f, indent=2)
 
+# ========= WRITE HTML STUBS =========
+REDIRECT = """
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Redirecting to {url}</title>
+<meta http-equiv="refresh" content="0; URL={url}">
+<link rel="canonical" href="{url}">
+"""
+
+for ver in versions[::-1]:
+    if ver['latest']:
+        latest_url = ver['url']
+        break
+else:
+    try:
+        latest_url = versions[-1]['url']
+    except IndexError:
+        latest_url = URL
+
+for ver in versions[::-1]:
+    if 'dev' in ver['version']:
+        dev_url = ver['url']
+        break
+else:
+    try:
+        dev_url = versions[-1]['url']
+    except IndexError:
+        dev_url = URL
+
+with open('index.html', 'w') as f:
+    f.write(REDIRECT.format(url=latest_url))
+
+with open('latest.html', 'w') as f:
+    f.write(REDIRECT.format(url=latest_url))
+
+with open('dev.html', 'w') as f:
+    f.write(REDIRECT.format(url=dev_url))
