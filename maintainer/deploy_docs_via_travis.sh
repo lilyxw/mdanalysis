@@ -46,6 +46,7 @@ git add .nojekyll
 
 python ${MAINTAIN_DIR}/update_versions_json.py
 git add versions.json
+git add *.html
 
 git status
 # check for anything to commit

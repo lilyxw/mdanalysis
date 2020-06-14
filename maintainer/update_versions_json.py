@@ -13,13 +13,16 @@ VERSION = os.environ['VERSION']
 url = os.path.join(URL, 'versions.json')
 try:
     data = urlopen(url).read().decode()
-    versions = json.loads(data)
-except:
+except HTTPError as e:
+    print(e)
     try:
         with open('versions.json', 'r') as f:
             versions = json.loads(f)
-    except:
+    except IOError as e:
+        print(e)
         versions = []
+else:
+    versions = json.loads(data)
 
 existing = [item['version'] for item in versions]
 already_exists = VERSION in existing
