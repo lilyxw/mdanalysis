@@ -10,15 +10,15 @@ URL = "https://lilyminium.github.io/mdanalysis/"
 
 VERSION = os.environ['VERSION']
 url = os.path.join(URL, 'versions.json')
-# try:
-data = urlopen(url).read().decode()
-versions = json.loads(data)
-# except:
-#     try:
-#         with open('versions.json', 'r') as f:
-#             versions = json.loads(f)
-#     except:
-#         versions = []
+try:
+    data = urlopen(url).read().decode()
+    versions = json.loads(data)
+except:
+    try:
+        with open('versions.json', 'r') as f:
+            versions = json.loads(f)
+    except:
+        versions = []
 
 existing = [item['version'] for item in versions]
 already_exists = VERSION in existing
