@@ -158,7 +158,7 @@ html_theme_options = {
 }
 
 html_context = {
-    'versions_json_url': 'https://lilyminium.github.io/mdanalysis/versions.json'
+    'versions_json_url': 'https://mdadocs.minium.com.au/versions.json'
 }
 
 # Add any paths that contain custom themes here, relative to this directory.
