@@ -2,18 +2,20 @@ import json
 import os
 
 try:
-    from urllib.request import urlopen
+    from urllib.request import Request, urlopen
 except ImportError:
-    from urllib2 import urlopen
+    from urllib2 import Request, urlopen
 
 # ========= WRITE JSON =========
 URL = "https://lilyminium.github.io/mdanalysis/"
 
 VERSION = os.environ['VERSION']
 url = os.path.join(URL, 'versions.json')
+
 try:
-    data = urlopen(url).read().decode()
-except HTTPError as e:
+    page = Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+    data = urlopen(page).read().decode()
+except Exception as e:
     print(e)
     try:
         with open('versions.json', 'r') as f:
