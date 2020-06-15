@@ -34,10 +34,6 @@ git remote add upstream git@github.com:lilyminium/mdanalysis.git
 git fetch --depth 50 upstream ${GH_DOC_BRANCH} gh-pages
 git reset upstream/gh-pages
 
-
-touch .
-touch .nojekyll
-
 echo $VERSION
 echo "ls *"
 ls *
@@ -46,10 +42,11 @@ ls *
 mkdir dev latest
 export URL="https://lilyminium.github.io/mdanalysis/"
 python ${MAINTAIN_DIR}/update_versions_json.py
+touch .
+touch .nojekyll
+git add .nojekyll versions.json
 git add -A ${VERSION}/
-git add .nojekyll
-git add versions.json
-git add *.html
+git add index.html dev/index.html latest/index.html
 git add *.xml
 
 git status
