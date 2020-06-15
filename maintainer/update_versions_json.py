@@ -7,7 +7,7 @@ except ImportError:
     from urllib2 import Request, urlopen
 
 # ========= WRITE JSON =========
-URL = "https://lilyminium.github.io/mdanalysis/"
+URL = os.environ['URL']
 
 VERSION = os.environ['VERSION']
 url = os.path.join(URL, 'versions.json')
@@ -40,7 +40,7 @@ if not already_exists:
         'display': VERSION,
         'url': os.path.join(URL, VERSION),
         'latest': latest
-        })
+    })
 
 with open("versions.json", 'w') as f:
     json.dump(versions, f, indent=2)
