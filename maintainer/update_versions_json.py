@@ -1,31 +1,35 @@
 import json
 import os
+import xml.etree.ElementTree as ET
 
 try:
     from urllib.request import Request, urlopen
 except ImportError:
     from urllib2 import Request, urlopen
 
-# ========= WRITE JSON =========
 URL = os.environ['URL']
-
 VERSION = os.environ['VERSION']
-url = os.path.join(URL, 'versions.json')
 
-try:
-    page = Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-    data = urlopen(page).read().decode()
-except Exception as e:
-    print(e)
+
+def get_web_file(filename, callback):
+    url = os.path.join(URL, filename)
     try:
-        with open('versions.json', 'r') as f:
-            versions = json.loads(f)
-    except IOError as e:
+        page = Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        data = urlopen(page).read().decode()
+    except Exception as e:
         print(e)
-        versions = []
-else:
-    versions = json.loads(data)
+        try:
+            with open(filename, 'r') as f:
+                return callback(f)
+        except IOError as e:
+            print(e)
+            versions = []
+    else:
+        return callback(data)
 
+
+# ========= WRITE JSON =========
+versions = get_web_file('versions.json', json.loads)
 existing = [item['version'] for item in versions]
 already_exists = VERSION in existing
 
@@ -77,8 +81,34 @@ else:
 with open('index.html', 'w') as f:
     f.write(REDIRECT.format(url=latest_url))
 
-with open('latest.html', 'w') as f:
+with open('latest/index.html', 'w') as f:
     f.write(REDIRECT.format(url=latest_url))
 
-with open('dev.html', 'w') as f:
+with open('dev/index.html', 'w') as f:
     f.write(REDIRECT.format(url=dev_url))
+
+# ========= WRITE SUPER SITEMAP.XML =========
+ET.register_namespace('xhtml', "http://www.w3.org/1999/xhtml")
+bigroot = ET.Element("urlset")
+
+# so we could make 1 big sitemap as commented
+# below, but they must be max 50 MB / 50k URL.
+# Yes, this is 100+ releases, but who knows when
+# that'll happen and who'll look at this then?
+# bigroot.set("xmlns", "http://www.sitemaps.org/schemas/sitemap/0.9")
+# for ver in versions:
+#     tree = get_web_file(ver['version']+'/sitemap.xml', ET.fromstring)
+#     root = tree.getroot()
+#     bigroot.extend(root.getchildren())
+
+# so instead we make a sitemap of sitemaps.
+bigroot.set("sitemapindex", "http://www.sitemaps.org/schemas/sitemap/0.9")
+for ver in versions:
+    path = os.path.join(URL, '{}/sitemap.xml'.format(ver['version']))
+    sitemap = ET.SubElement(bigroot, 'sitemap')
+    ET.SubElement(sitemap, 'loc').text = path
+
+ET.ElementTree(bigroot).write('sitemap.xml',
+                              xml_declaration=True,
+                              encoding='utf-8',
+                              method="xml")
