@@ -42,9 +42,10 @@ echo $VERSION
 echo "ls *"
 ls *
 
+# for dev, latest, home redirects
+mkdir dev latest
 export URL="https://lilyminium.github.io/mdanalysis/"
 python ${MAINTAIN_DIR}/update_versions_json.py
-python ${MAINTAIN_DIR}/make_super_sitemap.py
 git add -A ${VERSION}/
 git add .nojekyll
 git add versions.json
