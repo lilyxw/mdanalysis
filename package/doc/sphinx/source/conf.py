@@ -81,6 +81,7 @@ packageversion = __import__('MDAnalysis').__version__
 # The short X.Y version.
 # commented out version because it wasn't used except by sitemap
 # version = '.'.join(packageversion.split('.')[:2])
+version = packageversion # needed for sitemap and not used anyway
 # The full version, including alpha/beta/rc tags.
 release = packageversion
 
