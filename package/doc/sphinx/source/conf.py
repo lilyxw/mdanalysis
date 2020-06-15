@@ -25,7 +25,7 @@ import sphinx_rtd_theme
 # here.
 
 # make sure sphinx always uses the current branch
-sys.path.insert(0, os.path.abspath('../../..'))
+# sys.path.insert(0, os.path.abspath('../../..'))
 
 # -- General configuration -----------------------------------------------------
 
