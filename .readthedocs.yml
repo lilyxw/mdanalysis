@@ -18,5 +18,3 @@ python:
   version: 3.7
   install:
     - requirements: package/requirements.txt
-    - method: setuptools
-      path: package/

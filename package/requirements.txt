@@ -2,6 +2,8 @@ biopython
 codecov
 cython
 griddataformats
+git+https://github.com/MDAnalysis/mdanalysis@develop#egg=package&subdirectory=package/
+git+https://github.com/MDAnalysis/mdanalysis@develop#egg=testsuite&subdirectory=testsuite/
 gsd
 hypothesis
 joblib>=0.12
