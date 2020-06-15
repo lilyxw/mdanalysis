@@ -41,10 +41,12 @@ touch .nojekyll
 echo $VERSION
 echo "ls *"
 ls *
+
+export URL="https://lilyminium.github.io/mdanalysis/"
+python ${MAINTAIN_DIR}/update_versions_json.py
+python ${MAINTAIN_DIR}/make_super_sitemap.py
 git add -A ${VERSION}/
 git add .nojekyll
-
-python ${MAINTAIN_DIR}/update_versions_json.py
 git add versions.json
 git add *.html
 
