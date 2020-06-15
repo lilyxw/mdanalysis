@@ -7,13 +7,7 @@ try:
 except ImportError:
     from urllib2 import Request, urlopen
 
-<< << << < HEAD
-# ========= WRITE JSON =========
 URL = os.environ['URL']
-
-== == == =
-URL = os.environ['URL']
->>>>>> > versioned-docs
 VERSION = os.environ['VERSION']
 
 
@@ -72,7 +66,7 @@ else:
     try:
         latest_url = versions[-1]['url']
     except IndexError:
-        latest_url = URL
+        latest_url = None
 
 for ver in versions[::-1]:
     if 'dev' in ver['version']:
@@ -82,25 +76,27 @@ else:
     try:
         dev_url = versions[-1]['url']
     except IndexError:
-        dev_url = URL
+        dev_url = None
 
-with open('index.html', 'w') as f:
-    f.write(REDIRECT.format(url=latest_url))
+if latest_url:
+    with open('index.html', 'w') as f:
+        f.write(REDIRECT.format(url=latest_url))
 
-with open('latest/index.html', 'w') as f:
-    f.write(REDIRECT.format(url=latest_url))
+    with open('latest/index.html', 'w') as f:
+        f.write(REDIRECT.format(url=latest_url))
 
-with open('dev/index.html', 'w') as f:
-    f.write(REDIRECT.format(url=dev_url))
+if dev_url:
+    with open('dev/index.html', 'w') as f:
+        f.write(REDIRECT.format(url=dev_url))
 
 # ========= WRITE SUPER SITEMAP.XML =========
 ET.register_namespace('xhtml', "http://www.w3.org/1999/xhtml")
-bigroot = ET.Element("urlset")
 
 # so we could make 1 big sitemap as commented
 # below, but they must be max 50 MB / 50k URL.
 # Yes, this is 100+ releases, but who knows when
 # that'll happen and who'll look at this then?
+# bigroot = ET.Element("urlset")
 # bigroot.set("xmlns", "http://www.sitemaps.org/schemas/sitemap/0.9")
 # for ver in versions:
 #     tree = get_web_file(ver['version']+'/sitemap.xml', ET.fromstring)
@@ -108,7 +104,8 @@ bigroot = ET.Element("urlset")
 #     bigroot.extend(root.getchildren())
 
 # so instead we make a sitemap of sitemaps.
-bigroot.set("sitemapindex", "http://www.sitemaps.org/schemas/sitemap/0.9")
+bigroot = ET.Element("sitemapindex")
+bigroot.set("xmlns", "http://www.sitemaps.org/schemas/sitemap/0.9")
 for ver in versions:
     path = os.path.join(URL, '{}/sitemap.xml'.format(ver['version']))
     sitemap = ET.SubElement(bigroot, 'sitemap')
