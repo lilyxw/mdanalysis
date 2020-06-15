@@ -41,7 +41,7 @@ ls *
 # for dev, latest, home redirects
 mkdir dev latest
 export URL="https://lilyminium.github.io/mdanalysis/"
-python ${MAINTAIN_DIR}/update_versions_json.py
+python ${MAINTAIN_DIR}/update_json_stubs_sitemap.py
 touch .
 touch .nojekyll
 git add .nojekyll versions.json
