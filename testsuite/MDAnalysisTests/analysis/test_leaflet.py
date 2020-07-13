@@ -218,34 +218,17 @@ class TestLeafletFinderMemProtAA(BaseTestLeafletFinder):
                       list(range(410, 518)) + list(range(546, 573))]
 
 
-class BaseTestLipidEnrichment:
-    protein_sel = 'protein'
-    avg_c = 'Average near protein'
-    sd_c = 'SD near protein'
-    avg_frac = 'Average fraction near protein'
-    sd_frac = 'SD fraction near protein'
-    avg_en = 'Average enrichment'
-    sd_en = 'SD enrichment'
-
-    @pytest.fixture()
-    def universe(self):
-        return mda.Universe(*self.files)
-
-    @pytest.fixture()
-    def lipen(self, universe):
-        return LipidEnrichment(universe, select_protein=self.protein_sel,
-                               select_headgroup=self.headgroup_sel,
-                               select_residues=self.lipid_sel,
-                               enrichment_cutoff=self.cutoff).run()
-
-
 @skip_spectralclustering
-class TestLipidEnrichmentMembrane(BaseTestLipidEnrichment):
-    files = [Martini_membrane_gro]
-    lipid_sel = 'resname DPPC'
-    headgroup_sel = 'name PO4'
-    cutoff = 6
-    n_lipids = 360
+class TestLipidEnrichmentMembrane:
+    @pytest.fixture()
+    def lipen(self):
+        u = mda.Universe(Martini_membrane_gro)
+        return LipidEnrichment(u, select_protein='protein',
+                               select_headgroup='name PO4',
+                               select_residues='resname DPPC',
+                               enrichment_cutoff=6,
+                               distribution='gaussian',
+                               compute_p_value=False).run()
 
     def test_empty_results(self, lipen):
         assert len(lipen.leaflets) == 2
@@ -257,12 +240,23 @@ class TestLipidEnrichmentMembrane(BaseTestLipidEnrichment):
 
 
 @skip_spectralclustering
-class TestLipidEnrichmentMemProtAA(BaseTestLipidEnrichment):
+class BaseTestLipidEnrichmentMemProt:
     files = [GRO_MEMPROT, XTC_MEMPROT]
     lipid_sel = 'resname POPE POPG'
     headgroup_sel = 'name P*'
-    cutoff = 4
 
+    protein_sel = 'protein'
+    avg_c = 'Average near protein'
+    sd_c = 'SD near protein'
+    avg_frac = 'Average fraction near protein'
+    sd_frac = 'SD fraction near protein'
+    avg_en = 'Average enrichment'
+    sd_en = 'SD enrichment'
+    med_en = 'Median enrichment'
+    p_en = 'Enrichment p-value'
+
+    # lipids don't flip
+    keys = {'POPE', 'POPG', 'all'}
     n_u_POPE = 113
     n_l_POPE = 108
     n_u_POPG = 28
@@ -271,77 +265,69 @@ class TestLipidEnrichmentMemProtAA(BaseTestLipidEnrichment):
     n_lower = 108+27
     n_lipids = 276
 
+    @pytest.fixture()
+    def universe(self):
+        return mda.Universe(*self.files)
+
+    @pytest.fixture()
+    def lipen(self, universe):
+        return LipidEnrichment(universe, select_protein=self.protein_sel,
+                               select_headgroup=self.headgroup_sel,
+                               select_residues=self.lipid_sel,
+                               enrichment_cutoff=self.cutoff,
+                               distribution=self.distribution,
+                               compute_p_value=True).run()
+
     def test_results(self, lipen):
         upper, lower = lipen.leaflets
-        assert_equal(set(upper.keys()), {'POPE', 'POPG', 'all'})
-        assert_equal(set(lower.keys()), {'POPE', 'POPG', 'all'})
+        assert_equal(set(upper.keys()), self.keys)
+        assert_equal(set(lower.keys()), self.keys)
 
-        # counts near protein by selection language ('around 4 protein')
-        n_u_pope = np.array([4, 7, 6, 2, 3])
-        n_l_pope = np.array([8, 11, 10, 10, 7])
-        n_u_popg = np.zeros(5)
-        n_l_popg = np.array([5, 5, 3, 6, 7])
-        n_u = n_u_pope+n_u_popg
-        n_l = n_l_pope+n_l_popg
-        assert_equal(upper['POPE']['Near protein'], n_u_pope)
-        assert_equal(lower['POPE']['Near protein'], n_l_pope)
-        assert_equal(upper['POPG']['Near protein'], n_u_popg)
-        assert_equal(lower['POPG']['Near protein'], n_l_popg)
-        assert_equal(upper['all']['Near protein'], n_u)
-        assert_equal(lower['all']['Near protein'], n_l)
-
-        # Fraction
-        f_l_pope = n_l_pope/n_l
-        f_l_popg = 1-f_l_pope
-        assert_almost_equal(upper['POPE']['Fraction near protein'], np.ones(5))
-        assert_almost_equal(lower['POPE']['Fraction near protein'], f_l_pope)
-        assert_almost_equal(
-            upper['POPG']['Fraction near protein'], np.zeros(5))
-        assert_almost_equal(lower['POPG']['Fraction near protein'], f_l_popg)
-
-        # enrichment
-        assert_almost_equal(upper['POPE']['Enrichment'],
-                            self.n_upper/self.n_u_POPE)
-        assert_almost_equal(lower['POPE']['Enrichment'], f_l_pope/0.8)
-        assert_almost_equal(upper['POPG']['Enrichment'], 0)
-        assert_almost_equal(lower['POPG']['Enrichment'], f_l_popg/0.2)
+        for i, leaflet in enumerate(lipen.leaflets):
+            for lipid in self.keys:
+                assert_equal(leaflet[lipid]['Near protein'],
+                             self.near_prot[i][lipid])
+                assert_almost_equal(leaflet[lipid]['Fraction near protein'],
+                                    self.frac[i][lipid],
+                                    decimal=4)
+                assert_almost_equal(leaflet[lipid]['Enrichment'],
+                                    self.dei[i][lipid],
+                                    decimal=4)
+                assert_almost_equal(leaflet[lipid]['Enrichment p-value'],
+                                    self.dei_p[i][lipid],
+                                    decimal=4)
 
     def test_results_summary(self, lipen):
         upper, lower = lipen.leaflets_summary
-        assert_equal(set(upper.keys()), {'POPE', 'POPG', 'all'})
-        assert_equal(set(lower.keys()), {'POPE', 'POPG', 'all'})
+        assert_equal(set(upper.keys()), self.keys)
+        assert_equal(set(lower.keys()), self.keys)
 
-        # counts near protein
-        assert_almost_equal(upper['POPE'][self.avg_c], 4.4)
-        assert_almost_equal(lower['POPE'][self.avg_c], 9.2)
-        assert_almost_equal(upper['POPG'][self.avg_c], 0)
-        assert_almost_equal(lower['POPG'][self.avg_c], 5.2)
-        assert_almost_equal(upper['all'][self.avg_c], 4.4)
-        assert_almost_equal(lower['all'][self.avg_c], 14.4)
-        assert_almost_equal(upper['POPE'][self.sd_c], 1.8547, decimal=4)
-        assert_almost_equal(lower['POPE'][self.sd_c], 1.4697, decimal=4)
-        assert_almost_equal(upper['POPG'][self.sd_c], 0)
-        assert_almost_equal(lower['POPG'][self.sd_c], 1.3266, decimal=4)
-
-        # Fraction
-        assert_almost_equal(upper['POPE'][self.avg_frac], 1)
-        assert_almost_equal(lower['POPE'][self.avg_frac], 0.6389, decimal=4)
-        assert_almost_equal(upper['POPG'][self.avg_frac], 0)
-        assert_almost_equal(lower['POPG'][self.avg_frac], 0.3611, decimal=4)
-        assert_almost_equal(upper['POPE'][self.sd_frac], 0)
-        assert_almost_equal(lower['POPE'][self.sd_frac], 0.0888, decimal=4)
-        assert_almost_equal(upper['POPG'][self.sd_frac], 0)
-        assert_almost_equal(lower['POPG'][self.sd_frac], 0.0888, decimal=4)
-
-        # enrichment
-        assert_almost_equal(upper['POPE'][self.avg_en], 1.2478, decimal=4)
-        assert_almost_equal(lower['POPE'][self.avg_en], 0.7986, decimal=4)
-        assert_almost_equal(upper['POPG'][self.avg_en], 0)
-        assert_almost_equal(lower['POPG'][self.avg_en], 1.8056, decimal=4)
-        assert_almost_equal(upper['POPE'][self.sd_en], 0)
-        assert_almost_equal(lower['POPE'][self.sd_en], 0.1109, decimal=4)
-        assert_almost_equal(upper['POPG'][self.sd_en], 0)
-        assert_almost_equal(lower['POPG'][self.sd_en], 0.4438, decimal=4)
+        for i, leaflet in enumerate(lipen.leaflets_summary):
+            for lipid in self.keys:
+                assert_almost_equal(leaflet[lipid][self.avg_c],
+                                    self.near_prot_mean[i][lipid],
+                                    decimal=4)
+                assert_almost_equal(leaflet[lipid][self.sd_c],
+                                    self.near_prot_sd[i][lipid],
+                                    decimal=4)
+                assert_almost_equal(leaflet[lipid][self.avg_frac],
+                                    self.frac_mean[i][lipid],
+                                    decimal=4)
+                assert_almost_equal(leaflet[lipid][self.sd_frac],
+                                    self.frac_sd[i][lipid],
+                                    decimal=4)
+                assert_almost_equal(leaflet[lipid][self.avg_en],
+                                    self.dei_mean[i][lipid],
+                                    decimal=4)
+                assert_almost_equal(leaflet[lipid][self.med_en],
+                                    self.dei_median[i][lipid],
+                                    decimal=4)
+                assert_almost_equal(leaflet[lipid][self.sd_en],
+                                    self.dei_sd[i][lipid],
+                                    decimal=4)
+                assert_almost_equal(leaflet[lipid][self.p_en],
+                                    self.dei_all_p[i][lipid],
+                                    decimal=4)
 
     @pytest.mark.skipif(not has_pandas,
                         reason="Need pandas for this function")
@@ -350,36 +336,140 @@ class TestLipidEnrichmentMemProtAA(BaseTestLipidEnrichment):
         upper = df[df.Leaflet == 1]
         lower = df[df.Leaflet == 2]
 
-        # counts near protein
-        assert_almost_equal(upper.loc['POPE', self.avg_c], 4.4)
-        assert_almost_equal(lower.loc['POPE', self.avg_c], 9.2)
-        assert_almost_equal(upper.loc['POPG', self.avg_c], 0)
-        assert_almost_equal(lower.loc['POPG', self.avg_c], 5.2)
-        assert_almost_equal(upper.loc['all', self.avg_c], 4.4)
-        assert_almost_equal(lower.loc['all', self.avg_c], 14.4)
-        assert_almost_equal(upper.loc['POPE', self.sd_c], 1.8547, decimal=4)
-        assert_almost_equal(lower.loc['POPE', self.sd_c], 1.4697, decimal=4)
-        assert_almost_equal(upper.loc['POPG', self.sd_c], 0)
-        assert_almost_equal(lower.loc['POPG', self.sd_c], 1.3266, decimal=4)
+        for i, leaflet in enumerate([upper, lower]):
+            for lipid in self.keys:
+                assert_almost_equal(leaflet.loc[lipid, self.avg_c],
+                                    self.near_prot_mean[i][lipid],
+                                    decimal=4)
+                assert_almost_equal(leaflet.loc[lipid, self.sd_c],
+                                    self.near_prot_sd[i][lipid],
+                                    decimal=4)
+                assert_almost_equal(leaflet.loc[lipid, self.avg_frac],
+                                    self.frac_mean[i][lipid],
+                                    decimal=4)
+                assert_almost_equal(leaflet.loc[lipid, self.sd_frac],
+                                    self.frac_sd[i][lipid],
+                                    decimal=4)
+                assert_almost_equal(leaflet.loc[lipid, self.avg_en],
+                                    self.dei_mean[i][lipid],
+                                    decimal=4)
+                assert_almost_equal(leaflet.loc[lipid, self.sd_en],
+                                    self.dei_sd[i][lipid],
+                                    decimal=4)
+                assert_almost_equal(leaflet.loc[lipid, self.med_en],
+                                    self.dei_median[i][lipid],
+                                    decimal=4)
+                assert_almost_equal(leaflet.loc[lipid, self.p_en],
+                                    self.dei_all_p[i][lipid],
+                                    decimal=4)
 
-        # Fraction
-        assert_almost_equal(upper.loc['POPE', self.avg_frac], 1)
-        assert_almost_equal(
-            lower.loc['POPE', self.avg_frac], 0.6389, decimal=4)
-        assert_almost_equal(upper.loc['POPG', self.avg_frac], 0)
-        assert_almost_equal(
-            lower.loc['POPG', self.avg_frac], 0.3611, decimal=4)
-        assert_almost_equal(upper.loc['POPE', self.sd_frac], 0)
-        assert_almost_equal(lower.loc['POPE', self.sd_frac], 0.0888, decimal=4)
-        assert_almost_equal(upper.loc['POPG', self.sd_frac], 0)
-        assert_almost_equal(lower.loc['POPG', self.sd_frac], 0.0888, decimal=4)
 
-        # enrichment
-        assert_almost_equal(upper.loc['POPE', self.avg_en], 1.2478, decimal=4)
-        assert_almost_equal(lower.loc['POPE', self.avg_en], 0.7986, decimal=4)
-        assert_almost_equal(upper.loc['POPG', self.avg_en], 0)
-        assert_almost_equal(lower.loc['POPG', self.avg_en], 1.8056, decimal=4)
-        assert_almost_equal(upper.loc['POPE', self.sd_en], 0)
-        assert_almost_equal(lower.loc['POPE', self.sd_en], 0.1109, decimal=4)
-        assert_almost_equal(upper.loc['POPG', self.sd_en], 0)
-        assert_almost_equal(lower.loc['POPG', self.sd_en], 0.4438, decimal=4)
+class TestLipidEnrichmentMemProtGaussian(BaseTestLipidEnrichmentMemProt):
+    cutoff = 4
+    distribution = 'gaussian'
+
+    # counts near protein by selection language ('around 4 protein')
+    near_prot = [
+        {'POPE': [4, 7, 6, 2, 3],
+         'POPG': [0, 0, 0, 0, 0],
+         'all': [4, 7, 6, 2, 3]},
+        {'POPE': [8, 11, 10, 10, 7],
+         'POPG': [5, 5, 3, 6, 7],
+         'all': [13, 16, 13, 16, 14]}
+    ]
+    frac = [
+        {'POPE': [1, 1, 1, 1, 1],
+         'POPG': [0, 0, 0, 0, 0],
+         'all': [1, 1, 1, 1, 1]},
+        {'POPE': [0.6154, 0.6875, 0.7692, 0.625, 0.5],
+         'POPG': [0.3846, 0.3125, 0.2308, 0.375, 0.5],
+         'all': [1, 1, 1, 1, 1]}
+    ]
+
+    dei = [
+        {'POPE': [1.2478, 1.2478, 1.2478, 1.2478, 1.2478],
+         'POPG': [0, 0, 0, 0, 0],
+         'all': [1, 1, 1, 1, 1]},
+        {'POPE': [0.7692, 0.8594, 0.9615, 0.7813, 0.625],
+         'POPG': [1.9231, 1.5625, 1.1538, 1.875, 2.5],
+         'all': [1, 1, 1, 1, 1]}
+    ]
+
+    dei_p = [
+        {'POPE': [0.4081, 0.2044, 0.2578, 0.6411, 0.512],
+         'POPG': [0.4081, 0.2044, 0.2578, 0.6411, 0.512],
+         'all': [1, 1, 1, 1, 1]},
+        {'POPE': [0.065, 0.1207, 0.2589, 0.0497, 0.0065],
+         'POPG': [0.065, 0.1207, 0.2589, 0.0497, 0.0065],
+         'all': [1, 1, 1, 1, 1]}
+    ]
+
+    near_prot_mean = [
+        {'POPE': 4.4, 'POPG': 0, 'all': 4.4},
+        {'POPE': 9.2, 'POPG': 5.2, 'all': 14.4},
+    ]
+    near_prot_sd = [
+        {'POPE': 1.8547, 'POPG': 0,      'all': 1.8547},
+        {'POPE': 1.4697, 'POPG': 1.3266, 'all': 1.3565},
+    ]
+    frac_mean = [
+        {'POPE': 1,      'POPG': 0,      'all': 1},
+        {'POPE': 0.6394, 'POPG': 0.3606, 'all': 1},
+    ]
+    frac_sd = [
+        {'POPE': 0,      'POPG': 0,      'all': 0},
+        {'POPE': 0.0888, 'POPG': 0.0888, 'all': 0},
+    ]
+    dei_mean = [
+        {'POPE': 1.2478, 'POPG': 0,      'all': 1},
+        {'POPE': 0.7993, 'POPG': 1.8029, 'all': 1},
+    ]
+    dei_median = [
+        {'POPE': 1.2478, 'POPG': 0,      'all': 1},
+        {'POPE': 0.7813, 'POPG': 1.875, 'all': 1},
+    ]
+    dei_sd = [
+        {'POPE': 0,      'POPG': 0,      'all': 0},
+        {'POPE': 0.1109, 'POPG': 0.4438, 'all': 0},
+    ]
+    dei_all_p = [
+        {'POPE': 0.4289, 'POPG': 0.0722, 'all': 1},
+        {'POPE': 0.4349, 'POPG': 0.1780, 'all': 1},
+    ]
+
+
+class TestLipidEnrichmentMemProtBinomial(TestLipidEnrichmentMemProtGaussian):
+    distribution = 'binomial'
+
+    near_prot_mean = [
+        {'POPE': 4.4, 'POPG': 0, 'all': 4.4},
+        {'POPE': 9.2, 'POPG': 5.2, 'all': 14.4},
+    ]
+    near_prot_sd = [
+        {'POPE': 1.8547, 'POPG': 0,      'all': 1.8547},
+        {'POPE': 1.4697, 'POPG': 1.3266, 'all': 1.3565},
+    ]
+    frac_mean = [
+        {'POPE': 1,      'POPG': 0,      'all': 1},
+        {'POPE': 0.6389, 'POPG': 0.3611, 'all': 1},
+    ]
+    frac_sd = [
+        {'POPE': 0,      'POPG': 0,      'all': 0},
+        {'POPE': 0.0556, 'POPG': 0.0556, 'all': 0},
+    ]
+    dei_mean = [
+        {'POPE': 1.2548, 'POPG': 0,      'all': 1},
+        {'POPE': 0.8031, 'POPG': 1.8794, 'all': 1},
+    ]
+    dei_median = [
+        {'POPE': 1.2478, 'POPG': 0,      'all': 1},
+        {'POPE': 0.7986, 'POPG': 1.8056, 'all': 1},
+    ]
+    dei_sd = [
+        {'POPE': 0.1335, 'POPG': 0,      'all': 0},
+        {'POPE': 0.0857, 'POPG': 0.5428, 'all': 0},
+    ]
+    dei_all_p = [
+        {'POPE': 0.6749, 'POPG': 0.0077, 'all': 1},
+        {'POPE': 0.1873, 'POPG': 0.1062, 'all': 1},
+    ]

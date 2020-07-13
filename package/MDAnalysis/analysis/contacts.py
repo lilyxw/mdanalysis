@@ -374,6 +374,7 @@ class Contacts(AnalysisBase):
         added ``pbc`` attribute to calculate distances using PBC.
 
     """
+
     def __init__(self, u, select, refgroup, method="hard_cut", radius=4.5,
                  pbc=True, kwargs=None, **basekwargs):
         """
@@ -417,7 +418,8 @@ class Contacts(AnalysisBase):
         elif method == 'soft_cut':
             self.fraction_contacts = soft_cut_q
         elif method == 'radius_cut':
-            self.fraction_contacts = functools.partial(radius_cut_q, radius=radius)
+            self.fraction_contacts = functools.partial(
+                radius_cut_q, radius=radius)
         else:
             if not callable(method):
                 raise ValueError("method has to be callable")
@@ -427,12 +429,12 @@ class Contacts(AnalysisBase):
         self.grA = u.select_atoms(select[0])
         self.grB = u.select_atoms(select[1])
         self.pbc = pbc
-        
+
         # contacts formed in reference
         self.r0 = []
         self.initial_contacts = []
 
-        #get dimension of box if pbc set to True
+        # get dimension of box if pbc set to True
         if self.pbc:
             self._get_box = lambda ts: ts.dimensions
         else:
@@ -441,25 +443,26 @@ class Contacts(AnalysisBase):
         if isinstance(refgroup[0], AtomGroup):
             refA, refB = refgroup
             self.r0.append(distance_array(refA.positions, refB.positions,
-                                            box=self._get_box(refA.universe)))
+                                          box=self._get_box(refA.universe)))
             self.initial_contacts.append(contact_matrix(self.r0[-1], radius))
 
         else:
             for refA, refB in refgroup:
                 self.r0.append(distance_array(refA.positions, refB.positions,
-                                                box=self._get_box(refA.universe)))
-                self.initial_contacts.append(contact_matrix(self.r0[-1], radius))
+                                              box=self._get_box(refA.universe)))
+                self.initial_contacts.append(
+                    contact_matrix(self.r0[-1], radius))
 
     def _prepare(self):
         self.timeseries = np.empty((self.n_frames, len(self.r0)+1))
 
     def _single_frame(self):
         self.timeseries[self._frame_index][0] = self._ts.frame
-        
+
         # compute distance array for a frame
         d = distance_array(self.grA.positions, self.grB.positions,
-                            box=self._get_box(self._ts))
-        
+                           box=self._get_box(self._ts))
+
         for i, (initial_contacts, r0) in enumerate(zip(self.initial_contacts,
                                                        self.r0), 1):
             # select only the contacts that were formed in the reference state
@@ -496,7 +499,7 @@ def q1q2(u, select='all', radius=4.5):
     contacts : :class:`Contacts`
         Contact Analysis that is set up for a q1-q2 analysis
 
-    
+
     .. versionchanged:: 1.0.0
        Changed `selection` keyword to `select`
        Support for setting ``start``, ``stop``, and ``step`` has been removed.

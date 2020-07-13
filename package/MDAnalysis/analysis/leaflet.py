@@ -23,13 +23,34 @@
 
 
 """
-Leaflet identification --- :mod:`MDAnalysis.analysis.leaflet`
-==============================================================
+Leaflet analysis --- :mod:`MDAnalysis.analysis.leaflet`
+=======================================================
 
-This module implements the *LeafletFinder* algorithm, described in
-[Michaud-Agrawal2011]_. It can identify the lipids in a bilayer of
-arbitrary shape and topology, including planar and undulating bilayers
-under periodic boundary conditions or vesicles.
+This module implements leaflet-based lipid analysis.
+
+Finding leaflets
+----------------
+
+:class:`~MDAnalysis.analysis.leaflet.LeafletFinder` implements three
+algorithms:
+
+* the *LeafletFinder* algorithm, described in
+  [Michaud-Agrawal2011]_. It can identify the lipids in a bilayer of
+  arbitrary shape and topology, including planar and undulating bilayers
+  under periodic boundary conditions or vesicles. It follows the
+  algorithm below (for further details see [Michaud-Agrawal2011]_.)
+
+    1. build a graph of all phosphate distances < cutoff
+    2. identify the largest connected subgraphs
+    3. analyse first and second largest graph, which correspond to the leaflets
+
+* the spectral clustering algorithm. This clusters lipids by headgroups
+  into the number of clusters specified by the user, according to
+  pairwise distance.
+
+* partitioning lipids by how close they are to a *known* center of
+  geometry. This is *not recommended* unless the leaflets are planar
+  and well-defined. It will not work well on vesicles.
 
 One can use this information to identify
 
@@ -49,14 +70,83 @@ algorithm.
 .. _MDAnalysisCookbook: https://github.com/MDAnalysis/MDAnalysisCookbook/tree/master/examples
 
 
-Algorithm
----------
+Calculating lipid enrichment
+----------------------------
 
-1. build a graph of all phosphate distances < cutoff
-2. identify the largest connected subgraphs
-3. analyse first and second largest graph, which correspond to the leaflets
+The lipid environment around a protein can be enriched or depleted in certain
+lipid species, relative to the proportions of these species in the entire
+membrane. One metric to quantify this is with a lipid depletion-enrichment
+index, or DEI.
 
-For further details see [Michaud-Agrawal2011]_.
+:class:`~MDAnalysis.analysis.leaflet.LipidEnrichment` implements a number of
+options to calculate a DEI:
+
+* the original method of [Corradi2018]_
+  (``distribution='gaussian', buffer=0``).
+  This uses a hard distance cut-off to determine membership in the
+  lipid shell around the protein; fits the array of DEIs of each frame
+  to a Gaussian distribution; and uses a two-tailed T-test to
+  calculate p-values. This means that the mean and SD of the DEI is
+  calculated directly from frame-by-frame DEI values. The mean is the
+  arithmetic mean and the variance is the average of squared deviations
+  from the mean.
+
+* fitting a binomial distribution (``distribution='binomial'``).
+  The number of lipids present around a protein more accurately follows
+  a hypergeometric distribution with :math:`k` lipids of a species around
+  the protein, :math:`K` specific lipids in the leaflet, :math:`n` total
+  lipids around the protein, and :math:`N` total lipids in the leaflet:
+
+  .. math::
+    p = \frac{K}/{N}
+    \text{Pr}(k; n, p) = \binom{n}{k} p^k (1-p)^{n-k}
+
+  The convolution of the hypergeometric distributions in each frame is
+  non-trivial, so instead this method approximates a trajectory of
+  samples as a convolution of binomial distributions. This is itself
+  a binomial:
+
+  .. math::
+
+    \sum^n_{i=1} B(n_i, p) ~ B(\sum^n{i=1} n_i, p) \ 0 < p < 1
+
+  The mean and SD DEI for the overall trajectory is then calculated
+  from the log-normal distribution that arises from the ratio of two
+  binomial distributions :math:`T = X/Y`, where :math:`X` is the
+  binomial distribution of lipids found around the protein, and
+  :math:`Y` is the binomial distribution of the null hypothesis. The
+  p-value is calculated from :math:`Y`.
+
+  Edge cases are handled in the following ways:
+
+  * :math:`p_{i}=0`: the lipid is totally depleted and never around
+    the protein. Mean DEI = 0; SD = 0; Median = 0; p-value calculated
+    as normal.
+  * :math:`p_{0}=0`: there is none of this lipid species in the leaflet.
+    In this case :math:`p_{i}=0` must also be true. Mean DEI = 1; SD = 0;
+    Median = 1; p-value = 1
+  * :math:`p_{0}=1`: the leaflet is comprised entirely of this lipid species.
+    In this case :math:`p_{i}=1` must also be true. Mean DEI = 1; SD = 0;
+    Median = 1; p-value = 1
+
+* using a soft cutoff (``cutoff>0, buffer>0``).
+  Using a hard-cutoff may result in extreme DEI values for lipid species
+  with low concentration in the leaflet, or miss near-contact events,
+  especially in short trajectories with sampling. Add a buffer to your
+  ``cutoff`` to add fractional values for near-contact events.
+  This follows a normal distribution, where the standard deviation is set
+  such that 99.7% (3 sigma) of the probability distribution is contained
+  within the buffer.
+
+  In this case, we are no longer working with discrete events.
+  If ``distribution='binomial'`` is selected, the class will use a continuous
+  approximation of the hypergeometric distribution to compute frame-by-frame
+  p-values (using the gamma function for factorials). 
+  If ``distribution='gaussian'``, there is no change.
+
+* using a soft potential (``cutoff=0, buffer>0``)
+  You can choose to use a soft potential entirely by simply setting the
+  hard cutoff region to 0. 
 
 
 Classes and Functions
@@ -317,6 +407,17 @@ def optimize_cutoff(universe, select, dmin=10.0, dmax=20.0, step=0.5,
     return results[0]  # (cutoff,N) with N>1 and shortest cutoff
 
 
+def binomial_gamma(top, bottom):
+    try:
+        from scipy.special import gamma
+    except ImportError:
+        raise ImportError("scipy is needed for this analysis but "
+                          "is not installed. Please install with "
+                          "`conda install scipy` or "
+                          "`pip install scipy`") from None
+    return gamma(top+1) / (gamma(bottom+1) * gamma(top-bottom+1))
+
+
 class LipidEnrichment(AnalysisBase):
     r"""Calculate the lipid depletion-enrichment index around a protein
     by leaflet.
@@ -350,8 +451,10 @@ class LipidEnrichment(AnalysisBase):
         protein: :math:`\frac{n(x_{(L, r)})}{n(x_r)}`
     * 'Enrichment': the depletion-enrichment index.
 
-    This algorithm was obtained from [Corradi2018]_. Please cite them if you
+    This metric was obtained from [Corradi2018]_. Please cite them if you
     use this analysis in published work.
+
+    There are
 
     .. note::
 
@@ -378,7 +481,7 @@ class LipidEnrichment(AnalysisBase):
         each lipid species is computed individually. However, any topology
         attribute can be used. For example, you could add a new attribute
         describing tail saturation.
-    enrichment_cutoff: float (optional)
+    cutoff: float (optional)
         Cutoff in ångström
     delta: float (optional)
         Leaflets are determined via spectral clustering on a similarity matrix.
@@ -388,7 +491,7 @@ class LipidEnrichment(AnalysisBase):
         leaflets are incorrect, try finetuning the `delta` value.
     compute_headgroup_only: bool (optional)
         By default this analysis only uses distance from the lipid headgroup
-        to determine whether a lipid is within the `enrichment_cutoff`
+        to determine whether a lipid is within the `cutoff`
         distance from the protein. This choice was made to save computation.
         Compute the distance from every atom by toggling this option off.
     **kwargs
@@ -438,12 +541,14 @@ class LipidEnrichment(AnalysisBase):
                  select_residues: str = 'all',
                  select_headgroup: str = 'name PO4',
                  n_leaflets: int = 2, count_by_attr: str = 'resnames',
-                 enrichment_cutoff: float = 6, pbc: bool = True,
+                 cutoff: float = 6, pbc: bool = True,
                  compute_headgroup_only: bool = True,
                  update_leaflet_step: int = 1,
                  group_method: str = "spectralclustering",
                  update_method: str = None, group_kwargs: dict = {},
-                 update_kwargs: dict = {}, **kwargs):
+                 update_kwargs: dict = {}, distribution: str = "binomial",
+                 compute_p_value: bool = False,
+                 buffer: float = 0, beta: float = 5, **kwargs):
         super(LipidEnrichment, self).__init__(universe.universe.trajectory,
                                               **kwargs)
         if n_leaflets < 1:
@@ -476,6 +581,26 @@ class LipidEnrichment(AnalysisBase):
         self.group_kwargs = group_kwargs
         self.update_leaflet_step = update_leaflet_step
 
+        distribution = distribution.lower()
+        if distribution == "binomial":
+            self._fit_distribution = self._fit_binomial
+        elif distribution == "gaussian":
+            self._fit_distribution = self._fit_gaussian
+        else:
+            raise ValueError("`distribution` should be either "
+                             "'binomial' or 'gaussian'")
+
+        self.compute_p_value = compute_p_value
+
+        if self.compute_p_value:  # look for scipy once
+            try:
+                import scipy.stats
+            except ImportError:
+                raise ImportError("scipy is needed for this analysis but "
+                                  "is not installed. Please install with "
+                                  "`conda install scipy` or "
+                                  "`pip install scipy`") from None
+
         self.pbc = pbc
         self.box = universe.dimensions if pbc else None
         self.protein = universe.select_atoms(select_protein)
@@ -491,7 +616,9 @@ class LipidEnrichment(AnalysisBase):
         else:
             self._residue_groups = self.residues
             self._compute_atoms = self.residues.atoms
-        self.cutoff = enrichment_cutoff
+        self.cutoff = cutoff
+        self.buffer = buffer
+        self.beta = beta
         self.leaflets = []
         self.leaflets_summary = []
 
@@ -500,7 +627,12 @@ class LipidEnrichment(AnalysisBase):
         self.attrname = _TOPOLOGY_ATTRS[attrname].attrname
 
     def _prepare(self):
+        # in case of change + re-run
+        self.mid_buffer = self.buffer / 2.0
+        self.max_cutoff = self.cutoff + self.buffer
         self.ids = np.unique(getattr(self.residues, self.attrname))
+
+        # results
         self.near_counts = np.zeros((self.n_leaflets, len(self.ids),
                                      self.n_frames))
         self.residue_counts = np.zeros((self.n_leaflets, len(self.ids),
@@ -522,16 +654,51 @@ class LipidEnrichment(AnalysisBase):
 
         hcom = self._compute_atoms.center_of_geometry(compound="residues")
         pairs = distances.capped_distance(self.protein.positions, hcom,
-                                          self.cutoff, box=self.box,
+                                          self.max_cutoff, box=self.box,
                                           return_distances=False)
         if pairs.size > 0:
             indices = np.sort(pairs[:, 1])
-            indices = np.unique(indices)
+            # indices = np.unique(indices)
         else:
             indices = []
 
-        resix = self._resindices[indices]
+        hcom2 = hcom[indices]
+        if len(indices) and self.buffer:
+            # compute soft cutoff values
+            pairs2, dist = distances.capped_distance(self.protein.positions,
+                                                     hcom2, self.max_cutoff,
+                                                     min_cutoff=self.cutoff,
+                                                     box=self.box,
+                                                     return_distances=True)
+            if pairs2.size > 0:
+                _ix = np.argsort(pairs2[:, 1])
+                indices2 = pairs2[_ix]
+                # indices2 = np.unique(indices)
+                dist = dist[_ix] - self.cutoff - self.mid_buffer
 
+                # logistic function
+                resix2 = self._resindices[indices2]
+                for i, leaf in enumerate(self._current_leaflets):
+                    ids = self._current_ids[i]
+                    match, rix, lix = np.intersect1d(resix2, leaf.resindices,
+                                                     assume_unique=True,
+                                                     return_indices=True)
+                    subdist = dist[rix]
+                    subids = ids[lix]
+                    for j, x in enumerate(self.ids):
+                        mask = (subids == x)
+                        xdist = subdist[mask]
+                        sigma = (self.buffer / 2) / 3  # 99.7%
+                        exp = np.exp(-0.5 * ((xdist/sigma) ** 2))
+                        n = 1 / (sigma * np.sqrt(2*np.pi) * exp)
+                        self.near_counts[i, j, self._frame_index] += n
+            else:
+                indices2 = []
+
+            # don't double count
+            indices = [x for x in indices if x not in indices2]
+
+        resix = self._resindices[indices]
         for i, leaf in enumerate(self._current_leaflets):
             ids = self._current_ids[i]
             _, ix1, ix2 = np.intersect1d(resix, leaf.resindices,
@@ -540,44 +707,204 @@ class LipidEnrichment(AnalysisBase):
             self.total_counts[i, self._frame_index] = len(ix1)
             subids = ids[ix2]
             for j, x in enumerate(self.ids):
-                self.residue_counts[i, j, self._frame_index] = sum(ids == x)
-                self.near_counts[i, j, self._frame_index] = sum(subids == x)
+                self.residue_counts[i, j, self._frame_index] += sum(ids == x)
+                self.near_counts[i, j, self._frame_index] += sum(subids == x)
+
+    def _fit_gaussian(self, data):
+        """Treat each frame as an independent observation in a gaussian
+        distribution.
+
+        Appears to be original method of [Corradi2018]_.
+
+        .. note::
+
+            The enrichment p-value is calculated from a two-tailed
+            sample T-test, following [Corradi2018]_.
+
+        """
+        near = data['Near protein']
+        frac = data['Fraction near protein']
+        dei = data['Enrichment']
+        summary = {
+            'Average near protein': near.mean(),
+            'SD near protein': near.std(),
+            'Average fraction near protein': frac.mean(),
+            'SD fraction near protein': frac.std(),
+            'Average enrichment': dei.mean(),
+            'Median enrichment': np.median(dei),
+            'SD enrichment': dei.std()
+        }
+        if self.compute_p_value:
+            # sample T-test, 2-tailed
+            t, p = scipy.stats.ttest_1samp(dei, 1)
+            summary['Enrichment p-value'] = p
+
+        return summary
+
+    def _compute_p_ttest(self, dei, *args):
+        # sample T-test, 2-tailed
+        t, p = scipy.stats.ttest_1samp(dei, 1)
+        return p
+
+    def _compute_p_hypergeom(self, dei, k, N, K, n):
+        return scipy.stats.hypergeom.pmf(k, N, K, n)
+
+    def _compute_p_hypergeom_gamma(self, dei, k, N, K, n):
+        K_k = binomial_gamma(K, k)
+        N_k = binomial_gamma(N - K, n - k)
+        N_n = binomial_gamma(N, n)
+        return K_k * N_k / N_n
+
+    def _compute_p_gaussian(self, dei, k, N, K, n):
+        sigma = (K/N) / 3
+        return scipy.stats.norm.pdf(k/n, K/N, sigma)
+
+    def _fit_binomial(self, data: dict, n_near_species: np.ndarray,
+                      n_near: np.ndarray, n_species: np.ndarray,
+                      n_all: np.ndarray, n_near_tot: int, n_all_tot: int):
+        """
+        This function computes the following approximate probability
+        distributions and derives statistics accordingly.
+
+        * The number of lipids near the protein is represented as a
+        normal distribution.
+        * The fraction of lipids near the protein follows a
+        hypergeometric distribution.
+        * The enrichment is represented as the log-normal distribution
+        derived from the ratio of two binomial convolutions of the
+        frame-by-frame binomial distributions.
+
+        All these approximations assume that each frame or observation is
+        independent. The binomial approximation assumes that:
+
+        * the number of the lipid species near the protein is
+        small compared to the total number of that lipid species
+        * the total number of all lipids is large
+        * the fraction (n_species / n_all) is not close to 0 or 1.
+
+        .. note::
+
+            The enrichment p-value is calculated from the log-normal
+            distribution of the null hypothesis: that the average
+            enrichment is representative of the ratio of
+            n_species : n_all
+
+        """
+
+        summary = {}
+        p_time = data['Fraction near protein']
+        if n_near_tot:  # catch zeros
+            p_real = n_near_species.sum() / n_near_tot
+        else:
+            p_real = 0
+        if n_all_tot:
+            p_exp = n_species.sum() / n_all_tot
+        else:
+            p_exp = 0
+
+        # n events: assume normal
+        summary['Average near protein'] = n_near_species.mean()
+        summary['SD near protein'] = n_near_species.std()
+
+        # actually hypergeometric, but binomials are easier
+        # X ~ B(n_near_tot, p_real)
+        summary['Average fraction near protein'] = p_real
+        s2 = np.mean((p_time - p_real) ** 2)
+        var_frac = ((p_real * (1-p_real)) - s2) * n_near_tot
+        summary['SD fraction near protein'] = (var_frac ** 0.5) / n_near_tot
+
+        # Now compute ratio of binomials
+        # Let X ~ B(n, p_real),  Y ~ B(n, p_exp), T = (X/Y)
+        # log T is approx. normally distributed. T is log-normal distribution
+        # FIRST catch edge cases where this is not suitable
+        if p_exp == 0:  # trivial case
+            summary['Average enrichment'] = 1  # 0 / 0
+            summary['SD enrichment'] = 0
+            summary['Median enrichment'] = 1
+            if self.compute_p_value:
+                summary['Enrichment p-value'] = 1
+            return summary
+
+        if p_real == 0:  # totally depleted
+            summary['Average enrichment'] = 0
+            summary['SD enrichment'] = 0
+            summary['Median enrichment'] = 0
+            if self.compute_p_value:
+                # X ~ B(n, p_exp)(0)
+                p = scipy.stats.binom.pmf(0, n_near_tot, p_exp)
+                summary['Enrichment p-value'] = p
+            return summary
+
+        if p_exp == 1:  # totally this thing
+            summary['Average enrichment'] = 1  # 1 / 1
+            summary['SD enrichment'] = 0
+            summary['Median enrichment'] = 1
+            if self.compute_p_value:
+                summary['Enrichment p-value'] = 1
+            return summary
+
+        mean_logT = np.log(p_real / p_exp)
+        var_logT = ((1/p_real) + (1/p_exp) - 2) / n_near_tot
+        summary['Average enrichment'] = np.exp(mean_logT + (var_logT/2))
+        var_enr = (np.exp(var_logT) - 1) * np.exp(2*mean_logT + var_logT)
+        summary['SD enrichment'] = var_enr ** 0.5
+        summary['Median enrichment'] = p_real / p_exp
+        if self.compute_p_value:
+            v_logT_ = 2 * (1/p_exp - 1) / n_near_tot
+            s = v_logT_ ** 0.5  # sd
+            avg = summary['Average enrichment']
+            summary['Enrichment p-value'] = scipy.stats.lognorm.pdf(avg, s)
+        return summary
+
+    def _collate(self, n_near_species: np.ndarray, n_near: np.ndarray,
+                 n_species: np.ndarray, n_all: np.ndarray,
+                 n_near_tot: int, n_all_tot: int):
+        data = {}
+        data['Near protein'] = n_near_species
+        frac = np.nan_to_num(n_near_species / n_near, nan=0.0)
+        data['Fraction near protein'] = frac
+        data['Total number'] = n_species
+        n_total = np.nan_to_num(n_species / n_all, nan=0.0)
+        data['Fraction total'] = n_total
+        data['Enrichment'] = dei = np.nan_to_num(frac / n_total, nan=0.0)
+        if self.compute_p_value:
+            pval = np.zeros(len(frac))
+            for i, args in enumerate(zip(dei, n_near_species, n_all,
+                                         n_species, n_near_species)):
+                pval[i] = self._compute_p(*args)
+            data['Enrichment p-value'] = pval
+
+        summary = self._fit_distribution(data, n_near_species, n_near,
+                                         n_species, n_all, n_near_tot,
+                                         n_all_tot)
+        return data, summary
 
     def _conclude(self):
+        self.leaflets = []
+        self.leaflets_summary = []
+
         for i in range(self.n_leaflets):
-            leaf = {}
+            timeseries = {}
             summary = {}
             res_counts = self.residue_counts[i]
             near_counts = self.near_counts[i]
-            all_lipids = {}
-            all_lipids_sum = {}
-            all_lipids['Near protein'] = nc_all = near_counts.sum(axis=0)
-            all_lipids['Total number'] = tc_all = res_counts.sum(axis=0)
-            all_lipids_sum['Total near protein'] = nc_all.sum()
-            all_lipids_sum['Average near protein'] = avgall = nc_all.mean()
-            all_lipids_sum['Total number'] = all_total = res_counts.sum()
-            all_lipids_sum['SD near protein'] = nc_all.std()
 
+            near_all = near_counts.sum(axis=0)
+            total_all = res_counts.sum(axis=0)
+            n_near_tot = near_all.sum()
+            n_all_tot = total_all.sum()
+            d, s = self._collate(near_all, near_all, total_all,
+                                 total_all, n_near_tot, n_all_tot)
+            timeseries['all'] = d
+            summary['all'] = s
             for j, resname in enumerate(self.ids):
-                results = {}
-                results_sum = {}
-                results['Near protein'] = nc = near_counts[j]
-                results_sum['Average near protein'] = avg = nc.mean()
-                results_sum['Total number'] = total = res_counts[j]
-                results_sum['SD near protein'] = nc.std()
-                results['Fraction near protein'] = frac = nc / nc_all
-                avg_frac = avg / avgall
-                results_sum['Average fraction near protein'] = avg_frac
-                results_sum['SD fraction near protein'] = frac.std()
-                results['Enrichment'] = frac / (total / tc_all)
-                denom = total.sum() / all_total
-                results_sum['Average enrichment'] = avg_frac / denom
-                results_sum['SD enrichment'] = (frac / denom).std()
-                leaf[resname] = results
-                summary[resname] = results_sum
-            leaf['all'] = all_lipids
-            summary['all'] = all_lipids_sum
-            self.leaflets.append(leaf)
+                near_species = near_counts[j]
+                total_species = res_counts[j]
+                d, s = self._collate(near_species, near_all, total_species,
+                                     total_all, n_near_tot, n_all_tot)
+                timeseries[resname] = d
+                summary[resname] = s
+            self.leaflets.append(timeseries)
             self.leaflets_summary.append(summary)
 
     def _update_leafletfinder(self, method="spectralclustering", kwargs={}):
