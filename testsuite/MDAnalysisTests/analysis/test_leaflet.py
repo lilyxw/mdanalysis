@@ -214,6 +214,7 @@ class TestLeafletFinderBySC(BaseTestLeafletFinderMartini):
 
 class TestLeafletFinderByOrientation(BaseTestLeafletFinderMartini):
     method = "orientation"
+    kwargs = {"resort_cog": True}
 
 
 class TestLeafletFinderByCOG(BaseTestLeafletFinderMartini):
@@ -245,6 +246,7 @@ class TestLFMemProtGraph(BaseTestLFMemProt):
 
 class TestLFMemProtOrientation(BaseTestLFMemProt):
     method = "orientation"
+    kwargs = {"resort_cog": True}
 
 
 @skip_spectralclustering

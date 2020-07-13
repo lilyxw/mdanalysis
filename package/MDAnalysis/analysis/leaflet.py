@@ -291,7 +291,6 @@ class LeafletFinder(object):
             hgs = [x[1] for x in hgs_]
             positions = [lipid_orientation(hg.residues[0], hg) for hg in hgs]
             self.positions = np.array(positions)
-            resort_cog = True
         else:
             self.method = method
 
