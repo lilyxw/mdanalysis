@@ -126,8 +126,7 @@ def lipid_orientation(residue, headgroup, pbc=True):
         xyz = lib.distances.apply_PBC(xyz, atoms.dimensions)  # unwrap
     vec = xyz - cog  # direction vectors
     vdot = np.einsum('ij,jk->ik', vec, vec.T)  # dot matrix
-    ix = np.argsort(np.diag(vdot))  # sort by distance from cog
-    mostly_acute = (vdot[ix] >= 0).sum(axis=0) > (len(vec)/2)
+    mostly_acute = (vdot >= 0).sum(axis=0) > (len(vec)/2)
     if len(mostly_acute) == 0:
         raise ValueError("Could not find lipid direction; "
                          "tail could not be determined by vector "
