@@ -66,15 +66,15 @@ def test_optimize_cutoff(martini_universe):
 
 
 @pytest.mark.parametrize('n,sel,vec', [
-    (0, "name PO4", [ -0.4729897,   5.5480019, -10.0399998]),
+    (0, "name PO4", [-0.5472627,  4.8972744, -8.8254544]),
     (180, "name ROH", [-0.0157176,  3.7500022, -6.7571378])
 ])
 def test_orientation(martini_universe, n, sel, vec):
     # vectors checked by visual validation "does this look about right"
     res = martini_universe.residues[n]
     headgroup = res.atoms.select_atoms(sel)
-    orientation = lipid_orientation(res, headgroup, pbc=True)
-    assert_almost_equal(orientation, vec)
+    orientation = lipid_orientation(headgroup)
+    assert_almost_equal(orientation, vec, decimal=5)
 
 
 class BaseTestLeafletFinder(object):

@@ -324,19 +324,20 @@ def group_coordinates_by_cog(coordinates, centers=[], box=None,
     """
     coordinates = coordinates.astype(np.float64)
     centers = np.asarray(centers)
-    dist = distance_array(coordinates, centers, box=box)
+    dist_ = distance_array(coordinates, centers, box=box)
     indices = np.arange(len(coordinates))
     cluster_i = np.argmin(dist, axis=1)
     ix = np.argsort(cluster_i)
     groups = np.split(indices[ix], np.where(np.ediff1d(cluster_i[ix]))[0]+1)
     groups = [np.sort(x) for x in groups]
     if return_predictor:
-        return (groups, dist)
+        return (groups, dist_)
     return groups
 
 
 def group_coordinates_by_graph(coordinates, cutoff=15.0, box=None,
-                               sparse=None, return_predictor=False):
+                               sparse=None, return_predictor=False,
+                               **kwargs):
     """Cluster coordinates into groups using an adjacency matrix
 
     If the optional argument `box` is supplied, the minimum image convention
@@ -378,6 +379,7 @@ def group_coordinates_by_graph(coordinates, cutoff=15.0, box=None,
                           "`conda install networkx` or "
                           "`pip install networkx`.") from None
     returntype = "numpy" if not sparse else "sparse"
+    coordinates = np.asarray(coordinates).astype(np.float32)
     try:
         adj = contact_matrix(coordinates, cutoff=cutoff, box=box,
                              returntype=returntype)
@@ -401,19 +403,47 @@ def group_coordinates_by_graph(coordinates, cutoff=15.0, box=None,
         return groups
 
 
-def group_vectors_by_orientation(vectors, n_groups=2,
-                                 return_predictor=False, **kwargs):
-    """Group vectors into groups by angles to first vector
+def group_coordinates_by_normal(coordinates, orientations,
+                                n_groups=2, cutoff=15.0, box=None,
+                                **kwargs):
+    pairs, dists = capped_distance(coordinates, coordinates,
+                                   cutoff, box=box, return_distances=True)
+    vectors = np.asarray(orientations)
+    mags = np.einsum('ij,ij,kl,kl->ik', vectors, vectors, vectors, vectors)
+    angles = np.dot(vectors, vectors.T) / (mags ** 0.5)
+
+    ix = np.sort(pairs[:, 0])
+    pairs = pairs[ix]
+    dists = dists[ix]
+    splix = np.where(np.ediff1d(pairs[:, 0]))[0] + 1
+    plist = np.split(pairs)
+    dlist = np.split(dists)
+
+    for p, d in zip(plist, dlist):
+        if len(p) == 1:  # self to self
+            continue
+        i = p[0, 0]
+        js = p[:, 1]
+        similar = angles[i, js] < 0
+        coords = coordinates[js][similar]
+        origin = coordinates[i][similar]
+        
+
+
+def group_vectors_by_orientation(coordinates, orientations,
+                                 return_predictor=False, n_groups=2,
+                                 cutoff=15.0, box=None, **kwargs):
+    """Group vectors into 2 groups by angles to first vector
 
     If the optional argument `box` is supplied, the minimum image convention
     is applied when calculating distances.
 
     Parameters
     ----------
-    coordinates: numpy.ndarray
+    vectors: numpy.ndarray
         Coordinate array with shape ``(n, 3)``
     n_groups: int (optional)
-        Number of resulting groups. This is not tested for n_groups != 2.
+        Number of resulting groups. It is not tested n_groups != 2.
     return_predictor: bool (optional)
         whether to return the angles
     **kwargs:
@@ -429,18 +459,139 @@ def group_vectors_by_orientation(vectors, n_groups=2,
         k-th entry in ``coordinates`` is in cluster ``i``.
         The groups are sorted by size.
 
-    angles: :class:`numpy.ndarry` (optional)
+    angles: :class:`numpy.ndarray` (optional)
         Array of angles to the first vector
     """
-    indices = np.arange(len(vectors))
-    vectors = np.asarray(vectors)
-    vdot = np.einsum('ij,jk->ik', vectors, vectors.T)
-    ix = np.argsort(vdot[0])[::-1]  # angle to first vector
-    vdot = vdot[ix]
-    indices = indices[ix]
-    bins = np.linspace(-1, 1, num=n_groups+1)[::-1]
-    splix = np.searchsorted(vdot[0], bins, side='left')
-    groups = np.split(indices, splix[1:-1], axis=0)
+    vectors = np.asarray(orientations)
+    coordinates = np.asarray(coordinates)
+
+    # first merge by similar neighbours
+    norm = np.linalg.norm(vectors, axis=1)
+    angles = np.dot(vectors, vectors.T) / np.outer(norm, norm.T)
+    pairs, dists = capped_distance(coordinates, coordinates,
+                                   cutoff, box=box, return_distances=True)
+    splix = np.where(np.ediff1d(pairs[:, 0]))[0] + 1
+    plist = np.split(pairs, splix)
+    dlist = np.split(dists, splix)
+    groups_ = np.arange(len(orientations))
+
+    # first pass: merge similar groups
+    for p, d in zip(plist, dlist):
+    # for p, d in zip(plist, dlist):
+        i = p[0, 0]
+        js = p[:, 1]
+        similar = angles[i, js] > 0.2
+        dist_ix = np.argsort(d[similar])[:20]
+        ijs_ = np.unique(p[similar][dist_ix])
+        common = np.bincount(groups_[ijs_]).argmax()
+        groups_[ijs_] = common
+
+
+    # second pass: clean up
+    ids, counts = np.unique(groups_, return_counts=True)
+    
+    n_squash = len(ids) - n_groups
+    indices = [np.where(groups_ == i)[0] for i in ids[np.argsort(counts)]]
+
+    while n_squash != 0:
+        if n_squash > 0:
+            keep = indices[n_squash:]
+            ditch = indices[:n_squash]
+            groups_ = [list(x) for x in keep]
+
+            mean_cog = np.array([coordinates[x].mean(axis=0) for x in keep])
+            mean_orients = np.array([vectors[x].mean(axis=0) for x in keep])
+
+            # extra = np.concatenate(ditch)
+            # extra_vec = vectors[extra]
+            # extra_mag = np.einsum('ij,ij,kl,kl->ik', extra_vec, extra_vec,
+            #                     mean_orients, mean_orients, optimize='optimal')
+            # extra_angles = np.dot(extra_vec, mean_orients.T) / extra_mag
+
+            # extra_dots = np.einsum('ij,ij->i', extra_vec, extra_vec)
+            # for i, idx in enumerate(extra):
+            #     _vec = vectors[idx]
+            #     js = plist[idx][:, 1]
+            #     friends = [np.intersect1d(js, x, assume_unique=True) for x in keep]
+            #     f_orients = np.array([vectors[x].mean(axis=0) for x in friends])
+            #     extra_mags = np.einsum('ij,ij->i', f_orients, f_orients) * extra_dots[i]
+            #     extra_angles = np.dot(_vec, f_orients.T) / (extra_mags ** 0.5)
+            #     most = np.argmax([len(x) for x in friends])
+            #     closest = np.argmax(extra_angles)
+            #     if extra_angles[most] > 0 or closest == most:
+            #         groups_[most].append(idx)  # acute and max neighbours
+            #     else:
+            #         options = [most, closest]
+            #         dist_ = distance_array(_vec, mean_cog[options],
+            #                                box=box)
+            #         g = options[int(np.argmin(dist_) % 2 == 0)]
+            #         groups_[g].append(idx)
+
+            extra_vec = np.array([vectors[x].mean(axis=0) for x in ditch])
+            extra_mag = np.einsum('ij,ij,kl,kl->ik', extra_vec, extra_vec,
+                                mean_orients, mean_orients, optimize='optimal')
+            extra_angles = np.dot(extra_vec, mean_orients.T) / extra_mag
+
+            for i, ix_ in enumerate(ditch):
+                js = np.unique(np.concatenate([plist[i_][:, 1] for i_ in ix_]))
+                other = [np.intersect1d(js, x, assume_unique=True) for x in keep]
+                most = np.argmax([len(x) for x in other])
+                closest = np.argmax(extra_angles[i])
+                if extra_angles[i, most] > 0 or closest == most:
+                    groups_[most].extend(ix_)  # acute and max neighbours
+                else:
+                    extra_xyz = coordinates[ix_]
+                    options = [most, closest]
+                    dist_ = distance_array(extra_xyz, mean_cog[options],
+                                           box=box)
+                    g = options[int(np.argmin(dist_) % 2 == 0)]
+                    groups_[g].extend(ix_)
+
+            indices = [np.array(x) for x in groups_]
+
+        else:
+            # split leaflets out, largest first
+            ix = indices[-1]
+            n_ix_ = len(ix)
+            vectors_ = vectors[ix]
+            # first group by angle to first atom
+            vdot = np.dot(vectors_[0], vectors_.T)
+            vix = np.argsort(vdot)  # angle to first vector
+            vdot = vdot[vix]
+            ix_ = ix[vix]
+            splix = np.where(vdot >= 0)[0][0]
+            halves = np.split(ix_, [splix], axis=0)
+
+            if len(halves[0]) and len(halves[1]):
+                # re-group by anti/parallel
+                mean_orient = np.array([vectors[x].mean(axis=0) for x in halves])
+                mags = np.einsum('ij,ij,kl,kl->ik', vectors_, vectors_, 
+                                mean_orient, mean_orient, optimize='optimal')
+                angles_ = np.dot(vectors_, mean_orient.T) / (mags ** 0.5)
+                args = np.argmax(angles_, axis=1)
+                anti_groups = [ix_[np.where(args == i)[0]] for i in (0, 1)]
+                indices = indices[:-1] + anti_groups
+
+            else:
+                # re-group by distance. This is SLOW
+                coords_ = coordinates[ix]
+                mean_orient_ = vectors[ix].mean(axis=0)
+                cog = coords_.mean(axis=0)
+                lower = cog - mean_orient_/2
+                upper = cog + mean_orient_/2
+
+                options = np.array([lower, upper])
+                dist_ = distance_array(coords_, options, box=box)
+                min_dist = np.argmin(dist_, axis=1)
+                new_groups_ = [ix[np.where(min_dist == i)[0]] for i in (0, 1)]
+                indices = new_groups_ + indices[:-1]
+
+
+        # indices = sorted(indices, key=lambda x: len(x))
+        n_squash = len(indices) - n_groups
+
+    groups = sorted(indices, key=lambda x: len(x))
+
     if return_predictor:
-        return (groups, vdot[0])
+        return (groups, angles)
     return groups

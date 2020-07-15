@@ -86,7 +86,7 @@ Classes and Functions
 import numpy as np
 
 from ..core import groups
-from ..lib.mdamath import vector_of_best_fit
+from ..lib.mdamath import vector_of_best_fit, make_whole
 from .. import selections, lib
 from . import distances
 
@@ -99,18 +99,20 @@ due.cite(Doi("10.1002/jcc.21787"),
 del Doi
 
 
-def lipid_orientation(residue, headgroup, pbc=True):
+def lipid_orientation(headgroup, residue=None, unit=False, box=None):
     """Determine lipid orientation from headgroup.
 
     Parameters
     ----------
-    residue: Residue or AtomGroup
-        Lipid to determine orientation for.
-    headgroup: Atom or AtomGroup
+    headgroup: Atom or AtomGroup or numpy.ndarray
         Headgroup atom or atoms. The center of geometry is used
         as the origin.
-    pbc: bool (optional)
-        Whether to use PBC.
+    residue: Residue or AtomGroup (optional)
+        Residue atoms. If not given, this is taken as the first residue
+        of the headgroup atoms. Even if the residue is guessed correctly,
+        it is more efficient to provide as an argument if known.
+    unit: bool (optional)
+        Whether to return the unit vector
 
     Returns
     -------
@@ -119,23 +121,25 @@ def lipid_orientation(residue, headgroup, pbc=True):
     """
     if isinstance(headgroup, groups.Atom):
         headgroup = groups.AtomGroup([headgroup])
-    cog = headgroup.center_of_geometry(pbc=pbc)
-    atoms = sum([a for a in residue.atoms if a not in headgroup])
-    xyz = atoms.positions
-    if pbc and atoms.dimensions is not None:
-        xyz = lib.distances.apply_PBC(xyz, atoms.dimensions)  # unwrap
-    vec = xyz - cog  # direction vectors
-    vdot = np.einsum('ij,jk->ik', vec, vec.T)  # dot matrix
-    mostly_acute = (vdot >= 0).sum(axis=0) > (len(vec)/2)
-    if len(mostly_acute) == 0:
-        raise ValueError("Could not find lipid direction; "
-                         "tail could not be determined by vector "
-                         "from the headgroup")
-    # original method: svd for line of best fit.
-    # turns out just the mean is better for leaflet identification...
-    # keep = np.r_[[cog], xyz[ix][mostly_acute]]
-    # return vector_of_best_fit(keep)
-    return vec[mostly_acute].mean(axis=0)
+    try:
+        ra = residue.atoms
+    except AttributeError:
+        ra = headgroup.residues[0].atoms
+    n_hg = len(headgroup)
+    atoms = ra - headgroup
+    all_xyz = np.concatenate([headgroup.positions, atoms.positions])
+    if box is not None:  # slow.....
+        diff = all_xyz - all_xyz[0]
+        move = np.where(np.abs(diff) > box[:3] / 2)
+        all_xyz[move] -= box[move[1]] * np.sign(diff[move])
+    hg_xyz = all_xyz[:n_hg]
+    at_xyz = all_xyz[n_hg:]
+    cog_hg = hg_xyz.mean(axis=0)
+    cog_atoms = at_xyz.mean(axis=0)
+    vec = cog_atoms - cog_hg
+    if unit:
+        vec = vec / np.dot(vec, vec)
+    return vec
 
 
 class LeafletFinder(object):
@@ -171,7 +175,7 @@ class LeafletFinder(object):
     pbc : bool (optional)
         If ``False``, does not follow the minimum image convention when
         computing distances
-    method: str or function
+    method: str or function (optional)
         method to use to assign groups to leaflets. Choose
         "graph" for :func:`~distances.group_coordinates_by_graph`;
         "spectralclustering" for
@@ -184,10 +188,14 @@ class LeafletFinder(object):
         array of coordinates as the first argument, and *must*
         return either a list of numpy arrays (the ``components``
         attribute) or a tuple of (list of numpy arrays, predictor object).
+    calculate_orientations: bool (optional)
+        if your custom method requires the orientation vector of each lipid,
+        set ``calculate_orientations=True`` and an Nx3 array of orientation
+        vectors will get passed into your function with the keyword
+        ``orientation``. This is set to ``True`` for ``method="orientation"``.
     resort_cog: bool (optional)
         Whether to re-check leaflet membership by distance to
-        center-of-geometry after assigning. This is always on for
-        ``method="orientation"``.
+        center-of-geometry after assigning.
     **kwargs:
         Passed to ``method``
 
@@ -199,6 +207,8 @@ class LeafletFinder(object):
         Selection string
     selection: AtomGroup
         Atoms that the analysis is applied to
+    headgroups: List of AtomGroup
+        Atoms that the analysis is applied to, grouped by residue.
     pbc: bool
         Whether to use PBC or not
     box: numpy.ndarray or None
@@ -208,6 +218,11 @@ class LeafletFinder(object):
         ``method="graph"``; :class:`sklearn.cluster.SpectralClustering` for
         ``method="spectralclustering"``; or :class:`numpy.ndarray` for
         ``method="center_of_geometry"``.
+    positions: numpy.ndarray (N x 3)
+        Array of positions of headgroups to use. If your selection has
+        multiple atoms for each residue, this is the center of geometry.
+    orientations: numpy.ndarray (N x 3) or None
+        Array of orientation vectors calculated with ``lipid_orientation``.
     components: list of numpy.ndarray
         List of indices of atoms in each leaflet, corresponding to the
         order of `selection`. ``components[i]`` is the array of indices
@@ -265,15 +280,40 @@ class LeafletFinder(object):
        Changed `selection` keyword to `select`
     """
 
+    @staticmethod
+    def _unwrap(coord_list: list, box: np.ndarray,
+                centers: np.ndarray=None):
+        if centers is None:
+            centers = [x[0] for x in coord_list]
+        xyz = np.concatenate(coord_list)
+        n_xyz = np.cumsum([len(x) for x in coord_list[:-1]])
+        diff = np.concatenate([x - c for x, c in zip(coord_list, centers)])
+        move = np.where(np.abs(diff) > box[:3]/2)
+        xyz[move] -= box[move[1]] * np.sign(diff[move])
+        return np.split(xyz, n_xyz)
+
+
     def __init__(self, universe, select='all', cutoff=20.0, pbc=True,
-                 method="graph", resort_cog=False, **kwargs):
+                 method="graph", resort_cog=False,
+                 calculate_orientations=False, **kwargs):
         self.universe = universe.universe
         self.select = select
         self.selection = universe.select_atoms(select, periodic=pbc)
+        self.residues = self.selection.residues
+        self.headgroups = self.selection.split('residue')
         self.pbc = pbc
         self.cutoff = cutoff
         self.box = self.universe.dimensions if pbc else None
-        self.positions = self.selection.positions
+
+        # unwrap
+        if self.box is not None and len(self.selection) > len(self.residues):
+            hg_xyz = [a.positions.copy() for a in self.headgroups]
+            hgs = self._unwrap(hg_xyz, box=self.box)
+            self.positions = np.array([h.mean(axis=0) for h in hgs])
+        else:
+            self.positions = self.selection.center(None, compound='residues')
+
+        _kw = {}
 
         if isinstance(method, str):
             method = method.lower().replace('_', '')
@@ -285,29 +325,49 @@ class LeafletFinder(object):
             self.method = distances.group_coordinates_by_cog
         elif method == "orientation":
             self.method = distances.group_vectors_by_orientation
-            hgdct = self.selection.groupby('resindices')
-            hgs_ = sorted(list(hgdct.items()), key=lambda x: x[0])
-            hgs = [x[1] for x in hgs_]
-            positions = [lipid_orientation(hg.residues[0], hg) for hg in hgs]
-            self.positions = np.array(positions)
+            calculate_orientations = True
         else:
             self.method = method
 
+        self.orientations = None
+        if calculate_orientations:
+            # faster than doing lipid_orientations over and over
+            not_hg = self.residues.atoms - self.selection
+            if self.box is not None:                
+                other = not_hg.split('residue')
+                xyz = [r.positions.copy() for r in other]
+                xyz_i = self._unwrap(xyz, box=self.box, centers=self.positions)
+                cog_other = [x.mean(axis=0) for x in xyz_i]
+            else:
+                cog_other = not_hg.center(None, compound='residues')
+            
+            orients = cog_other - self.positions
+
+            # orients = ra.center(None, pbc=False, compound='residues')
+            # orients -= self.positions
+            # orients = [lipid_orientation(hg, residue=r, box=self.box)
+            #            for hg, r in zip(self.headgroups, self.residues)]
+            self.orientations = _kw['orientations'] = orients
+        
+        _kw.update(kwargs)
+
         results = self.method(self.positions,
-                              cutoff=self.cutoff,
-                              box=self.box,
-                              return_predictor=True,
-                              **kwargs)
+                              cutoff=self.cutoff, box=self.box,
+                              return_predictor=True, **_kw)
         if isinstance(results, tuple):
             self.components, self.predictor = results
         else:
             self.components = results
             self.predictor = None
-
-        self.groups = [self.selection[x] for x in self.components]
+        
+        if len(self.headgroups) == len(self.selection):
+            self.groups = [self.selection[x] for x in self.components]
+        else:
+            self.groups = [sum(self.headgroups[y] for y in x)
+                           for x in self.components]
         if resort_cog:
             cogs = [x.center_of_geometry() for x in self.groups]
-            new = distances.group_coordinates_by_cog(self.selection.positions,
+            new = distances.group_coordinates_by_cog(self.positions,
                                                      centers=cogs,
                                                      box=self.box,
                                                      return_predictor=False)

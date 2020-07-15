@@ -148,6 +148,7 @@ __all__ = [
     "COORDINATES_GRO",
     "COORDINATES_GRO_INCOMPLETE_VELOCITY",
     "Martini_membrane_gro", # for testing the leaflet finder
+    "Martini_double_membrane",  # for testing leaflet finder more
     "COORDINATES_XTC",
     "COORDINATES_TRR",
     "COORDINATES_DCD",
@@ -482,6 +483,7 @@ fullerene = resource_filename(__name__, 'data/fullerene.pdb.gz')
 
 Plength = resource_filename(__name__, 'data/plength.gro')
 Martini_membrane_gro = resource_filename(__name__, 'data/martini_dppc_chol_bilayer.gro')
+Martini_double_membrane = resource_filename(__name__, 'data/martini_double_bilayer.gro')
 
 # Contains one of each residue in 'nucleic' selections
 NUCLsel = resource_filename(__name__, 'data/nucl_res.pdb')
