@@ -44,13 +44,14 @@ __all__ = ['distance_array', 'self_distance_array',
 import numpy as np
 import scipy.sparse
 
-from MDAnalysis.lib.distances import (
-    capped_distance,
-    self_distance_array, distance_array,  # legacy reasons
-)
-from MDAnalysis.lib.c_distances import contact_matrix_no_pbc, contact_matrix_pbc
-from MDAnalysis.lib.NeighborSearch import AtomNeighborSearch
-from MDAnalysis.lib.distances import calc_bonds
+from ..lib.distances import (capped_distance,
+                             self_distance_array,
+                             distance_array,  # legacy reasons
+                             )
+from ..lib.c_distances import contact_matrix_no_pbc, contact_matrix_pbc
+from ..lib.NeighborSearch import AtomNeighborSearch
+from ..lib.distances import calc_bonds
+from ..lib.mdamath import vector_of_best_fit
 
 
 import warnings
@@ -101,8 +102,8 @@ def contact_matrix(coord, cutoff=15.0, returntype="numpy", box=None):
 
     if returntype == "numpy":
         adj = np.full((len(coord), len(coord)), False, dtype=bool)
-        pairs = capped_distance(
-            coord, coord, max_cutoff=cutoff, box=box, return_distances=False)
+        pairs = capped_distance(coord, coord, max_cutoff=cutoff,
+                                box=box, return_distances=False)
 
         idx, idy = np.transpose(pairs)
         adj[idx, idy] = True
@@ -111,8 +112,8 @@ def contact_matrix(coord, cutoff=15.0, returntype="numpy", box=None):
     elif returntype == "sparse":
         # Initialize square List of Lists matrix of dimensions equal to number
         # of coordinates passed
-        sparse_contacts = scipy.sparse.lil_matrix(
-            (len(coord), len(coord)), dtype='bool')
+        sparse_contacts = scipy.sparse.lil_matrix((len(coord), len(coord)),
+                                                  dtype='bool')
         if box is not None:
             # with PBC
             contact_matrix_pbc(coord, sparse_contacts, box, cutoff)
@@ -156,8 +157,8 @@ def dist(A, B, offset=0, box=None):
     """
 
     if A.atoms.n_atoms != B.atoms.n_atoms:
-        raise ValueError(
-            "AtomGroups A and B do not have the same number of atoms")
+        raise ValueError("AtomGroups A and B do not have the "
+                         "same number of atoms")
     try:
         off_A, off_B = offset
     except (TypeError, ValueError):
@@ -209,7 +210,8 @@ def between(group, A, B, distance):
 
 def group_coordinates_by_spectralclustering(coordinates, n_groups=2,
                                             cutoff=1e2, box=None,
-                                            return_predictor=False):
+                                            return_predictor=False,
+                                            **kwargs):
     """Cluster coordinates into groups using spectral clustering
 
     If the optional argument `box` is supplied, the minimum image convention
@@ -223,11 +225,14 @@ def group_coordinates_by_spectralclustering(coordinates, n_groups=2,
         Number of resulting groups
     cutoff: float (optional)
         Cutoff for computing distances in the matrix used for clustering
-    box: numpy.ndarray
+    box: numpy.ndarray (optional)
         The unitcell dimensions of the system or ``None``. If ``None``,
         we do not use the minimum image convention.
     return_predictor: bool (optional)
         whether to return the cluster class
+    **kwargs:
+        ignored (available to provide a similar interface to other
+        grouping functions)
 
     Returns
     -------
@@ -237,6 +242,9 @@ def group_coordinates_by_spectralclustering(coordinates, n_groups=2,
         for the i-th cluster. ``k = indices[i][j]`` means that the
         k-th entry in ``coordinates`` is in cluster ``i``.
         The groups are sorted by size.
+
+    clusterer: :class:`sklearn.cluster.SpectralClustering` (optional)
+        The object used to cluster the groups
     """
     try:
         import sklearn.cluster as skc
@@ -257,10 +265,8 @@ def group_coordinates_by_spectralclustering(coordinates, n_groups=2,
     dist_mat[:] = cutoff
     pairs, distances = capped_distance(coordinates, coordinates, cutoff,
                                        box=box, return_distances=True)
-    for (i, j), d in zip(pairs, distances):
-        dist_mat[i, j] = dist_mat[j, i] = d
-
-    # dist_mat = distance_array(coordinates, coordinates, box=box)
+    pi, pj = tuple(pairs.T)
+    dist_mat[pi, pj] = dist_mat[pj, pi] = distances
 
     try:
         sc = skc.SpectralClustering(n_clusters=n_groups,
@@ -276,6 +282,7 @@ def group_coordinates_by_spectralclustering(coordinates, n_groups=2,
     ix = np.argsort(clusters)
     groups = np.split(indices[ix], np.where(np.ediff1d(clusters[ix]))[0]+1)
     groups = [np.sort(x) for x in groups]
+    groups.sort(key=lambda x: len(x), reverse=True)
     if return_predictor:
         return (groups, sc)
     return groups
@@ -284,21 +291,55 @@ def group_coordinates_by_spectralclustering(coordinates, n_groups=2,
 def group_coordinates_by_cog(coordinates, centers=[], box=None,
                              return_predictor=False,
                              **kwargs):
+    """Separate coordinates into groups by distance to points
+
+    For example, separate a bilayer into leaflets depending on distance
+    to center-of-geometry
+
+    Parameters
+    ----------
+    coordinates: numpy.ndarray
+        Coordinate array with shape ``(n, 3)``
+    centers: array-like (optional)
+        List or numpy array (shape ``(n, 3)``) of xyz coordinates
+    box: numpy.ndarray (optional)
+        The unitcell dimensions of the system or ``None``. If ``None``,
+        we do not use the minimum image convention.
+    return_predictor: bool (optional)
+        whether to return the distance matrix used to cluster the groups
+    **kwargs:
+        ignored (available to provide a similar interface to other
+        grouping functions)
+
+    Returns
+    -------
+    indices: list of numpy.ndarray
+        List of indices for each group, corresponding to the order
+        of ``coordinates``. ``indices[i]`` is the array of indices
+        for the i-th cluster. ``k = indices[i][j]`` means that the
+        k-th entry in ``coordinates`` is in cluster ``i``.
+        The groups are *not* sorted by size, unlike other grouping
+        metrics.
+
+    distance_matrix: :class:`numpy.ndarray` (optional)
+        Distance matrix of each coordinate to each center
+    """
     coordinates = coordinates.astype(np.float64)
     centers = np.asarray(centers)
-    dist = distance_array(coordinates, centers, box=box)
+    dist_arr = distance_array(coordinates, centers, box=box)
     indices = np.arange(len(coordinates))
-    cluster_i = np.argmin(dist, axis=1)
+    cluster_i = np.argmin(dist_arr, axis=1)
     ix = np.argsort(cluster_i)
     groups = np.split(indices[ix], np.where(np.ediff1d(cluster_i[ix]))[0]+1)
     groups = [np.sort(x) for x in groups]
     if return_predictor:
-        return (groups, dist)
+        return (groups, dist_arr)
     return groups
 
 
 def group_coordinates_by_graph(coordinates, cutoff=15.0, box=None,
-                               sparse=None, return_predictor=False):
+                               sparse=None, return_predictor=False,
+                               **kwargs):
     """Cluster coordinates into groups using an adjacency matrix
 
     If the optional argument `box` is supplied, the minimum image convention
@@ -311,11 +352,14 @@ def group_coordinates_by_graph(coordinates, cutoff=15.0, box=None,
     cutoff: float (optional)
         Cutoff distance for determining if two coordinates are in the same
         group
-    box: numpy.ndarray
+    box: numpy.ndarray (optional)
         The unitcell dimensions of the system or ``None``. If ``None``,
         we do not use the minimum image convention.
     return_predictor: bool (optional)
         whether to return the graph
+    **kwargs:
+        ignored (available to provide a similar interface to other
+        grouping functions)
 
     Returns
     -------
@@ -325,6 +369,9 @@ def group_coordinates_by_graph(coordinates, cutoff=15.0, box=None,
         for the i-th cluster. ``k = indices[i][j]`` means that the
         k-th entry in ``coordinates`` is in cluster ``i``.
         The groups are sorted by size.
+
+    graph: :class:`networkx.Graph` (optional)
+        Graph used to group the coordinates
     """
     try:
         import networkx as nx
@@ -334,6 +381,7 @@ def group_coordinates_by_graph(coordinates, cutoff=15.0, box=None,
                           "`conda install networkx` or "
                           "`pip install networkx`.") from None
     returntype = "numpy" if not sparse else "sparse"
+    coordinates = np.asarray(coordinates).astype(np.float32)
     try:
         adj = contact_matrix(coordinates, cutoff=cutoff, box=box,
                              returntype=returntype)
@@ -355,3 +403,222 @@ def group_coordinates_by_graph(coordinates, cutoff=15.0, box=None,
         return (groups, graph)
     else:
         return groups
+
+
+def group_vectors_by_orientation(coordinates, orientations,
+                                 return_predictor=False, n_groups=2,
+                                 cutoff=15.0, box=None,
+                                 min_group=1,
+                                 return_ungrouped=False,
+                                 max_neighbors=20,
+                                 angle_threshold=0.5, **kwargs):
+    """Group vectors into 2 groups by angles to first vector
+
+    If the optional argument `box` is supplied, the minimum image convention
+    is applied when calculating distances.
+
+    Parameters
+    ----------
+    vectors: numpy.ndarray
+        Coordinate array with shape ``(n, 3)``
+    n_groups: int (optional)
+        Number of resulting groups. It is not tested n_groups != 2.
+    return_predictor: bool (optional)
+        whether to return the angles
+    **kwargs:
+        ignored (available to provide a similar interface to other
+        grouping functions)
+
+    Returns
+    -------
+    indices: list of numpy.ndarray
+        List of indices for each group, corresponding to the order
+        of ``coordinates``. ``indices[i]`` is the array of indices
+        for the i-th cluster. ``k = indices[i][j]`` means that the
+        k-th entry in ``coordinates`` is in cluster ``i``.
+        The groups are sorted by size.
+
+    angles: :class:`numpy.ndarray` (optional)
+        Array of angles to the first vector
+    """
+    vectors = np.asarray(orientations)
+    coordinates = np.asarray(coordinates)
+
+    # first merge by similar neighbours
+    norm = np.linalg.norm(vectors, axis=1)
+    angles = np.dot(vectors, vectors.T) / np.outer(norm, norm.T)
+    pairs, dists = capped_distance(coordinates, coordinates,
+                                   cutoff, box=box, return_distances=True)
+    splix = np.where(np.ediff1d(pairs[:, 0]))[0] + 1
+    plist = np.split(pairs, splix)
+    dlist = np.split(dists, splix)
+    groups_ = np.arange(len(orientations))
+
+    dix = [np.argsort(x) for x in dlist]
+    dlist = [d[x] for d, x in zip(dlist, dix)]
+    plist = [p[x] for p, x in zip(plist, dix)]
+
+    # first pass: merge similar groups
+    for p in plist:
+        i = p[0, 0]
+        js = p[:, 1]
+        similar = angles[i, js] > angle_threshold
+        ijs_ = js[similar][:max_neighbors]
+        common = np.bincount(groups_[ijs_]).argmax()
+        groups_[ijs_] = common
+
+    # second pass: clean up
+    ids, counts = np.unique(groups_, return_counts=True)
+
+    n_squash = len(ids) - n_groups
+    indices = [np.where(groups_ == i)[0] for i in ids[np.argsort(counts)]]
+    ignored = []
+
+    if n_squash > 0:
+        keep = indices[n_squash:]
+        ditch = indices[:n_squash]
+        groups_ = [list(x) for x in keep]
+
+        mean_cog = np.array([coordinates[x].mean(axis=0) for x in keep])
+        mean_orients = np.array([vectors[x].mean(axis=0) for x in keep])
+        std_orients = np.array([np.std(vectors[x], axis=0) for x in keep])
+        unsquashed = []
+
+        while len(indices) > 2:
+            if len(indices) + len(unsquashed) == n_groups:
+                break
+            current_gp = indices.pop(0)
+            p_neighbors = np.concatenate([plist[x] for x in current_gp])
+            d_neighbors = np.concatenate([dlist[x] for x in current_gp])
+            a_neighbors = np.array([angles[x[0], x[1]]
+                                    for x in p_neighbors])
+            not_self = np.array(
+                [x not in current_gp for x in p_neighbors[:, 1]])
+            similar = a_neighbors > angle_threshold
+            p_neighbors = p_neighbors[not_self & similar]
+            d_neighbors = d_neighbors[not_self & similar]
+            a_neighbors = a_neighbors[not_self & similar]
+            dix_ = np.argsort(d_neighbors)
+            p_neighbors = p_neighbors[dix_]
+            d_neighbors = d_neighbors[dix_]
+            a_neighbors = a_neighbors[dix_]
+            ids, u_ix = np.unique(p_neighbors[:, 1], return_index=True)
+            n_neighbors = min(max_neighbors, int(len(ids)/2 + 1))
+            ud_ix = np.sort(u_ix)[:n_neighbors]
+            # neighbors = p_neighbors[:, 1][ud_ix]
+            friends, neighbors = p_neighbors[ud_ix].T
+            inter_angles = a_neighbors[ud_ix]
+
+            members, comm1 = [], []
+            for x in indices:
+                m, c, _ = np.intersect1d(neighbors, x, assume_unique=True,
+                                         return_indices=True)
+                members.append(m)
+                comm1.append(c)
+
+            n_members = [len(x) for x in members]
+            a_members = [inter_angles[x].mean() for x in comm1]
+            a_std = [inter_angles[x].std() for x in comm1]
+
+            if any(n_members):
+                _most = np.argmax(n_members)
+                _closest = np.argmax(a_members)
+                _mean = a_members[_most]
+                _std = a_std[_most]
+                if _mean > angle_threshold:
+                    indices[_most] = np.concatenate([indices[_most],
+                                                     current_gp])
+                    indices.sort(key=lambda x: len(x))
+                    continue
+
+            if len(current_gp) < min_group:
+                ignored.append(current_gp)
+            else:
+                unsquashed.append(current_gp)
+
+        indices = unsquashed + indices
+        n_squash = len(indices) - n_groups
+        indices = sorted(indices, key=lambda x: len(x))
+
+        if n_squash > 0:
+            # now by distance
+            keep = indices[n_squash:]
+            ditch = indices[:n_squash]
+
+            cog_keep = np.array([coordinates[x].mean(axis=0)
+                                 for x in keep])
+            cog_ditch = np.array([coordinates[x].mean(axis=0)
+                                  for x in ditch])
+
+            _dist = distance_array(cog_ditch, cog_keep, box=box)
+            _min = np.argmin(_dist, axis=1)
+            for i in range(n_groups):
+                found = np.where(_min == i)[0]
+                extra = [ditch[f] for f in found]
+                keep[i] = np.concatenate([keep[i]] + extra)
+
+            indices = keep
+
+        n_squash = len(indices) - n_groups
+
+    while n_squash < 0:
+        # split leaflets out, largest first
+        ix = indices[-1]
+        n_ix_ = len(ix)
+        vectors_ = vectors[ix]
+        # first group by angle to first atom
+        vdot = np.dot(vectors_[0], vectors_.T)
+        vix = np.argsort(vdot)  # angle to first vector
+        vdot = vdot[vix]
+        ix_ = ix[vix]
+        vectors_ = vectors_[vix]
+        splix = np.where(vdot >= 0)[0][0]
+        halves = np.split(ix_, [splix], axis=0)
+
+        if len(halves[0]) and len(halves[1]):
+            # re-group by anti/parallel
+            mean_orient = [vectors[x].mean(axis=0) for x in halves]
+            mean_orient = np.array(mean_orient)
+            mags = np.einsum('ij,ij,kl,kl->ik', vectors_, vectors_,
+                             mean_orient, mean_orient, optimize='optimal')
+            angles_ = np.dot(vectors_, mean_orient.T) / (mags ** 0.5)
+            args = np.argmax(angles_, axis=1)
+            anti_groups = [ix_[np.where(args == i)[0]] for i in (0, 1)]
+            indices = indices[:-1] + anti_groups
+
+        else:
+            # re-group by distance. This is SLOW
+            coords_ = coordinates[ix]
+            cog = coords_.mean(axis=0)
+            mean_orient_ = vectors[ix].mean(axis=0)
+            mean_orient_ /= np.linalg.norm(mean_orient_)
+            mean_orient_ *= np.linalg.norm(cog)
+            lower = cog - mean_orient_
+            upper = cog + mean_orient_
+
+            options = np.array([lower, upper])
+            dist_ = distance_array(coords_, options, box=box)
+            min_dist = np.argmin(dist_, axis=1)
+            init_sep = [ix[np.where(min_dist == i)[0]] for i in (0, 1)]
+
+            cogs = np.array([coordinates[x].mean(axis=0)
+                             for x in init_sep])
+            dist_ = distance_array(coords_, cogs, box=box)
+            min_dist = np.argmin(dist_, axis=1)
+            new_groups_ = [ix[np.where(min_dist == i)[0]] for i in (0, 1)]
+
+            indices = new_groups_ + indices[:-1]
+
+        # indices = sorted(indices, key=lambda x: len(x))
+        n_squash = len(indices) - n_groups
+
+    groups = sorted(indices, key=lambda x: len(x), reverse=True)
+
+    if return_ungrouped:
+        groups += ignored
+
+    groups = [np.sort(x) for x in groups]
+
+    if return_predictor:
+        return (groups, angles)
+    return groups

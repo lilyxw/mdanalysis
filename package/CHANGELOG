@@ -14,7 +14,7 @@ The rules for this file:
 
 ------------------------------------------------------------------------------
 ??/??/?? richardjgowers, IAlibay, hmacdope, orbeckst, cbouy, lilyminium,
-         daveminh
+         daveminh, jbarnoud, yuxuanzhuang
 
   * 2.0.0
 
@@ -24,8 +24,15 @@ Fixes
   * TOPParser no longer guesses elements when missing atomic number records
     (Issues #2449, #2651)
   * Testsuite does not any more matplotlib.use('agg') (#2191)
+  * In ChainReader, read_frame does not trigger change of iterating position. 
+    (Issue #2723, PR #2815)
+  * TRZReader now checks `n_atoms` on reading. (Issue #2817, PR #2820)
+  * TRZWriter now writes `n_atoms` to the file. (Issue #2817, PR #2820)
+
 
 Enhancements
+  * Updated LeafletFinder to use flexible grouping methods and added new
+    grouping methods to analysis.distances (Issue #2843, PR #2844)
   * Added the RDKitParser which creates a `core.topology.Topology` object from
     an `rdkit.Chem.rdchem.Mol` object, and the RDKitReader to read coordinates
     from RDKit conformers (Issue #2468, PR #2707)
@@ -33,6 +40,7 @@ Enhancements
     token (Issue #2468, PR #2707)
   * Added the `from_smiles` classmethod to the Universe (Issue #2468, PR #2707)
   * Added computation of Mean Squared Displacements (#2438, PR #2619)
+  * Improved performances when parsing TPR files (PR #2804)
   * Added converter between Cartesian and Bond-Angle-Torsion coordinates (PR #2668)
 
 Changes

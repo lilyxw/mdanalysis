@@ -52,6 +52,9 @@ algorithms:
   geometry. This is *not recommended* unless the leaflets are planar
   and well-defined. It will not work well on vesicles.
 
+* You can also pass in your own function, which must take an input array of
+  coordinates and return a list of indices
+
 One can use this information to identify
 
 * the upper and lower leaflet of a *planar membrane* by comparing the
@@ -165,11 +168,14 @@ import warnings
 import functools
 
 import numpy as np
-import networkx as NX
 
 from .. import core, selections, _TOPOLOGY_ATTRNAMES, _TOPOLOGY_ATTRS
 from . import distances
 from .base import AnalysisBase
+from ..core import groups
+from ..lib.mdamath import vector_of_best_fit, make_whole
+from .. import selections, lib
+from . import distances
 
 from ..due import due, Doi
 
@@ -177,17 +183,65 @@ due.cite(Doi("10.1002/jcc.21787"),
          description="LeafletFinder 'graph' algorithm",
          path="MDAnalysis.analysis.leaflet.LeafletFinder")
 
-due.cite(Doi("10.1021/acscentsci.8b00143"),
-         description="Lipid enrichment-depletion index formula",
-         path="MDAnalysis.analysis.leaflet.LipidEnrichment")
-
 del Doi
+
+
+def lipid_orientation(headgroup, residue=None, unit=False, box=None):
+    """Determine lipid orientation from headgroup.
+
+    Parameters
+    ----------
+    headgroup: Atom or AtomGroup or numpy.ndarray
+        Headgroup atom or atoms. The center of geometry is used
+        as the origin.
+    residue: Residue or AtomGroup (optional)
+        Residue atoms. If not given, this is taken as the first residue
+        of the headgroup atoms. Even if the residue is guessed correctly,
+        it is more efficient to provide as an argument if known.
+    unit: bool (optional)
+        Whether to return the unit vector
+
+    Returns
+    -------
+    vector: numpy.ndarray (3,)
+        Vector of orientation
+    """
+    if isinstance(headgroup, groups.Atom):
+        headgroup = groups.AtomGroup([headgroup])
+    try:
+        ra = residue.atoms
+    except AttributeError:
+        ra = headgroup.residues[0].atoms
+    n_hg = len(headgroup)
+    atoms = ra - headgroup
+    all_xyz = np.concatenate([headgroup.positions, atoms.positions])
+    if box is not None:  # slow.....
+        diff = all_xyz - all_xyz[0]
+        move = np.where(np.abs(diff) > box[:3] / 2)
+        all_xyz[move] -= box[move[1]] * np.sign(diff[move])
+    hg_xyz = all_xyz[:n_hg]
+    at_xyz = all_xyz[n_hg:]
+    cog_hg = hg_xyz.mean(axis=0)
+    cog_atoms = at_xyz.mean(axis=0)
+    vec = cog_atoms - cog_hg
+    if unit:
+        vec = vec / np.dot(vec, vec)
+    return vec
 
 
 class LeafletFinder(object):
     """Identify atoms in the same leaflet of a lipid bilayer.
 
-    This class implements the *LeafletFinder* algorithm [Michaud-Agrawal2011]_.
+    You can use a predefined method ("graph", "spectralclustering" or
+    "center_of_geometry"). Alternatively, you can pass in your own function
+    as a method. This *must* accept an array of coordinates as the first
+    argument, and *must* return either a list of numpy arrays (the
+    ``components`` attribute) or a tuple of (list of numpy arrays,
+    predictor object). The numpy arrays should be arrays of indices of the
+    input coordinates, such that ``k = components[i][j]`` means that the
+    ``k``th coordinate belongs to the ``i-th`` leaflet.
+    The class will also pass the following keyword arguments to your function:
+    ``cutoff``, ``box``, ``return_predictor``.
 
     Parameters
     ----------
@@ -203,15 +257,32 @@ class LeafletFinder(object):
         method). In spectral clustering, it just has to be suitably large to
         cover a significant part of the leaflet, but lower values increase
         computational efficiency. Please see the :func:`optimize_cutoff`
-        function for help in with values for the graph method.
+        function for help with values for the graph method. A cutoff is not
+        used for the "center_of_geometry" method.
     pbc : bool (optional)
         If ``False``, does not follow the minimum image convention when
         computing distances
-    method: str, {"graph", "spectralclustering"}
-        method to use to assign groups to leaflets. Choose either
-        "graph" for :func:`~distances.group_coordinates_by_graph` or
+    method: str or function (optional)
+        method to use to assign groups to leaflets. Choose
+        "graph" for :func:`~distances.group_coordinates_by_graph`;
         "spectralclustering" for
-        :func:`~distances.group_coordinates_by_spectralclustering`
+        :func:`~distances.group_coordinates_by_spectralclustering`;
+        "center_of_geometry" for
+        :func:`~distances.group_coordinates_by_cog`;
+        "orientation" to calculate orientations for each lipid and
+        use :func:`~distances.group_vectors_by_orientation`
+        or alternatively, pass in your own method. This *must* accept an
+        array of coordinates as the first argument, and *must*
+        return either a list of numpy arrays (the ``components``
+        attribute) or a tuple of (list of numpy arrays, predictor object).
+    calculate_orientations: bool (optional)
+        if your custom method requires the orientation vector of each lipid,
+        set ``calculate_orientations=True`` and an Nx3 array of orientation
+        vectors will get passed into your function with the keyword
+        ``orientation``. This is set to ``True`` for ``method="orientation"``.
+    resort_cog: bool (optional)
+        Whether to re-check leaflet membership by distance to
+        center-of-geometry after assigning.
     **kwargs:
         Passed to ``method``
 
@@ -223,21 +294,35 @@ class LeafletFinder(object):
         Selection string
     selection: AtomGroup
         Atoms that the analysis is applied to
+    headgroups: List of AtomGroup
+        Atoms that the analysis is applied to, grouped by residue.
     pbc: bool
         Whether to use PBC or not
     box: numpy.ndarray or None
         Cell dimensions to use in calculating distances
-    predictor: :class:`networkx.Graph` or :class:`sklearn.cluster.SpectralClustering`
-        The object used to predict the leaflets
+    predictor:
+        The object used to group the leaflets. :class:`networkx.Graph` for
+        ``method="graph"``; :class:`sklearn.cluster.SpectralClustering` for
+        ``method="spectralclustering"``; or :class:`numpy.ndarray` for
+        ``method="center_of_geometry"``.
+    positions: numpy.ndarray (N x 3)
+        Array of positions of headgroups to use. If your selection has
+        multiple atoms for each residue, this is the center of geometry.
+    orientations: numpy.ndarray (N x 3) or None
+        Array of orientation vectors calculated with ``lipid_orientation``.
     components: list of numpy.ndarray
         List of indices of atoms in each leaflet, corresponding to the
         order of `selection`. ``components[i]`` is the array of indices
         for the ``i``-th leaflet. ``k = components[i][j]`` means that the
         ``k``-th atom in `selection` is in the ``i``-th leaflet.
-        The components are sorted by size.
+        The components are sorted by size for the "spectralclustering" and
+        "graph" methods. For the "center_of_geometry" method, they are
+        sorted by the order that the centers are passed into the class.
     groups: list of AtomGroups
         List of AtomGroups in each leaflet. ``groups[i]`` is the ``i``-th
-        leaflet. The leaflets are sorted by size.
+        leaflet. The components are sorted by size for the "spectralclustering"
+        and "graph" methods. For the "center_of_geometry" method, they are
+        sorted by the order that the centers are passed into the class.
     leaflets: list of AtomGroup
         List of AtomGroups in each leaflet. ``groups[i]`` is the ``i``-th
         leaflet. The leaflets are sorted by z-coordinate so that the
@@ -282,36 +367,119 @@ class LeafletFinder(object):
        Changed `selection` keyword to `select`
     """
 
-    def __init__(self, universe, select='all', cutoff=15.0, pbc=True,
-                 method="graph", **kwargs):
-        method = method.lower().replace('_', '')
-        if method == "graph":
-            self.method = distances.group_coordinates_by_graph
-        elif method == "spectralclustering":
-            self.method = distances.group_coordinates_by_spectralclustering
-        elif method == "centerofgeometry":
-            self.method = distances.group_coordinates_by_cog
-        else:
-            raise ValueError("`method` must be in {'graph', "
-                             "'spectralclustering', 'center_of_geometry'")
+    @staticmethod
+    def _unwrap(coord_list: list, box: np.ndarray,
+                centers: np.ndarray = None):
+        if centers is None:
+            centers = [x[0] for x in coord_list]
 
+        xyz = np.concatenate(coord_list)
+        n_xyz = np.cumsum([len(x) for x in coord_list[:-1]])
+        diff = np.concatenate([x - c for x, c in zip(coord_list, centers)])
+        move = np.where(np.abs(diff) > box[:3]/2)
+        xyz[move] -= box[move[1]] * np.sign(diff[move])
+        return np.split(xyz, n_xyz)
+
+    def _get_positions_by_residue(self, selection, centers=None):
+        if self.box is None:
+            return selection.center(None, compound='residues', pbc=self.pbc)
+        sel = [x.positions.copy() for x in selection.split('residue')]
+        uw = self._unwrap(sel, box=self.box, centers=centers)
+        return np.array([x.mean(axis=0) for x in uw])
+
+    def _guess_cutoff(self, cutoff, min_cutoff=15):
+        # get box
+        box = self.universe.dimensions
+        if box is None:
+            xyz = self.selection.positions
+            box = box.max(axis=0) - box.min(axis=0)
+        else:
+            box = box[:3]
+
+        per_leaflet = self.n_residues / self.n_groups
+        spread = box / (per_leaflet ** 0.5)
+
+        if self.method == "graph":
+            # not too low
+            guessed = 2 * min(spread)
+            return max(guessed, min_cutoff)
+
+        if cutoff == "guess":
+            guessed = 3 * max(spread)
+            return max(guessed, min_cutoff)
+
+        dist = np.linalg.norm(box)
+        guessed = dist / 2
+        return max(guessed, min_cutoff)
+
+    def __init__(self, universe, select='all', cutoff="guess", pbc=True,
+                 method="graph", n_groups=2,
+                 calculate_orientations=False, **kwargs):
         self.universe = universe.universe
         self.select = select
-        self.selection = universe.select_atoms(select, periodic=pbc)
+        self.selection = universe.atoms.select_atoms(select, periodic=pbc)
+        self.headgroups = self.selection.split('residue')
+        self.residues = self.selection.residues
+        self.n_residues = len(self.residues)
+        self.n_groups = n_groups
         self.pbc = pbc
-        self.cutoff = cutoff
         self.box = self.universe.dimensions if pbc else None
-        results = self.method(self.selection.positions,
-                              cutoff=self.cutoff,
-                              box=self.box,
-                              return_predictor=True,
-                              **kwargs)
-        self.components, self.predictor = results
-        self.groups = [self.selection[x] for x in self.components]
+        self.positions = self._get_positions_by_residue(self.selection)
+
+        if isinstance(method, str):
+            method = method.lower().replace('_', '')
+            self.method = method
+        if method == "graph":
+            self._method = distances.group_coordinates_by_graph
+        elif method == "spectralclustering":
+            self._method = distances.group_coordinates_by_spectralclustering
+        elif method == "centerofgeometry":
+            self._method = distances.group_coordinates_by_cog
+        elif method == "orientation":
+            self._method = distances.group_vectors_by_orientation
+            calculate_orientations = True
+        else:
+            self._method = self.method = method
+
+        if cutoff == "guess" or cutoff < 0:
+            cutoff = self._guess_cutoff(cutoff)
+        elif not isinstance(cutoff, (int, float)):
+            raise ValueError("cutoff must be an int, float, or 'guess'. "
+                             f"Given: {cutoff}")
+        self.cutoff = cutoff
+
+        self.orientations = None
+        if calculate_orientations:
+            # faster than doing lipid_orientations over and over
+            not_hg = self.residues.atoms - self.selection
+            cog_other = self._get_positions_by_residue(not_hg,
+                                                       centers=self.positions)
+            orients = cog_other - self.positions
+            self.orientations = orients
+
+        results = self._method(self.positions,
+                               cutoff=self.cutoff, box=self.box,
+                               return_predictor=True,
+                               orientations=self.orientations,
+                               n_groups=n_groups, **kwargs)
+
+        if isinstance(results, tuple):
+            self.components, self.predictor = results
+        else:
+            self.components = results
+            self.predictor = None
+
+        if len(self.headgroups) == len(self.selection):
+            self.groups = [self.selection[x] for x in self.components]
+        else:
+            self.groups = [sum(self.headgroups[y] for y in x)
+                           for x in self.components]
+
+        self.sizes = [len(ag) for ag in self.groups]
+
         self.leaflets = sorted(self.groups,
                                key=lambda x: x.center_of_geometry()[-1],
                                reverse=True)
-        self.sizes = [len(ag) for ag in self.groups]
 
     def groups_iter(self):
         """Iterator over all leaflet :meth:`groups`"""
