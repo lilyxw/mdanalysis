@@ -723,7 +723,7 @@ class LipidEnrichment(AnalysisBase):
             raise ValueError('Must have at least one leaflet')
         self.n_leaflets = n_leaflets
         group_method = group_method.lower().replace('_', '')
-        if group_method in ("spectralclustering", "graph"):
+        if group_method in ("spectralclustering", "graph", "orientation"):
             self._get_leaflets = functools.partial(self._update_leafletfinder,
                                                    method=group_method,
                                                    kwargs=group_kwargs)
@@ -735,7 +735,7 @@ class LipidEnrichment(AnalysisBase):
             self._update_leaflets = self._get_leaflets
         else:
             update_method = update_method.lower().replace('_', '')
-            if update_method in ("spectralclustering", "graph"):
+            if update_method in ("spectralclustering", "graph", "orientation"):
                 self._update_leaflets = functools.partial(self._update_leafletfinder,
                                                           method=update_method,
                                                           kwargs=update_kwargs)
@@ -878,7 +878,7 @@ class LipidEnrichment(AnalysisBase):
                 self.residue_counts[i, j, self._frame_index] += sum(ids == x)
                 self.near_counts[i, j, self._frame_index] += sum(subids == x)
 
-    def _fit_gaussian(self, data):
+    def _fit_gaussian(self, data, *args, **kwargs):
         """Treat each frame as an independent observation in a gaussian
         distribution.
 
