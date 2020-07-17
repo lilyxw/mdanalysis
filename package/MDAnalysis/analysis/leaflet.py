@@ -282,9 +282,10 @@ class LeafletFinder(object):
 
     @staticmethod
     def _unwrap(coord_list: list, box: np.ndarray,
-                centers: np.ndarray=None):
+                centers: np.ndarray = None):
         if centers is None:
             centers = [x[0] for x in coord_list]
+
         xyz = np.concatenate(coord_list)
         n_xyz = np.cumsum([len(x) for x in coord_list[:-1]])
         diff = np.concatenate([x - c for x, c in zip(coord_list, centers)])
@@ -292,92 +293,106 @@ class LeafletFinder(object):
         xyz[move] -= box[move[1]] * np.sign(diff[move])
         return np.split(xyz, n_xyz)
 
+    def _get_positions_by_residue(self, selection, centers=None):
+        if self.box is None:
+            return selection.center(None, compound='residues', pbc=self.pbc)
+        sel = [x.positions.copy() for x in selection.split('residue')]
+        uw = self._unwrap(sel, box=self.box, centers=centers)
+        return np.array([x.mean(axis=0) for x in uw])
 
-    def __init__(self, universe, select='all', cutoff=20.0, pbc=True,
-                 method="graph", resort_cog=False,
+    def _guess_cutoff(self, cutoff, min_cutoff=15):
+        # get box
+        box = self.universe.dimensions
+        if box is None:
+            xyz = self.selection.positions
+            box = box.max(axis=0) - box.min(axis=0)
+        else:
+            box = box[:3]
+
+        per_leaflet = self.n_residues / self.n_groups
+        spread = box / (per_leaflet ** 0.5)
+
+        if self.method == "graph":
+            # not too low
+            guessed = 2 * min(spread)
+            return max(guessed, min_cutoff)
+
+        if cutoff == "guess":
+            guessed = 3 * max(spread)
+            return max(guessed, min_cutoff)
+
+        dist = np.linalg.norm(box)
+        guessed = dist / 2
+        return max(guessed, min_cutoff)
+
+    def __init__(self, universe, select='all', cutoff="guess", pbc=True,
+                 method="graph", n_groups=2,
                  calculate_orientations=False, **kwargs):
         self.universe = universe.universe
         self.select = select
-        self.selection = universe.select_atoms(select, periodic=pbc)
-        self.residues = self.selection.residues
+        self.selection = universe.atoms.select_atoms(select, periodic=pbc)
         self.headgroups = self.selection.split('residue')
+        self.residues = self.selection.residues
+        self.n_residues = len(self.residues)
+        self.n_groups = n_groups
         self.pbc = pbc
-        self.cutoff = cutoff
         self.box = self.universe.dimensions if pbc else None
-
-        # unwrap
-        if self.box is not None and len(self.selection) > len(self.residues):
-            hg_xyz = [a.positions.copy() for a in self.headgroups]
-            hgs = self._unwrap(hg_xyz, box=self.box)
-            self.positions = np.array([h.mean(axis=0) for h in hgs])
-        else:
-            self.positions = self.selection.center(None, compound='residues')
-
-        _kw = {}
+        self.positions = self._get_positions_by_residue(self.selection)
 
         if isinstance(method, str):
             method = method.lower().replace('_', '')
+            self.method = method
         if method == "graph":
-            self.method = distances.group_coordinates_by_graph
+            self._method = distances.group_coordinates_by_graph
         elif method == "spectralclustering":
-            self.method = distances.group_coordinates_by_spectralclustering
+            self._method = distances.group_coordinates_by_spectralclustering
         elif method == "centerofgeometry":
-            self.method = distances.group_coordinates_by_cog
+            self._method = distances.group_coordinates_by_cog
         elif method == "orientation":
-            self.method = distances.group_vectors_by_orientation
+            self._method = distances.group_vectors_by_orientation
             calculate_orientations = True
         else:
-            self.method = method
+            self._method = self.method = method
+
+        if cutoff == "guess" or cutoff < 0:
+            cutoff = self._guess_cutoff(cutoff)
+        elif not isinstance(cutoff, (int, float)):
+            raise ValueError("cutoff must be an int, float, or 'guess'. "
+                             f"Given: {cutoff}")
+        self.cutoff = cutoff
 
         self.orientations = None
         if calculate_orientations:
             # faster than doing lipid_orientations over and over
             not_hg = self.residues.atoms - self.selection
-            if self.box is not None:                
-                other = not_hg.split('residue')
-                xyz = [r.positions.copy() for r in other]
-                xyz_i = self._unwrap(xyz, box=self.box, centers=self.positions)
-                cog_other = [x.mean(axis=0) for x in xyz_i]
-            else:
-                cog_other = not_hg.center(None, compound='residues')
-            
+            cog_other = self._get_positions_by_residue(not_hg,
+                                                       centers=self.positions)
             orients = cog_other - self.positions
+            self.orientations = orients
 
-            # orients = ra.center(None, pbc=False, compound='residues')
-            # orients -= self.positions
-            # orients = [lipid_orientation(hg, residue=r, box=self.box)
-            #            for hg, r in zip(self.headgroups, self.residues)]
-            self.orientations = _kw['orientations'] = orients
-        
-        _kw.update(kwargs)
+        results = self._method(self.positions,
+                               cutoff=self.cutoff, box=self.box,
+                               return_predictor=True,
+                               orientations=self.orientations,
+                               n_groups=n_groups, **kwargs)
 
-        results = self.method(self.positions,
-                              cutoff=self.cutoff, box=self.box,
-                              return_predictor=True, **_kw)
         if isinstance(results, tuple):
             self.components, self.predictor = results
         else:
             self.components = results
             self.predictor = None
-        
+
         if len(self.headgroups) == len(self.selection):
             self.groups = [self.selection[x] for x in self.components]
         else:
             self.groups = [sum(self.headgroups[y] for y in x)
                            for x in self.components]
-        if resort_cog:
-            cogs = [x.center_of_geometry() for x in self.groups]
-            new = distances.group_coordinates_by_cog(self.positions,
-                                                     centers=cogs,
-                                                     box=self.box,
-                                                     return_predictor=False)
-            self.components = new
-            self.groups = [self.selection[x] for x in self.components]
+
+        self.sizes = [len(ag) for ag in self.groups]
 
         self.leaflets = sorted(self.groups,
                                key=lambda x: x.center_of_geometry()[-1],
                                reverse=True)
-        self.sizes = [len(ag) for ag in self.groups]
 
     def groups_iter(self):
         """Iterator over all leaflet :meth:`groups`"""
