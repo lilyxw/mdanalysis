@@ -168,6 +168,12 @@ import warnings
 import functools
 
 import numpy as np
+try:
+    import scipy.stats
+except ImportError:
+    found_scipy = False
+else:
+    found_scipy = True
 
 from .. import core, selections, _TOPOLOGY_ATTRNAMES, _TOPOLOGY_ATTRS
 from . import distances
@@ -712,47 +718,25 @@ class LipidEnrichment(AnalysisBase):
                  cutoff: float = 6, pbc: bool = True,
                  compute_headgroup_only: bool = True,
                  update_leaflet_step: int = 1,
-                 group_method: str = "spectralclustering",
-                 update_method: str = None, group_kwargs: dict = {},
-                 update_kwargs: dict = {}, distribution: str = "binomial",
-                 compute_p_value: bool = False,
-                 buffer: float = 0, beta: float = 5, **kwargs):
+                 group_method: str = "orientation",
+                 group_kwargs: dict = {},
+                 distribution: str = "binomial",
+                 compute_p_value: bool = True,
+                 buffer: float = 0, **kwargs):
         super(LipidEnrichment, self).__init__(universe.universe.trajectory,
                                               **kwargs)
         if n_leaflets < 1:
             raise ValueError('Must have at least one leaflet')
         self.n_leaflets = n_leaflets
-        group_method = group_method.lower().replace('_', '')
-        if group_method in ("spectralclustering", "graph", "orientation"):
-            self._get_leaflets = functools.partial(self._update_leafletfinder,
-                                                   method=group_method,
-                                                   kwargs=group_kwargs)
-        else:
-            raise ValueError("`group_method` should be one of "
-                             "{'spectralclustering', 'graph'}")
 
-        if update_method is None:
-            self._update_leaflets = self._get_leaflets
-        else:
-            update_method = update_method.lower().replace('_', '')
-            if update_method in ("spectralclustering", "graph", "orientation"):
-                self._update_leaflets = functools.partial(self._update_leafletfinder,
-                                                          method=update_method,
-                                                          kwargs=update_kwargs)
-            elif update_method == "centerofgeometry":
-                self._update_leaflets = self._update_cog
-            else:
-                raise ValueError("`update_method` should be one of "
-                                 "{'spectralclustering', 'graph', "
-                                 "'center_of_geometry'}")
-
+        self.group_method = group_method.lower()
         self.group_kwargs = group_kwargs
         self.update_leaflet_step = update_leaflet_step
 
-        distribution = distribution.lower()
-        if distribution == "binomial":
+        self.distribution = distribution.lower()
+        if self.distribution == "binomial":
             self._fit_distribution = self._fit_binomial
-        elif distribution == "gaussian":
+        elif self.distribution == "gaussian":
             self._fit_distribution = self._fit_gaussian
         else:
             raise ValueError("`distribution` should be either "
@@ -761,32 +745,33 @@ class LipidEnrichment(AnalysisBase):
         self.compute_p_value = compute_p_value
 
         if self.compute_p_value:  # look for scipy once
-            try:
-                import scipy.stats
-            except ImportError:
+            if not found_scipy:
                 raise ImportError("scipy is needed for this analysis but "
                                   "is not installed. Please install with "
                                   "`conda install scipy` or "
                                   "`pip install scipy`") from None
 
+            if buffer:
+                self._compute_p = self._compute_p_hypergeom_gamma
+            elif self.distribution == "gaussian":
+                self._compute_p = self._compute_p_gaussian
+            else:
+                self._compute_p = self._compute_p_hypergeom
+
         self.pbc = pbc
         self.box = universe.dimensions if pbc else None
         self.protein = universe.select_atoms(select_protein)
         self.residues = universe.select_atoms(select_residues).residues
-        self._resindices = self.residues.resindices
         self.n_residues = len(self.residues)
         self.headgroups = self.residues.atoms.select_atoms(select_headgroup)
 
         if compute_headgroup_only:
-            self._residue_groups = [r.atoms.select_atoms(select_headgroup)
-                                    for r in self.residues]
             self._compute_atoms = self.headgroups
         else:
-            self._residue_groups = self.residues
             self._compute_atoms = self.residues.atoms
+        self._resindices = self._compute_atoms.resindices
         self.cutoff = cutoff
         self.buffer = buffer
-        self.beta = beta
         self.leaflets = []
         self.leaflets_summary = []
 
@@ -810,48 +795,56 @@ class LipidEnrichment(AnalysisBase):
                                                self.n_residues), dtype=bool)
         self.leaflet_residues = np.zeros((self.n_frames, self.n_leaflets),
                                          dtype=object)
-        self._get_leaflets()
+        # self._update_leaflets()
+
+    def _update_leaflets(self):
+        lf = LeafletFinder(self.headgroups, method=self.group_method,
+                           n_groups=self.n_leaflets, **self.group_kwargs)
+        self._current_leaflets = lf.leaflets[:self.n_leaflets]
         self._current_ids = [getattr(r, self.attrname)
                              for r in self._current_leaflets]
 
     def _single_frame(self):
         if not self._frame_index % self.update_leaflet_step:
             self._update_leaflets()
-            self._current_ids = [getattr(r, self.attrname)
-                                 for r in self._current_leaflets]
 
-        hcom = self._compute_atoms.center_of_geometry(compound="residues")
-        pairs = distances.capped_distance(self.protein.positions, hcom,
+        # initial scoop for nearby groups
+        coords_ = self._compute_atoms.positions
+        pairs = distances.capped_distance(self.protein.positions,
+                                          coords_,
                                           self.max_cutoff, box=self.box,
                                           return_distances=False)
         if pairs.size > 0:
-            indices = np.sort(pairs[:, 1])
-            # indices = np.unique(indices)
+            indices = np.unique(pairs[:, 1])
         else:
             indices = []
 
-        hcom2 = hcom[indices]
+        # now look for groups in the buffer
+        around = coords_[indices]
         if len(indices) and self.buffer:
-            # compute soft cutoff values
             pairs2, dist = distances.capped_distance(self.protein.positions,
-                                                     hcom2, self.max_cutoff,
+                                                     around, self.max_cutoff,
                                                      min_cutoff=self.cutoff,
                                                      box=self.box,
                                                      return_distances=True)
             if pairs2.size > 0:
                 _ix = np.argsort(pairs2[:, 1])
-                indices2 = pairs2[_ix]
-                # indices2 = np.unique(indices)
+                indices2 = indices[pairs2[_ix, :1]]
                 dist = dist[_ix] - self.cutoff - self.mid_buffer
 
+                init_resix2 = self._resindices[indices2]
+                # sort through for minimum distance
+                resix2, splix = np.unique(init_resix2, return_index=True)
+                split_dist = np.split(dist, splix[1:])
+                min_dist = np.array([x.min() for x in split_dist])
+
                 # logistic function
-                resix2 = self._resindices[indices2]
                 for i, leaf in enumerate(self._current_leaflets):
-                    ids = self._current_ids[i]
+                    ids = self._current_ids[i][indices]
                     match, rix, lix = np.intersect1d(resix2, leaf.resindices,
                                                      assume_unique=True,
                                                      return_indices=True)
-                    subdist = dist[rix]
+                    subdist = min_dist[rix]
                     subids = ids[lix]
                     for j, x in enumerate(self.ids):
                         mask = (subids == x)
@@ -866,10 +859,11 @@ class LipidEnrichment(AnalysisBase):
             # don't double count
             indices = [x for x in indices if x not in indices2]
 
-        resix = self._resindices[indices]
+        init_resix = self._resindices[indices]
+        resix = np.unique(init_resix)
         for i, leaf in enumerate(self._current_leaflets):
             ids = self._current_ids[i]
-            _, ix1, ix2 = np.intersect1d(resix, leaf.resindices,
+            _, ix1, ix2 = np.intersect1d(resix, leaf.residues.resindices,
                                          assume_unique=True,
                                          return_indices=True)
             self.total_counts[i, self._frame_index] = len(ix1)
@@ -908,24 +902,6 @@ class LipidEnrichment(AnalysisBase):
             summary['Enrichment p-value'] = p
 
         return summary
-
-    def _compute_p_ttest(self, dei, *args):
-        # sample T-test, 2-tailed
-        t, p = scipy.stats.ttest_1samp(dei, 1)
-        return p
-
-    def _compute_p_hypergeom(self, dei, k, N, K, n):
-        return scipy.stats.hypergeom.pmf(k, N, K, n)
-
-    def _compute_p_hypergeom_gamma(self, dei, k, N, K, n):
-        K_k = binomial_gamma(K, k)
-        N_k = binomial_gamma(N - K, n - k)
-        N_n = binomial_gamma(N, n)
-        return K_k * N_k / N_n
-
-    def _compute_p_gaussian(self, dei, k, N, K, n):
-        sigma = (K/N) / 3
-        return scipy.stats.norm.pdf(k/n, K/N, sigma)
 
     def _fit_binomial(self, data: dict, n_near_species: np.ndarray,
                       n_near: np.ndarray, n_species: np.ndarray,
@@ -1075,19 +1051,6 @@ class LipidEnrichment(AnalysisBase):
             self.leaflets.append(timeseries)
             self.leaflets_summary.append(summary)
 
-    def _update_leafletfinder(self, method="spectralclustering", kwargs={}):
-        lf = LeafletFinder(self.headgroups, **kwargs,
-                           pbc=self.pbc, method=method)
-        self._current_leaflets = lf.leaflets
-
-    def _update_cog(self):
-        # this one relies on the leaflets not changing _too_ much. Fragile.
-        lcogs = [x.center_of_geometry() for x in self._current_leaflets]
-        rcogs = self.headgroups.center_of_geometry(compound='residues')
-        ix = distances.group_coordinates_by_cog(rcogs, lcogs, box=self.box,
-                                                return_predictor=False)
-        self._current_leaflets = [self._residue_groups[r] for r in ix]
-
     def summary_as_dataframe(self):
         """Convert the results summary into a pandas DataFrame.
 
@@ -1110,3 +1073,21 @@ class LipidEnrichment(AnalysisBase):
             df['Leaflet'] = i
         df = pd.concat(dfs)
         return df
+
+    def _compute_p_ttest(self, dei, *args):
+        # sample T-test, 2-tailed
+        t, p = scipy.stats.ttest_1samp(dei, 1)
+        return p
+
+    def _compute_p_hypergeom(self, dei, k, N, K, n):
+        return scipy.stats.hypergeom.pmf(k, N, K, n)
+
+    def _compute_p_hypergeom_gamma(self, dei, k, N, K, n):
+        K_k = binomial_gamma(K, k)
+        N_k = binomial_gamma(N - K, n - k)
+        N_n = binomial_gamma(N, n)
+        return K_k * N_k / N_n
+
+    def _compute_p_gaussian(self, dei, k, N, K, n):
+        sigma = (K/N) / 2.5
+        return scipy.stats.norm.pdf(k/n, K/N, sigma)

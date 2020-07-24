@@ -517,14 +517,15 @@ def group_vectors_by_orientation(coordinates, orientations,
                 comm1.append(c)
 
             n_members = [len(x) for x in members]
-            a_members = [inter_angles[x].mean() for x in comm1]
-            a_std = [inter_angles[x].std() for x in comm1]
+            a_members = [inter_angles[x].mean() if len(x)
+                         else 0 for x in comm1]
+            # a_std = [inter_angles[x].std() for x in comm1]
 
             if any(n_members):
                 _most = np.argmax(n_members)
                 _closest = np.argmax(a_members)
                 _mean = a_members[_most]
-                _std = a_std[_most]
+                # _std = a_std[_most]
                 if _mean > angle_threshold:
                     indices[_most] = np.concatenate([indices[_most],
                                                      current_gp])
