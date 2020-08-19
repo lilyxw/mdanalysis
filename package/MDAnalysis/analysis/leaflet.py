@@ -418,44 +418,15 @@ class LeafletFinder(object):
         guessed = dist / 2
         return max(guessed, min_cutoff)
 
-    def __init__(self, universe, select='all', cutoff="guess", pbc=True,
-                 method="graph", n_groups=2,
-                 calculate_orientations=False, **kwargs):
-        self.universe = universe.universe
-        self.select = select
-        self.selection = universe.atoms.select_atoms(select, periodic=pbc)
-        self.headgroups = self.selection.split('residue')
-        self.residues = self.selection.residues
-        self.n_residues = len(self.residues)
-        self.n_groups = n_groups
-        self.pbc = pbc
-        self.box = self.universe.dimensions if pbc else None
+    def run(self):
+        """
+        Actually run the analysis.
+
+        This is its own function to avoid repeating expensive setup in
+        __init__ when it's called on every frame.
+        """
         self.positions = self._get_positions_by_residue(self.selection)
-
-        if isinstance(method, str):
-            method = method.lower().replace('_', '')
-            self.method = method
-        if method == "graph":
-            self._method = distances.group_coordinates_by_graph
-        elif method == "spectralclustering":
-            self._method = distances.group_coordinates_by_spectralclustering
-        elif method == "centerofgeometry":
-            self._method = distances.group_coordinates_by_cog
-        elif method == "orientation":
-            self._method = distances.group_vectors_by_orientation
-            calculate_orientations = True
-        else:
-            self._method = self.method = method
-
-        if cutoff == "guess" or cutoff < 0:
-            cutoff = self._guess_cutoff(cutoff)
-        elif not isinstance(cutoff, (int, float)):
-            raise ValueError("cutoff must be an int, float, or 'guess'. "
-                             f"Given: {cutoff}")
-        self.cutoff = cutoff
-
-        self.orientations = None
-        if calculate_orientations:
+        if self.calculate_orientations:
             # faster than doing lipid_orientations over and over
             not_hg = self.residues.atoms - self.selection
             cog_other = self._get_positions_by_residue(not_hg,
@@ -467,7 +438,7 @@ class LeafletFinder(object):
                                cutoff=self.cutoff, box=self.box,
                                return_predictor=True,
                                orientations=self.orientations,
-                               n_groups=n_groups, **kwargs)
+                               n_groups=self.n_groups, **self.kwargs)
 
         if isinstance(results, tuple):
             self.components, self.predictor = results
@@ -486,6 +457,47 @@ class LeafletFinder(object):
         self.leaflets = sorted(self.groups,
                                key=lambda x: x.center_of_geometry()[-1],
                                reverse=True)
+
+
+    def __init__(self, universe, select='all', cutoff=None, pbc=True,
+                 method="spectralclustering", n_groups=2,
+                 calculate_orientations=False, **kwargs):
+        self.universe = universe.universe
+        self.select = select
+        self.selection = universe.atoms.select_atoms(select, periodic=pbc)
+        self.headgroups = self.selection.split('residue')
+        self.residues = self.selection.residues
+        self.n_residues = len(self.residues)
+        self.n_groups = n_groups
+        self.pbc = pbc
+        self.box = self.universe.dimensions if pbc else None
+
+        if isinstance(method, str):
+            method = method.lower().replace('_', '')
+            self.method = method
+        if method == "graph":
+            self._method = distances.group_coordinates_by_graph
+        elif method == "spectralclustering":
+            self._method = distances.group_coordinates_by_spectralclustering
+            calculate_orientations = True
+        elif method == "centerofgeometry":
+            self._method = distances.group_coordinates_by_cog
+        elif method == "orientation":
+            self._method = distances.group_vectors_by_orientation
+            calculate_orientations = True
+        else:
+            self._method = self.method = method
+
+        if cutoff is None or cutoff < 0:
+            cutoff = self._guess_cutoff(cutoff)
+        elif not isinstance(cutoff, (int, float)):
+            raise ValueError("cutoff must be an int, float, or 'guess'. "
+                             f"Given: {cutoff}")
+        self.cutoff = cutoff
+        self.kwargs = kwargs
+        self.orientations = None
+        self.calculate_orientations = calculate_orientations
+        self.run()
 
     def groups_iter(self):
         """Iterator over all leaflet :meth:`groups`"""
@@ -718,11 +730,11 @@ class LipidEnrichment(AnalysisBase):
                  cutoff: float = 6, pbc: bool = True,
                  compute_headgroup_only: bool = True,
                  update_leaflet_step: int = 1,
-                 group_method: str = "orientation",
+                 group_method: str = "spectralclustering",
                  group_kwargs: dict = {},
                  distribution: str = "binomial",
                  compute_p_value: bool = True,
-                 buffer: float = 0, **kwargs):
+                 buffer: float = 0, beta=4, **kwargs):
         super(LipidEnrichment, self).__init__(universe.universe.trajectory,
                                               **kwargs)
         if n_leaflets < 1:
@@ -761,9 +773,11 @@ class LipidEnrichment(AnalysisBase):
         self.pbc = pbc
         self.box = universe.dimensions if pbc else None
         self.protein = universe.select_atoms(select_protein)
-        self.residues = universe.select_atoms(select_residues).residues
-        self.n_residues = len(self.residues)
+        ag = universe.select_atoms(select_residues)
+        self.residues = ag.residues
+        self.n_residues = len(ag.residues)
         self.headgroups = self.residues.atoms.select_atoms(select_headgroup)
+        assert len(self.headgroups.residues) == self.n_residues
 
         if compute_headgroup_only:
             self._compute_atoms = self.headgroups
@@ -772,6 +786,7 @@ class LipidEnrichment(AnalysisBase):
         self._resindices = self._compute_atoms.resindices
         self.cutoff = cutoff
         self.buffer = buffer
+        self.beta = beta
         self.leaflets = []
         self.leaflets_summary = []
 
@@ -783,6 +798,9 @@ class LipidEnrichment(AnalysisBase):
         # in case of change + re-run
         self.mid_buffer = self.buffer / 2.0
         self.max_cutoff = self.cutoff + self.buffer
+        self._buffer_sigma = self.buffer / self.beta
+        if self._buffer_sigma:
+            self._buffer_coeff = 1 / (self._buffer_sigma * np.sqrt(2 * np.pi))
         self.ids = np.unique(getattr(self.residues, self.attrname))
 
         # results
@@ -800,7 +818,8 @@ class LipidEnrichment(AnalysisBase):
     def _update_leaflets(self):
         lf = LeafletFinder(self.headgroups, method=self.group_method,
                            n_groups=self.n_leaflets, **self.group_kwargs)
-        self._current_leaflets = lf.leaflets[:self.n_leaflets]
+        self._current_leaflets = [l.residues for l in lf.leaflets[:self.n_leaflets]]
+        lengths = [len(x) for x in self._current_leaflets]
         self._current_ids = [getattr(r, self.attrname)
                              for r in self._current_leaflets]
 
@@ -812,36 +831,45 @@ class LipidEnrichment(AnalysisBase):
         coords_ = self._compute_atoms.positions
         pairs = distances.capped_distance(self.protein.positions,
                                           coords_,
-                                          self.max_cutoff, box=self.box,
+                                          self.cutoff, box=self.box,
                                           return_distances=False)
         if pairs.size > 0:
             indices = np.unique(pairs[:, 1])
         else:
             indices = []
 
+        # print("indices", indices)
+
         # now look for groups in the buffer
-        around = coords_[indices]
         if len(indices) and self.buffer:
             pairs2, dist = distances.capped_distance(self.protein.positions,
-                                                     around, self.max_cutoff,
+                                                     coords_, self.max_cutoff,
                                                      min_cutoff=self.cutoff,
                                                      box=self.box,
                                                      return_distances=True)
+            
+            # don't count things in inner cutoff
+            mask = [x not in indices for x in pairs2[:, 1]]
+            pairs2 = pairs2[mask]
+            dist = dist[mask]
+
             if pairs2.size > 0:
                 _ix = np.argsort(pairs2[:, 1])
-                indices2 = indices[pairs2[_ix, :1]]
-                dist = dist[_ix] - self.cutoff - self.mid_buffer
+                indices2 = pairs2[_ix][:, 1]
+                dist = dist[_ix] - self.cutoff# - self.mid_buffer
 
                 init_resix2 = self._resindices[indices2]
                 # sort through for minimum distance
-                resix2, splix = np.unique(init_resix2, return_index=True)
+                ids2, splix = np.unique(init_resix2, return_index=True)
+                resix2 = init_resix2[splix]
                 split_dist = np.split(dist, splix[1:])
                 min_dist = np.array([x.min() for x in split_dist])
+                # print('min dist', len(min_dist), resix2)
 
                 # logistic function
                 for i, leaf in enumerate(self._current_leaflets):
-                    ids = self._current_ids[i][indices]
-                    match, rix, lix = np.intersect1d(resix2, leaf.resindices,
+                    ids = self._current_ids[i]
+                    match, rix, lix = np.intersect1d(resix2, leaf.residues.resindices,
                                                      assume_unique=True,
                                                      return_indices=True)
                     subdist = min_dist[rix]
@@ -849,15 +877,11 @@ class LipidEnrichment(AnalysisBase):
                     for j, x in enumerate(self.ids):
                         mask = (subids == x)
                         xdist = subdist[mask]
-                        sigma = (self.buffer / 2) / 3  # 99.7%
-                        exp = np.exp(-0.5 * ((xdist/sigma) ** 2))
-                        n = 1 / (sigma * np.sqrt(2*np.pi) * exp)
-                        self.near_counts[i, j, self._frame_index] += n
-            else:
-                indices2 = []
+                        exp = -0.5 * ((xdist/self._buffer_sigma) ** 2)
+                        n = self._buffer_coeff * np.exp(exp)
+                        self.near_counts[i, j, self._frame_index] += n.sum()
 
-            # don't double count
-            indices = [x for x in indices if x not in indices2]
+        soft = self.near_counts[:, :, self._frame_index].sum()
 
         init_resix = self._resindices[indices]
         resix = np.unique(init_resix)
@@ -871,6 +895,10 @@ class LipidEnrichment(AnalysisBase):
             for j, x in enumerate(self.ids):
                 self.residue_counts[i, j, self._frame_index] += sum(ids == x)
                 self.near_counts[i, j, self._frame_index] += sum(subids == x)
+
+        both = self.near_counts[:, :, self._frame_index].sum()
+        # print("cutoffs : ", soft, both, both-soft)
+
 
     def _fit_gaussian(self, data, *args, **kwargs):
         """Treat each frame as an independent observation in a gaussian
@@ -888,11 +916,11 @@ class LipidEnrichment(AnalysisBase):
         frac = data['Fraction near protein']
         dei = data['Enrichment']
         summary = {
-            'Average near protein': near.mean(),
+            'Mean near protein': near.mean(),
             'SD near protein': near.std(),
-            'Average fraction near protein': frac.mean(),
+            'Mean fraction near protein': frac.mean(),
             'SD fraction near protein': frac.std(),
-            'Average enrichment': dei.mean(),
+            'Mean enrichment': dei.mean(),
             'Median enrichment': np.median(dei),
             'SD enrichment': dei.std()
         }
@@ -947,12 +975,12 @@ class LipidEnrichment(AnalysisBase):
             p_exp = 0
 
         # n events: assume normal
-        summary['Average near protein'] = n_near_species.mean()
+        summary['Mean near protein'] = n_near_species.mean()
         summary['SD near protein'] = n_near_species.std()
 
         # actually hypergeometric, but binomials are easier
         # X ~ B(n_near_tot, p_real)
-        summary['Average fraction near protein'] = p_real
+        summary['Mean fraction near protein'] = p_real
         s2 = np.mean((p_time - p_real) ** 2)
         var_frac = ((p_real * (1-p_real)) - s2) * n_near_tot
         summary['SD fraction near protein'] = (var_frac ** 0.5) / n_near_tot
@@ -962,7 +990,7 @@ class LipidEnrichment(AnalysisBase):
         # log T is approx. normally distributed. T is log-normal distribution
         # FIRST catch edge cases where this is not suitable
         if p_exp == 0:  # trivial case
-            summary['Average enrichment'] = 1  # 0 / 0
+            summary['Mean enrichment'] = 1  # 0 / 0
             summary['SD enrichment'] = 0
             summary['Median enrichment'] = 1
             if self.compute_p_value:
@@ -970,17 +998,17 @@ class LipidEnrichment(AnalysisBase):
             return summary
 
         if p_real == 0:  # totally depleted
-            summary['Average enrichment'] = 0
+            summary['Mean enrichment'] = 0
             summary['SD enrichment'] = 0
             summary['Median enrichment'] = 0
             if self.compute_p_value:
                 # X ~ B(n, p_exp)(0)
-                p = scipy.stats.binom.pmf(0, n_near_tot, p_exp)
+                p = scipy.stats.binom.cdf(0, n_near_tot, p_exp)
                 summary['Enrichment p-value'] = p
             return summary
 
         if p_exp == 1:  # totally this thing
-            summary['Average enrichment'] = 1  # 1 / 1
+            summary['Mean enrichment'] = 1  # 1 / 1
             summary['SD enrichment'] = 0
             summary['Median enrichment'] = 1
             if self.compute_p_value:
@@ -989,15 +1017,30 @@ class LipidEnrichment(AnalysisBase):
 
         mean_logT = np.log(p_real / p_exp)
         var_logT = ((1/p_real) + (1/p_exp) - 2) / n_near_tot
-        summary['Average enrichment'] = np.exp(mean_logT + (var_logT/2))
-        var_enr = (np.exp(var_logT) - 1) * np.exp(2*mean_logT + var_logT)
-        summary['SD enrichment'] = var_enr ** 0.5
+        summary['Mean log T'] = mean_logT
+        summary['Var log T'] = var_logT
+        # summary['1/p_real'] = 1/p_real
+        # summary['1/p_exp'] = 1/p_exp
+        # summary['Near near, total'] = n_near_tot
+        summary['Mean enrichment'] = mean = np.exp(mean_logT) * np.exp(var_logT/2)
+        summary['Variance enrichment'] = (np.exp(var_logT) - 1) * np.exp(2*mean_logT + var_logT)
+        # var_enr = (np.exp(var_logT) - 1) * np.exp(2*mean_logT + var_logT)
+        diff = (data['Enrichment'] - mean) ** 2
+        var_pop = diff.sum() / (self.n_frames - 1)
+        summary['Population SD enrichment'] = var_pop ** 0.5
         summary['Median enrichment'] = p_real / p_exp
         if self.compute_p_value:
             v_logT_ = 2 * (1/p_exp - 1) / n_near_tot
             s = v_logT_ ** 0.5  # sd
-            avg = summary['Average enrichment']
-            summary['Enrichment p-value'] = scipy.stats.lognorm.pdf(avg, s)
+            avg = summary['Median enrichment']
+            # if avg > 1:
+            #     summary['Enrichment p-value'] = scipy.stats.lognorm.sf(avg, s)
+            # else:
+            #     summary['Enrichment p-value'] = scipy.stats.lognorm.cdf(avg, s)
+            if avg <= 1:
+                summary['Enrichment p-value'] = scipy.stats.lognorm.cdf(avg, s)
+            else:
+                summary['Enrichment p-value'] = scipy.stats.lognorm.sf(avg, s)
         return summary
 
     def _collate(self, n_near_species: np.ndarray, n_near: np.ndarray,
@@ -1010,7 +1053,9 @@ class LipidEnrichment(AnalysisBase):
         data['Total number'] = n_species
         n_total = np.nan_to_num(n_species / n_all, nan=0.0)
         data['Fraction total'] = n_total
-        data['Enrichment'] = dei = np.nan_to_num(frac / n_total, nan=0.0)
+        n_total[n_total == 0] = np.nan
+        dei = np.nan_to_num(frac / n_total, nan=0.0)
+        data['Enrichment'] = dei
         if self.compute_p_value:
             pval = np.zeros(len(frac))
             for i, args in enumerate(zip(dei, n_near_species, n_all,
@@ -1080,7 +1125,12 @@ class LipidEnrichment(AnalysisBase):
         return p
 
     def _compute_p_hypergeom(self, dei, k, N, K, n):
-        return scipy.stats.hypergeom.pmf(k, N, K, n)
+        kn = k/n
+        KN = K/N
+        if kn <= KN:
+            return scipy.stats.hypergeom.cdf(k, N, K, n)
+        return scipy.stats.hypergeom.sf(k, N, K, n)
+        # return scipy.stats.hypergeom.pmf(k, N, K, n)
 
     def _compute_p_hypergeom_gamma(self, dei, k, N, K, n):
         K_k = binomial_gamma(K, k)
@@ -1089,5 +1139,11 @@ class LipidEnrichment(AnalysisBase):
         return K_k * N_k / N_n
 
     def _compute_p_gaussian(self, dei, k, N, K, n):
-        sigma = (K/N) / 2.5
-        return scipy.stats.norm.pdf(k/n, K/N, sigma)
+        kn = k/n
+        KN = K/N
+        sigma = KN / 2.5
+        if kn <= KN:
+            return scipy.stats.norm.cdf(kn, KN, sigma)
+        return scipy.stats.norm.sf(kn, KN, sigma)
+
+        # return scipy.stats.norm.pdf(k/n, K/N, sigma)
