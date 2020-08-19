@@ -262,7 +262,7 @@ def group_coordinates_by_spectralclustering(coordinates, orientations,
     # first merge by similar neighbours
     norm = np.linalg.norm(orientations, axis=1)
     orientations /= norm.reshape(-1, 1)
-    angles = np.dot(orientations, orientations.T) #/ np.outer(norm, norm.T)
+    angles = np.dot(orientations, orientations.T)
     n_coordinates = len(coordinates)
     indices = np.arange(n_coordinates)
 
@@ -271,9 +271,7 @@ def group_coordinates_by_spectralclustering(coordinates, orientations,
     pairs, distances = capped_distance(coordinates, coordinates, cutoff,
                                        box=box, return_distances=True)
     pi, pj = tuple(pairs.T)
-    # dist_mat[pi, pj] = dist_mat[pj, pi] = distances
 
-    # calculate normals
     splix = np.where(np.ediff1d(pairs[:, 0]))[0] + 1
     plist = np.split(pairs, splix)
     dlist = np.split(distances, splix)
@@ -526,7 +524,6 @@ def group_vectors_by_orientation(coordinates, orientations,
     ids, counts = np.unique(groups_, return_counts=True)
 
     n_squash = len(ids) - n_groups
-    # print("n_squash:", n_squash)
     indices = [np.where(groups_ == i)[0] for i in ids[np.argsort(counts)]]
     ignored = []
 

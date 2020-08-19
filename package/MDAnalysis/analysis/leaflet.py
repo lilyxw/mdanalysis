@@ -452,11 +452,15 @@ class LeafletFinder(object):
             self.groups = [sum(self.headgroups[y] for y in x)
                            for x in self.components]
 
+        self.group_positions = [self.positions[x] for x in self.components]
         self.sizes = [len(ag) for ag in self.groups]
 
-        self.leaflets = sorted(self.groups,
-                               key=lambda x: x.center_of_geometry()[-1],
-                               reverse=True)
+        z = [x.center_of_geometry()[-1] for x in self.groups]
+        ix = np.argsort(z)
+        self.leaflets = [self.groups[i] for i in ix[::-1]]
+        self.leaflet_positions = [self.group_positions[i] for i in ix[::-1]]
+
+        
 
 
     def __init__(self, universe, select='all', cutoff=None, pbc=True,
