@@ -180,8 +180,8 @@ from . import distances
 from .base import AnalysisBase
 from ..core import groups
 from ..lib.mdamath import vector_of_best_fit, make_whole
+from ..lib.c_distances import unwrap_around
 from .. import selections, lib
-from . import distances
 
 from ..due import due, Doi
 

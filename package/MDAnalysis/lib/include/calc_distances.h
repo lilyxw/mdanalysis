@@ -546,6 +546,25 @@ void _coord_transform(coordinate* coords, int numCoords, double* box)
   }
 }
 
+void _unwrap_around(coordinate* __restrict__ coords, int numCoords,
+                    float* __restrict__ center, double* __restrict__ box)
+{
+  // Unwrap coordinates to around the proposed center
+  double half_x = box[0] * .5;
+  double half_y = box[1] * .5;
+  double half_z = box[2] * .5;
+
+  for (int i = 0; i < numCoords; i++) {
+    double dx = coords[i][0] - center[0];
+    double dy = coords[i][1] - center[1];
+    double dz = coords[i][2] - center[2];
+
+    coords[i][0] -= (fabs(dx) > half_x) * copysign(box[0], dx);
+    coords[i][1] -= (fabs(dy) > half_y) * copysign(box[1], dy);
+    coords[i][2] -= (fabs(dz) > half_z) * copysign(box[2], dz);
+  }
+}
+
 static void _calc_bond_distance(coordinate* atom1, coordinate* atom2,
                                 int numatom, double* distances)
 {
@@ -612,6 +631,35 @@ static void _calc_bond_distance_triclinic(coordinate* atom1, coordinate* atom2,
     minimum_image_triclinic(dx, box);
     rsq = (dx[0]*dx[0])+(dx[1]*dx[1])+(dx[2]*dx[2]);
     *(distances+i) = sqrt(rsq);
+  }
+}
+
+static inline double _calc_norm_vec3(float* vec)
+{
+  return sqrt(vec[0]*vec[0] + vec[1]*vec[1] + vec[2]*vec[2]);
+}
+
+static inline double _calc_dot_vec3(float* vec1, float* vec2)
+{
+  return vec1[0]*vec2[0] + vec1[1]*vec2[1] + vec1[2]*vec2[2];
+}
+
+
+void _calc_cosine_similarity(coordinate* vec1, int numVec1,
+                             coordinate* vec2, int numVec2,
+                             double* cosines)
+{
+  double norm2[numVec2];
+
+  for (int j=0; j<numVec2; j++) {
+    norm2[j] = _calc_norm_vec3(vec2[j]);
+  }
+
+  for (int i=0; i<numVec1; i++) {
+    double norm_i = _calc_norm_vec3(vec1[i]);
+    for (int j=0; j<numVec2; j++) {
+      *(cosines + i*numVec2 + j) = _calc_dot_vec3(vec1[i], vec2[j]) / (norm_i * norm2[j]);
+    }
   }
 }
 

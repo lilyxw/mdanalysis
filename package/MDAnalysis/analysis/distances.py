@@ -49,7 +49,7 @@ from ..lib.distances import (capped_distance,
                              distance_array,  # legacy reasons
                              apply_PBC
                              )
-from ..lib.c_distances import contact_matrix_no_pbc, contact_matrix_pbc
+from ..lib.c_distances import contact_matrix_no_pbc, contact_matrix_pbc, unwrap_around, calc_cosine_similarity
 from ..lib.NeighborSearch import AtomNeighborSearch
 from ..lib.distances import calc_bonds
 from ..lib.mdamath import vector_of_best_fit
@@ -278,17 +278,19 @@ def group_coordinates_by_spectralclustering(coordinates, orientations,
 
     for p, d in zip(plist, dlist):
         i = p[0, 0]
-        js_ = p[:, 1]
+        js_ = p[1:, 1]  # first is self-to-self
+        d = d[1:]
         i_coord = coordinates[i]
-        neigh_ = coordinates[js_]
-        vec = orientations[i]
+        neigh_ = coordinates[js_].copy()
+        vec = orientations[[i]]
         if box is not None:
-            diff = neigh_ - i_coord
-            move = np.where(np.abs(diff) > box[:3]/2)
-            neigh_[move] -= box[move[1]] * np.sign(diff[move])
+            unwrap_around(neigh_, i_coord, box[:3])
         neigh_ -= i_coord
-        ang_ = [np.dot(x, vec)/np.linalg.norm(x) for x in neigh_]
-        ang_ = np.nan_to_num(ang_, nan=1)
+
+        # norms = np.einsum("ij,ij->i", neigh_, neigh_) ** 0.5
+        # ang_ = np.matmul([vec], neigh_.T) / norms
+        ang_ = calc_cosine_similarity(vec, neigh_)
+        # ang_ = np.nan_to_num(ang_, nan=1)
         proj = np.abs(d * ang_)
         dist_mat[i, js_] = dist_mat[js_, i] = proj + d
 

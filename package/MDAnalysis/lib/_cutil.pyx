@@ -36,7 +36,8 @@ from cython.operator cimport dereference as deref
 
 
 __all__ = ['unique_int_1d', 'make_whole', 'find_fragments',
-           '_sarrus_det_single', '_sarrus_det_multiple']
+           '_sarrus_det_single', '_sarrus_det_multiple',
+           'unwrap_around']
 
 cdef extern from "calc_distances.h":
     ctypedef float coordinate[3]
