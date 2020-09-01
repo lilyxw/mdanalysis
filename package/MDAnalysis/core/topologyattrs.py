@@ -186,6 +186,18 @@ class _TopologyAttrMeta(type):
                     clean = name.lower().replace('_', '')
                     _TOPOLOGY_ATTRNAMES[clean] = name
 
+            # add each to "same attr as" class
+            if singular not in selection.SameSelection.prop_trans:
+                selection.SameSelection.prop_trans[singular] = attrname
+
+            # add token to selectiondict
+            if singular not in selection._SELECTIONDICT:
+                dtype = classdict.get("dtype")
+                if dtype is not None:
+                    per_obj = classdict.get("per_object", "atom")
+                    selection.gen_selection_class(singular, attrname, dtype,
+                                                  per_obj)
+
 
 class TopologyAttr(object, metaclass=_TopologyAttrMeta):
     """Base class for Topology attributes.
