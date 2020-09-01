@@ -166,6 +166,7 @@ Classes and Functions
 """
 import warnings
 import functools
+import logging
 
 import numpy as np
 try:
@@ -181,6 +182,7 @@ from .base import AnalysisBase
 from ..core import groups
 from ..lib.mdamath import vector_of_best_fit, make_whole
 from ..lib.c_distances import unwrap_around
+from ..lib.log import ProgressBar
 from .. import selections, lib
 
 from ..due import due, Doi
@@ -191,6 +193,7 @@ due.cite(Doi("10.1002/jcc.21787"),
 
 del Doi
 
+logger = logging.getLogger(__name__)
 
 def lipid_orientation(headgroup, residue=None, unit=False, box=None):
     """Determine lipid orientation from headgroup.
@@ -387,10 +390,10 @@ class LeafletFinder(object):
         return np.split(xyz, n_xyz)
 
     def _get_positions_by_residue(self, selection, centers=None):
-        if self.box is None:
+        if not self.pbc or selection.dimensions is None:
             return selection.center(None, compound='residues', pbc=self.pbc)
         sel = [x.positions.copy() for x in selection.split('residue')]
-        uw = self._unwrap(sel, box=self.box, centers=centers)
+        uw = self._unwrap(sel, box=selection.dimensions[:3], centers=centers)
         return np.array([x.mean(axis=0) for x in uw])
 
     def _guess_cutoff(self, cutoff, min_cutoff=15):
@@ -402,7 +405,7 @@ class LeafletFinder(object):
         else:
             box = box[:3]
 
-        per_leaflet = self.n_residues / self.n_groups
+        per_leaflet = self.n_residues / self.n_leaflets
         spread = box / (per_leaflet ** 0.5)
 
         if self.method == "graph":
@@ -434,11 +437,16 @@ class LeafletFinder(object):
             orients = cog_other - self.positions
             self.orientations = orients
 
+        if self.pbc:
+            box = self.universe.dimensions
+        else:
+            box = None
+
         results = self._method(self.positions,
-                               cutoff=self.cutoff, box=self.box,
+                               cutoff=self.cutoff, box=box,
                                return_predictor=True,
                                orientations=self.orientations,
-                               n_groups=self.n_groups, **self.kwargs)
+                               n_groups=self.n_leaflets, **self.kwargs)
 
         if isinstance(results, tuple):
             self.components, self.predictor = results
@@ -456,15 +464,15 @@ class LeafletFinder(object):
         self.sizes = [len(ag) for ag in self.groups]
 
         z = [x.center_of_geometry()[-1] for x in self.groups]
-        ix = np.argsort(z)
-        self.leaflets = [self.groups[i] for i in ix[::-1]]
-        self.leaflet_positions = [self.group_positions[i] for i in ix[::-1]]
+        self.leaflet_order = np.argsort(z)[::-1]
+        self.leaflets = [self.groups[i] for i in self.leaflet_order]
+        self.leaflet_positions = [self.group_positions[i] for i in self.leaflet_order]
 
         
 
 
     def __init__(self, universe, select='all', cutoff=None, pbc=True,
-                 method="spectralclustering", n_groups=2,
+                 method="spectralclustering", n_leaflets=2,
                  calculate_orientations=False, **kwargs):
         self.universe = universe.universe
         self.select = select
@@ -472,9 +480,8 @@ class LeafletFinder(object):
         self.headgroups = self.selection.split('residue')
         self.residues = self.selection.residues
         self.n_residues = len(self.residues)
-        self.n_groups = n_groups
+        self.n_leaflets = n_leaflets
         self.pbc = pbc
-        self.box = self.universe.dimensions if pbc else None
 
         if isinstance(method, str):
             method = method.lower().replace('_', '')
@@ -576,6 +583,10 @@ def optimize_cutoff(universe, select, dmin=10.0, dmax=20.0, step=0.5,
     """
     kwargs.pop('cutoff', None)  # not used, so we filter it
     _sizes = []
+    if not isinstance(select, str):
+        universe = select
+        select = "all"
+    
     for cutoff in np.arange(dmin, dmax, step):
         LF = LeafletFinder(universe, select, cutoff=cutoff, **kwargs)
         # heuristic:
@@ -597,6 +608,479 @@ def optimize_cutoff(universe, select, dmin=10.0, dmax=20.0, step=0.5,
     return results[0]  # (cutoff,N) with N>1 and shortest cutoff
 
 
+        # return scipy.stats.norm.pdf(k/n, K/N, sigma)
+
+# class LipidFlipFlop(AnalysisBase):
+#     def __init__(self, universe, select="name PO4",
+#                  leaflet_method="spectralclustering",
+#                  cutoff=20, leaflet_kwargs={},
+#                  min_frames=1, group_by_attr="resnames",
+#                  **kwargs):
+#         super(LipidFlipFlop, self).__init__(universe.universe.trajectory,
+#                                             **kwargs)
+#         self.selection = universe.select_atoms(select)
+#         self.residues = self.selection.residues
+#         self.n_res = len(self.residues)
+#         self.leaflet_finder = LeafletFinder(universe, select=select,
+#                                             n_groups=2,
+#                                             cutoff=cutoff,
+#                                             **leaflet_kwargs)
+#         self.min_frames = min_frames
+#         self.ids = getattr(self.residues, group_by_attr)
+        
+#     def _prepare(self):
+#         self.residue_leaflet_raw = np.zeros((self.n_frames, self.n_res))
+    
+#     def _single_frame(self):
+#         self.leaflet_finder.run()
+#         lower = self.leaflet_finder.components[self.leaflet_finder.leaflet_order[1]]
+#         self.residue_leaflet_raw[self._frame_index][lower] = 1
+
+#     def _conclude(self):
+#         self.residue_leaflet = np.zeros_like(self.residue_leaflet_raw)
+#         self.flips = np.zeros(self.n_res)
+#         self.flops = np.zeros(self.n_res)
+
+#         if not self.n_frames:
+#             return
+
+#         for i in range(self.n_res):
+#             trans = self.residue_leaflet_raw[:, i]
+#             # trans = smooth_transitions(self.residue_leaflet_raw[:, i],
+#             #                            self.min_frames)
+#             self.residue_leaflet[:, i] = trans
+#             diff = trans[1:] - trans[:-1]
+#             self.flips[i] = np.sum(diff > 0)  # 0: upper, 1: lower
+#             self.flops[i] = np.sum(diff < 0)
+        
+#         self.translocations = self.flips + self.flops
+
+#         self.flips_by_attr = {}
+#         self.flops_by_attr = {}
+#         self.translocations_by_attr = {}
+#         for each in np.unique(self.ids):
+#             mask = self.ids == each
+#             self.flips_by_attr[each] = int(sum(self.flips[mask]))
+#             self.flops_by_attr[each] = int(sum(self.flops[mask]))
+#             self.translocations_by_attr[each] = int(sum(self.translocations[mask]))
+
+
+def lipid_area(headgroup_coordinate,
+               neighbor_coordinates,
+               other_coordinates=None,
+               box=None, plot=False):
+    from scipy.spatial import Voronoi, voronoi_plot_2d
+    import matplotlib.pyplot as plt
+    # preprocess coordinates
+    headgroup_coordinate = np.asarray(headgroup_coordinate)
+    if len(headgroup_coordinate.shape) > 1:
+        if box is not None:
+            headgroup_coordinates = unwrap_around(headgroup_coordinate.copy(),
+                                                headgroup_coordinate[0],
+                                                box)
+        headgroup_coordinate = headgroup_coordinates.mean(axis=0)
+    if box is not None:
+        neighbor_coordinates = unwrap_around(neighbor_coordinates.copy(),
+                                             headgroup_coordinate,
+                                             box)
+        if other_coordinates is not None:
+            other_coordinates = np.asarray(other_coordinates).copy()
+            other_coordinates = unwrap_around(other_coordinates,
+                                              headgroup_coordinate,
+                                              box)
+    points = np.r_[[headgroup_coordinate], neighbor_coordinates]
+    center = points.mean(axis=0)
+    points -= center
+
+    Mt_M = np.matmul(points.T, points)
+    u, s, vh = np.linalg.linalg.svd(Mt_M)
+    # project onto plane
+
+    if other_coordinates is not None:
+        points = np.r_[points, other_coordinates-center]
+    xy = np.matmul(points, vh[:2].T)
+    # voronoi
+    vor = Voronoi(xy)
+    headgroup_cell_int = vor.point_region[0]
+    headgroup_cell = vor.regions[headgroup_cell_int]
+    if plot:
+        fig = voronoi_plot_2d(vor, show_vertices=False, line_alpha=0.6)
+        plt.plot([vor.points[0][0]], [vor.points[0][1]], 'r+', markersize=12)
+        plt.show()
+
+    if not all(vertex != -1 for vertex in headgroup_cell):
+
+        raise ValueError("headgroup not bounded by Voronoi cell points: "
+                         f"{headgroup_cell}. "
+                         "Try including more neighbor points")
+    # x and y should be ordered clockwise
+    x, y = np.array([vor.vertices[x] for x in headgroup_cell]).T
+    area = np.dot(x[:-1], y[1:]) - np.dot(y[:-1], x[1:])
+    area += (x[-1] * y[0] - y[-1] * x[0])
+    lipid_area = 0.5 * np.abs(area)
+
+    
+    # if lipid_area < 5 or lipid_area > 100:
+    #     print(lipid_area)
+    #     fig = voronoi_plot_2d(vor, show_vertices=False, line_alpha=0.6)
+    #     plt.plot([vor.points[0][0]], [vor.points[0][1]], 'r+', markersize=12)
+    #     plt.show()
+    return lipid_area
+
+
+
+class LeafletAnalysis(AnalysisBase):
+    def __init__(self, universe, select="all",
+                 leafletfinder=None,
+                 leaflet_kwargs={}, 
+                 group_by_attr="resnames",
+                 pbc=True, update_leaflet_step=1, **kwargs):
+        super().__init__(universe.universe.trajectory, **kwargs)
+        self.universe = universe.universe
+        self.selection = universe.select_atoms(select)
+        self.headgroups = self.selection.split("residue")
+        self.residues = self.selection.residues
+        self.resindices = self.residues.resindices
+        self.n_residues = len(self.residues)
+        self.group_by_attr = group_by_attr
+        self.ids = getattr(self.residues, self.group_by_attr)
+        self.update_leaflet_step = update_leaflet_step
+
+        if leafletfinder is not None:
+            self.leafletfinder = leafletfinder
+        else:
+            if "select" not in leaflet_kwargs:
+                leaflet_kwargs = dict(select=select, **leaflet_kwargs)
+            self.leafletfinder = LeafletFinder(universe, **leaflet_kwargs)
+        self.n_leaflets = self.leafletfinder.n_leaflets
+
+    def _update_leaflets(self):
+        self.leafletfinder.run()
+
+
+    def run(self, start=None, stop=None, step=None, verbose=None):
+        """Perform the calculation
+
+        Parameters
+        ----------
+        start : int, optional
+            start frame of analysis
+        stop : int, optional
+            stop frame of analysis
+        step : int, optional
+            number of frames to skip between each analysed frame
+        verbose : bool, optional
+            Turn on verbosity
+        """
+        logger.info("Choosing frames to analyze")
+        # if verbose unchanged, use class default
+        verbose = getattr(self, '_verbose',
+                          False) if verbose is None else verbose
+
+        self._setup_frames(self._trajectory, start, stop, step)
+        logger.info("Starting preparation")
+        self._prepare()
+        for i, ts in enumerate(ProgressBar(
+                self._trajectory[self.start:self.stop:self.step],
+                verbose=verbose)):
+            self._frame_index = i
+            self._ts = ts
+            self.frames[i] = ts.frame
+            self.times[i] = ts.time
+            # logger.info("--> Doing frame {} of {}".format(i+1, self.n_frames))
+            if not i % self.update_leaflet_step:
+                self._update_leaflets()
+            self._single_frame()
+        logger.info("Finishing up")
+        self._conclude()
+        return self
+
+
+class AreaPerLipid(LeafletAnalysis):
+
+    def __init__(self, universe, *args, cutoff=50, cutoff_other=None, select_other=None,
+                 **kwargs):
+        super().__init__(universe, *args, **kwargs)
+        if select_other is None:
+            self.other = (self.universe.residues - self.residues).atoms
+        else:
+            self.other = universe.select_atoms(select_other) - self.residues.atoms
+        self.cutoff = cutoff
+        if cutoff_other is None:
+            cutoff_other = cutoff
+        self.cutoff_other = cutoff_other
+        self.unique_ids = np.unique(self.ids)
+        self.resindices = self.residues.resindices
+        self.rix2ix = {x.resindex: i for i, x in enumerate(self.residues)}
+        self.n_per_res = np.array([len(x) for x in self.headgroups])
+
+    def _prepare(self):
+        super()._prepare()
+        self.areas = np.zeros((self.n_frames, self.n_residues))
+        self.areas_by_attr = []
+        for i in range(self.n_leaflets):
+            dct = {}
+            for each in self.unique_ids:
+                dct[each] = []
+            self.areas_by_attr.append(dct)
+    
+    def _single_frame(self):
+        other = self.other.positions
+        box = self.universe.dimensions
+        rix2lfi = {}
+        components = []
+        leaflets = []
+
+        for i, x in enumerate(self.leafletfinder.leaflets):
+            ix = []
+            atoms = []
+            for y in x.residues.resindices:
+                rix2lfi[y] = i
+                if y in self.resindices:
+                    ix.append(self.rix2ix[y])
+                    atoms.extend(self.headgroups[self.rix2ix[y]])
+            components.append(np.array(ix))
+            leaflets.append(sum(atoms))
+
+        hg_coords = [unwrap_around(x.positions.copy(), x.positions.copy()[0], box)
+                     for x in self.headgroups]
+        hg_mean = np.array([x.mean(axis=0) for x in hg_coords])
+
+        all_wrapped = [hg_mean[x] for x in components]
+
+        
+        for i, rix in enumerate(self.resindices):
+            hg_xyz = hg_mean[i]
+            lf_i = rix2lfi[rix]
+            potential_xyz = all_wrapped[lf_i]
+            # hg_xyz = self.headgroups[i].positions
+            # potential_xyz = leaflets[lf_i].positions
+
+            pairs, dist = distances.capped_distance(hg_xyz,
+                                                    potential_xyz,
+                                                    self.cutoff,
+                                                    box=self.selection.dimensions,
+                                                    return_distances=True)
+
+            if not len(pairs):
+                continue            
+            pairs = pairs[dist>0]
+            js = np.unique(pairs[:, 1])
+            neighbor_xyz = potential_xyz[js]
+
+            # get protein / etc ones
+            pairs2 = distances.capped_distance(hg_xyz, other, self.cutoff_other,
+                                               box=self.selection.dimensions,
+                                               return_distances=False)
+            if len(pairs2):
+                other_xyz = other[np.unique(pairs2[:, 1])]
+            else:
+                other_xyz = None
+            res = self.residues[i]
+            if res.resindex == 1088 and self._frame_index == 4:
+                plot = True
+            area = lipid_area(hg_xyz, neighbor_xyz,
+                            other_coordinates=other_xyz,
+                            box=self.selection.dimensions)
+            self.areas[self._frame_index][i] = area
+            self.areas_by_attr[lf_i][self.ids[i]].append(area)
+
+    # def _conclude(self):
+    #     super()._conclude()
+    #     self.areas_by_attr = {}
+    #     self.mean_area_by_attr = {}
+    #     self.std_area_by_attr = {}
+    #     for id_ in self.ids:
+    #         values = np.concatenate(self.areas[:, self.ids == id_])
+    #         self.areas_by_attr[id_] = values
+    #         self.mean_area_by_attr[id_] = values.mean()
+    #         self.std_area_by_attr[id_] = values.std()
+
+
+class LipidFlipFlop(LeafletAnalysis):
+
+    def __init__(self, *args, buffer_zone=8, cutoff=50, membrane_plane="xy", **kwargs):
+        super().__init__(*args, **kwargs)
+        self.buffer_zone = buffer_zone
+        self.cutoff = cutoff
+        if membrane_plane == "xy":
+            self.plane = [0, 1]
+        elif membrane_plane == "yz":
+            self.plane = [1, 2]
+        elif membrane_plane == "xz":
+            self.plane = [0, 2]
+        else:
+            raise ValueError("membrane_plane must be one of \{'xy', 'yz', 'xz'\}")
+        self._rix2ix = {x.resindex: i for i, x in enumerate(self.residues)}
+        self._ix2rix = {i: x.resindex for i, x in enumerate(self.leafletfinder.residues)}
+        self._rix2ix_lf = {x.resindex: i for i, x in enumerate(self.leafletfinder.residues)}
+
+    def _prepare(self):
+        self.residue_leaflet_raw = np.zeros((self.n_frames, self.n_residues))
+        self.bilayer_section = np.zeros((self.n_frames, self.n_residues))
+    
+    def _single_frame(self):
+        n_leaflets = self.leafletfinder.n_leaflets
+        for i in range(1, n_leaflets):
+            lf = self.leafletfinder.components[self.leafletfinder.leaflet_order[i]]
+            lf_r = [self._ix2rix[i] for i in lf]
+            lf_i = [self._rix2ix[i] for i in lf if i in self._rix2ix]
+            self.residue_leaflet_raw[self._frame_index][lf_i] = i
+
+        lf_ix = [self._rix2ix_lf[i] for i in self.residues.resindices]
+        xyz = self.leafletfinder.positions[lf_ix]
+        ix = self.leafletfinder.components
+        pairs = distances.capped_distance(xyz, xyz, self.cutoff,
+                                          return_distances=False)
+        splix = np.where(np.ediff1d(pairs[:, 0]))[0] + 1
+        plist = []
+        for group in np.split(pairs, splix):
+            not_self = [x for x in group[:, 1] if x != group[0, 0]]
+            if not_self:
+                plist.append(not_self)
+
+        if not len(plist) == self.n_residues:
+            raise ValueError("Could not find neighbor lipids around all residues "
+                             f"with cutoff={self.cutoff}. Try a larger cutoff")
+
+        ix2lfi = {y: i for i, x in enumerate(ix) for y in x}
+
+        midpts = []
+        endpts = []
+
+        for i, nix in enumerate(plist):
+            neighbor_lf = []
+            for j in range(n_leaflets):
+                neighbor_lf.append([])
+            
+            for n in nix:
+                neighbor_lf[ix2lfi[n]].append(n)
+
+            lf_i = ix2lfi[i]
+            if lf_i % 2:
+                top_i = lf_i - 1
+                bot_i = lf_i
+            else:
+                top_i = lf_i
+                bot_i = lf_i + 1
+
+            # get centers of leaflet parts
+            box = self.selection.dimensions
+            if len(neighbor_lf[top_i]):
+                top_xyz = xyz[neighbor_lf[top_i]].copy()
+            else:
+                top_xyz = self.leafletfinder.positions[ix[top_i]].copy()
+            if len(neighbor_lf[bot_i]):
+                bot_xyz = xyz[neighbor_lf[bot_i]].copy()
+            else:
+                bot_xyz = self.leafletfinder.positions[ix[bot_i]].copy()
+
+            i_xyz = xyz[i]
+            top_xyz = unwrap_around(top_xyz, i_xyz, box=box)
+            bot_xyz = unwrap_around(bot_xyz, i_xyz, box=box)
+
+            centers = np.array([top_xyz.mean(axis=0), bot_xyz.mean(axis=0)])
+            centers = unwrap_around(centers, i_xyz, box=box)
+            
+            diff = centers[0] - centers[1]
+            midpoint = centers[1] + diff/2
+            midpts.append(midpoint)
+            endpts.extend(centers)
+
+            dist_to_center = distances.calc_bonds(midpoint, i_xyz, box=box)
+            if dist_to_center < self.buffer_zone:
+                lf_i = -1
+
+            self.bilayer_section[self._frame_index, i] = lf_i
+
+        # new = core.universe.Universe.empty(self.n_residues*3)
+        # new.add_TopologyAttr("names")
+        # new.atoms.names = ["C"]*(self.n_residues*2) + ["H"] * self.n_residues
+        # # new.atoms[self.n_residues*2:].names = "H"
+        # coords = np.concatenate([endpts, midpts])
+        # new.load_new(coords)
+        # new.atoms.write(f"frame_{self._frame_index}.pdb")
+
+        
+        # coms = [x.center_of_geometry() for x in self.leafletfinder.leaflets]
+        # orders = self.leafletfinder.leaflet_order
+        # frame = self.bilayer_section[self._frame_index]
+        # for i in range(0, len(coms), 2):
+        #     # calculate midpoint
+        #     center1, center2 = coms[i:i+2]
+        #     center1[self.plane] = 0
+        #     center2[self.plane] = 0
+        #     leaflet_dist = distances.calc_bonds(center1, center2)
+        #     mid = center2
+        #     mid[2] += leaflet_dist/2
+
+
+        #     top_i = self.leafletfinder.components[orders[i]]
+        #     top = self.leafletfinder.positions[top_i].copy()
+        #     top[:, self.plane] = 0
+
+        #     dist_arr = distances.distance_array(mid, top,
+        #                                         box=self.selection.dimensions)
+        #     dists = dist_arr[0]
+        #     frame[top_i[dists < self.buffer_zone]] = -1
+        #     frame[top_i[dists >= self.buffer_zone]] = i
+
+        #     bot_i = self.leafletfinder.components[orders[i+1]]
+        #     bot = self.leafletfinder.positions[bot_i].copy()
+        #     bot[:, self.plane] = 0
+
+        #     dist_arr = distances.distance_array(mid, bot,
+        #                                         box=self.selection.dimensions)
+        #     dists = dist_arr[0]
+        #     frame[bot_i[dists < self.buffer_zone]] = -1
+        #     frame[bot_i[dists >= self.buffer_zone]] = i+1
+
+
+    def _conclude(self):
+        self.residue_leaflet = np.zeros_like(self.residue_leaflet_raw)
+        self.flips = np.zeros(self.n_residues)
+        self.flops = np.zeros(self.n_residues)
+        self.flip_sections = np.zeros(self.n_residues)
+        self.flop_sections = np.zeros(self.n_residues)
+
+        if not self.n_frames:
+            return
+
+        for i in range(self.n_residues):
+            trans = self.residue_leaflet_raw[:, i]
+            self.residue_leaflet[:, i] = trans
+            diff = trans[1:] - trans[:-1]
+            self.flips[i] = np.sum(diff > 0)  # 0: upper, 1: lower
+            self.flops[i] = np.sum(diff < 0)
+
+            trans2 = self.bilayer_section[:, i]
+            trans2 = trans2[trans2 != -1]
+            if len(trans2) < 2: 
+                continue
+            diff2 = trans2[1:] - trans2[:-1]
+            self.flip_sections[i] = np.sum(diff2 > 0)
+            self.flop_sections[i] = np.sum(diff2 < 0)
+        
+        self.translocations = self.flips + self.flops
+        self.trans_sections = self.flip_sections + self.flop_sections
+
+        self.flips_by_attr = {}
+        self.flops_by_attr = {}
+        self.translocations_by_attr = {}
+
+        self.flip_sections_by_attr = {}
+        self.flop_sections_by_attr = {}
+        self.trans_sections_by_attr = {}
+        for each in np.unique(self.ids):
+            mask = self.ids == each
+            self.flips_by_attr[each] = int(sum(self.flips[mask]))
+            self.flops_by_attr[each] = int(sum(self.flops[mask]))
+            self.translocations_by_attr[each] = tl = int(sum(self.translocations[mask]))
+            self.flip_sections_by_attr[each] = int(sum(self.flip_sections[mask]))
+            self.flop_sections_by_attr[each] = int(sum(self.flop_sections[mask]))
+            self.trans_sections_by_attr[each] = tl = int(sum(self.trans_sections[mask]))
+
+
 def binomial_gamma(top, bottom):
     try:
         from scipy.special import gamma
@@ -608,146 +1092,12 @@ def binomial_gamma(top, bottom):
     return gamma(top+1) / (gamma(bottom+1) * gamma(top-bottom+1))
 
 
-class LipidEnrichment(AnalysisBase):
-    r"""Calculate the lipid depletion-enrichment index around a protein
-    by leaflet.
-
-    The depletion-enrichment index (DEI) of a lipid around a protein
-    indicates how enriched or depleted that lipid in the lipid annulus
-    around the protein, with respect to the density of the lipid in the bulk
-    membrane. If more than one leaflet is specified, then the index is
-    calculated for each leaflet.
-
-    The DEI for lipid species or group :math:`L` at cutoff :math:`r` is as
-    follows:
-
-    .. math::
-
-        \text{DEI}_{L, r} = \frac{n(x_{(L, r)})}{n(x_r)} \times \frac{n(x)}{n(x_L)}
-
-    where :math:`n(x_{(L, r)})` is the number of lipids :math:`L` within
-    distance :math:`r` of the protein; :math:`n(x_r)` is total number of
-    lipids within distance :math:`r` of the protein; :math:`n(x_L)`
-    is the total number of lipids :math:`L` in that membrane or leaflet; and
-    :math:`n(x)` is the total number of all lipids in that membrane or
-    leaflet.
-
-    The results of this analysis contain these values:
-
-    * 'Near protein': the number of lipids :math:`L` within
-        cutoff :math:`r` of the protein
-    * 'Fraction near protein': the fraction of the lipids :math:`L`
-        with respect to all lipids within cutoff :math:`r` of the
-        protein: :math:`\frac{n(x_{(L, r)})}{n(x_r)}`
-    * 'Enrichment': the depletion-enrichment index.
-
-    This metric was obtained from [Corradi2018]_. Please cite them if you
-    use this analysis in published work.
-
-    There are
-
-    .. note::
-
-        This analysis requires ``scikit-learn`` to be installed to
-        determine leaflets.
-
-
-    Parameters
-    ----------
-    universe: Universe or AtomGroup
-        The atoms to apply this analysis to.
-    select_protein: str (optional)
-        Selection string for the protein.
-    select_residues: str (optional)
-        Selection string for the group of residues / lipids to analyse.
-    select_headgroup: str (optional)
-        Selection string for the lipid headgroups. This is used to determine
-        leaflets and compute distances, unless ``compute_headgroup_only`` is
-        ``False``.
-    n_leaflets: int (optional)
-        How many leaflets to split the membrane into.
-    count_by_attr: str (optional)
-        How to split the lipid species. By default, this is `resnames` so
-        each lipid species is computed individually. However, any topology
-        attribute can be used. For example, you could add a new attribute
-        describing tail saturation.
-    cutoff: float (optional)
-        Cutoff in ångström
-    delta: float (optional)
-        Leaflets are determined via spectral clustering on a similarity matrix.
-        This similarity matrix is created from a pairwise distance matrix by
-        applying the gaussian kernel
-        :math:`\exp{\frac{-\text{dist_matrix}^2}{2*\delta^2}}`. If your
-        leaflets are incorrect, try finetuning the `delta` value.
-    compute_headgroup_only: bool (optional)
-        By default this analysis only uses distance from the lipid headgroup
-        to determine whether a lipid is within the `cutoff`
-        distance from the protein. This choice was made to save computation.
-        Compute the distance from every atom by toggling this option off.
-    **kwargs
-        Passed to :class:`~MDAnalysis.analysis.base.AnalysisBase`.
-
-
-    Attributes
-    ----------
-    protein: :class:`~MDAnalysis.core.groups.AtomGroup`
-        Protein atoms.
-    residues: :class:`~MDAnalysis.core.groups.ResidueGroup`
-        Lipid residues.
-    headgroups: :class:`~MDAnalysis.core.groups.AtomGroup`
-        Headgroup atoms.
-    leaflet_residues: list of :class:`~MDAnalysis.core.groups.ResidueGroup`
-        Residues per leaflet.
-    leaflet_headgroups: list of :class:`~MDAnalysis.core.groups.AtomGroup`
-        Headgroup atoms per leaflet.
-    residue_counts: list of :class:`numpy.ndarray` (n_lipid_groups, n_frames)
-        Number of each residue around protein for each frame, per leaflet.
-    total_counts: list of :class:`numpy.ndarray` (n_frames,)
-        Total number of residues around protein for each frame, per leaflet.
-    leaflets: list of dict of dicts
-        Counts, fraction, and enrichment index of each residue per frame, per
-        leaflet.
-    leaflets_summary: list of dict of dicts
-        Counts, fraction, and enrichment index as averages and standard
-        deviations, per leaflet.
-    box: :class:`numpy.ndarray` or ``None``
-        Universe dimensions.
-    n_leaflets: int
-        Number of leaflets
-    delta: float
-        delta used Gaussian kernel to transform pairwise distances into a
-        similarity matrix for clustering.
-    compute_headgroup_only: bool
-        whether to compute distances only using the headgroup.
-    attrname: str
-        The topology attribute used to group lipid species.
-
-
-    .. versionadded:: 2.0.0
-
-    """
-
-    def __init__(self, universe, select_protein: str = 'protein',
-                 select_residues: str = 'all',
-                 select_headgroup: str = 'name PO4',
-                 n_leaflets: int = 2, count_by_attr: str = 'resnames',
-                 cutoff: float = 6, pbc: bool = True,
-                 compute_headgroup_only: bool = True,
-                 update_leaflet_step: int = 1,
-                 group_method: str = "spectralclustering",
-                 group_kwargs: dict = {},
-                 distribution: str = "binomial",
-                 compute_p_value: bool = True,
-                 buffer: float = 0, beta=4, **kwargs):
-        super(LipidEnrichment, self).__init__(universe.universe.trajectory,
-                                              **kwargs)
-        if n_leaflets < 1:
-            raise ValueError('Must have at least one leaflet')
-        self.n_leaflets = n_leaflets
-
-        self.group_method = group_method.lower()
-        self.group_kwargs = group_kwargs
-        self.update_leaflet_step = update_leaflet_step
+class LipidEnrichment(LeafletAnalysis):
+    def __init__(self, universe, *args, select_protein="protein",
+                 cutoff=6, compute_headgroup_only=True,
+                 distribution="binomial", compute_p_value=True,
+                 buffer=0, beta=4, **kwargs):
+        super(LipidEnrichment, self).__init__(universe, *args, **kwargs)
 
         self.distribution = distribution.lower()
         if self.distribution == "binomial":
@@ -760,13 +1110,7 @@ class LipidEnrichment(AnalysisBase):
 
         self.compute_p_value = compute_p_value
 
-        if self.compute_p_value:  # look for scipy once
-            if not found_scipy:
-                raise ImportError("scipy is needed for this analysis but "
-                                  "is not installed. Please install with "
-                                  "`conda install scipy` or "
-                                  "`pip install scipy`") from None
-
+        if self.compute_p_value:
             if buffer:
                 self._compute_p = self._compute_p_hypergeom_gamma
             elif self.distribution == "gaussian":
@@ -774,17 +1118,10 @@ class LipidEnrichment(AnalysisBase):
             else:
                 self._compute_p = self._compute_p_hypergeom
 
-        self.pbc = pbc
-        self.box = universe.dimensions if pbc else None
         self.protein = universe.select_atoms(select_protein)
-        ag = universe.select_atoms(select_residues)
-        self.residues = ag.residues
-        self.n_residues = len(ag.residues)
-        self.headgroups = self.residues.atoms.select_atoms(select_headgroup)
-        assert len(self.headgroups.residues) == self.n_residues
 
         if compute_headgroup_only:
-            self._compute_atoms = self.headgroups
+            self._compute_atoms = self.selection
         else:
             self._compute_atoms = self.residues.atoms
         self._resindices = self._compute_atoms.resindices
@@ -794,9 +1131,6 @@ class LipidEnrichment(AnalysisBase):
         self.leaflets = []
         self.leaflets_summary = []
 
-        # process this a bit to remove errors like "alt_locs"
-        attrname = _TOPOLOGY_ATTRNAMES[count_by_attr.lower().replace('_', '')]
-        self.attrname = _TOPOLOGY_ATTRS[attrname].attrname
 
     def _prepare(self):
         # in case of change + re-run
@@ -805,7 +1139,7 @@ class LipidEnrichment(AnalysisBase):
         self._buffer_sigma = self.buffer / self.beta
         if self._buffer_sigma:
             self._buffer_coeff = 1 / (self._buffer_sigma * np.sqrt(2 * np.pi))
-        self.ids = np.unique(getattr(self.residues, self.attrname))
+        self.ids = np.unique(getattr(self.residues, self.group_by_attr))
 
         # results
         self.near_counts = np.zeros((self.n_leaflets, len(self.ids),
@@ -813,43 +1147,32 @@ class LipidEnrichment(AnalysisBase):
         self.residue_counts = np.zeros((self.n_leaflets, len(self.ids),
                                         self.n_frames))
         self.total_counts = np.zeros((self.n_leaflets, self.n_frames))
-        self.leaflet_residue_masks = np.zeros((self.n_frames, self.n_leaflets,
-                                               self.n_residues), dtype=bool)
         self.leaflet_residues = np.zeros((self.n_frames, self.n_leaflets),
                                          dtype=object)
-        # self._update_leaflets()
 
     def _update_leaflets(self):
-        lf = LeafletFinder(self.headgroups, method=self.group_method,
-                           n_groups=self.n_leaflets, **self.group_kwargs)
-        self._current_leaflets = [l.residues for l in lf.leaflets[:self.n_leaflets]]
-        lengths = [len(x) for x in self._current_leaflets]
-        self._current_ids = [getattr(r, self.attrname)
-                             for r in self._current_leaflets]
+        self.leafletfinder.run()
+        self._current_leaflets = [l.residues for l in self.leafletfinder.leaflets[:self.n_leaflets]]
+        self._current_ids = [getattr(r, self.group_by_attr) for r in self._current_leaflets]
 
     def _single_frame(self):
-        if not self._frame_index % self.update_leaflet_step:
-            self._update_leaflets()
-
         # initial scoop for nearby groups
         coords_ = self._compute_atoms.positions
         pairs = distances.capped_distance(self.protein.positions,
                                           coords_,
-                                          self.cutoff, box=self.box,
+                                          self.cutoff, box=self.protein.dimensions,
                                           return_distances=False)
         if pairs.size > 0:
             indices = np.unique(pairs[:, 1])
         else:
             indices = []
 
-        # print("indices", indices)
-
         # now look for groups in the buffer
         if len(indices) and self.buffer:
             pairs2, dist = distances.capped_distance(self.protein.positions,
                                                      coords_, self.max_cutoff,
                                                      min_cutoff=self.cutoff,
-                                                     box=self.box,
+                                                     box=self.protein.dimensions,
                                                      return_distances=True)
             
             # don't count things in inner cutoff
@@ -858,9 +1181,9 @@ class LipidEnrichment(AnalysisBase):
             dist = dist[mask]
 
             if pairs2.size > 0:
-                _ix = np.argsort(pairs2[:, 1])
+                _ix = np.argsort(pairs2[:, 1])  
                 indices2 = pairs2[_ix][:, 1]
-                dist = dist[_ix] - self.cutoff# - self.mid_buffer
+                dist = dist[_ix] - self.cutoff
 
                 init_resix2 = self._resindices[indices2]
                 # sort through for minimum distance
@@ -868,7 +1191,6 @@ class LipidEnrichment(AnalysisBase):
                 resix2 = init_resix2[splix]
                 split_dist = np.split(dist, splix[1:])
                 min_dist = np.array([x.min() for x in split_dist])
-                # print('min dist', len(min_dist), resix2)
 
                 # logistic function
                 for i, leaf in enumerate(self._current_leaflets):
@@ -901,7 +1223,34 @@ class LipidEnrichment(AnalysisBase):
                 self.near_counts[i, j, self._frame_index] += sum(subids == x)
 
         both = self.near_counts[:, :, self._frame_index].sum()
-        # print("cutoffs : ", soft, both, both-soft)
+
+    def _conclude(self):
+        self.leaflets = []
+        self.leaflets_summary = []
+
+        for i in range(self.n_leaflets):
+            timeseries = {}
+            summary = {}
+            res_counts = self.residue_counts[i]
+            near_counts = self.near_counts[i]
+
+            near_all = near_counts.sum(axis=0)
+            total_all = res_counts.sum(axis=0)
+            n_near_tot = near_all.sum()
+            n_all_tot = total_all.sum()
+            d, s = self._collate(near_all, near_all, total_all,
+                                 total_all, n_near_tot, n_all_tot)
+            timeseries['all'] = d
+            summary['all'] = s
+            for j, resname in enumerate(self.ids):
+                near_species = near_counts[j]
+                total_species = res_counts[j]
+                d, s = self._collate(near_species, near_all, total_species,
+                                     total_all, n_near_tot, n_all_tot)
+                timeseries[resname] = d
+                summary[resname] = s
+            self.leaflets.append(timeseries)
+            self.leaflets_summary.append(summary)
 
 
     def _fit_gaussian(self, data, *args, **kwargs):
@@ -1021,26 +1370,16 @@ class LipidEnrichment(AnalysisBase):
 
         mean_logT = np.log(p_real / p_exp)
         var_logT = ((1/p_real) + (1/p_exp) - 2) / n_near_tot
-        summary['Mean log T'] = mean_logT
-        summary['Var log T'] = var_logT
-        # summary['1/p_real'] = 1/p_real
-        # summary['1/p_exp'] = 1/p_exp
-        # summary['Near near, total'] = n_near_tot
         summary['Mean enrichment'] = mean = np.exp(mean_logT) * np.exp(var_logT/2)
-        summary['Variance enrichment'] = (np.exp(var_logT) - 1) * np.exp(2*mean_logT + var_logT)
-        # var_enr = (np.exp(var_logT) - 1) * np.exp(2*mean_logT + var_logT)
+        # summary['Variance enrichment'] = (np.exp(var_logT) - 1) * np.exp(2*mean_logT + var_logT)
         diff = (data['Enrichment'] - mean) ** 2
         var_pop = diff.sum() / (self.n_frames - 1)
-        summary['Population SD enrichment'] = var_pop ** 0.5
+        summary['SD enrichment'] = var_pop ** 0.5
         summary['Median enrichment'] = p_real / p_exp
         if self.compute_p_value:
             v_logT_ = 2 * (1/p_exp - 1) / n_near_tot
             s = v_logT_ ** 0.5  # sd
             avg = summary['Median enrichment']
-            # if avg > 1:
-            #     summary['Enrichment p-value'] = scipy.stats.lognorm.sf(avg, s)
-            # else:
-            #     summary['Enrichment p-value'] = scipy.stats.lognorm.cdf(avg, s)
             if avg <= 1:
                 summary['Enrichment p-value'] = scipy.stats.lognorm.cdf(avg, s)
             else:
@@ -1071,34 +1410,6 @@ class LipidEnrichment(AnalysisBase):
                                          n_species, n_all, n_near_tot,
                                          n_all_tot)
         return data, summary
-
-    def _conclude(self):
-        self.leaflets = []
-        self.leaflets_summary = []
-
-        for i in range(self.n_leaflets):
-            timeseries = {}
-            summary = {}
-            res_counts = self.residue_counts[i]
-            near_counts = self.near_counts[i]
-
-            near_all = near_counts.sum(axis=0)
-            total_all = res_counts.sum(axis=0)
-            n_near_tot = near_all.sum()
-            n_all_tot = total_all.sum()
-            d, s = self._collate(near_all, near_all, total_all,
-                                 total_all, n_near_tot, n_all_tot)
-            timeseries['all'] = d
-            summary['all'] = s
-            for j, resname in enumerate(self.ids):
-                near_species = near_counts[j]
-                total_species = res_counts[j]
-                d, s = self._collate(near_species, near_all, total_species,
-                                     total_all, n_near_tot, n_all_tot)
-                timeseries[resname] = d
-                summary[resname] = s
-            self.leaflets.append(timeseries)
-            self.leaflets_summary.append(summary)
 
     def summary_as_dataframe(self):
         """Convert the results summary into a pandas DataFrame.
@@ -1134,7 +1445,6 @@ class LipidEnrichment(AnalysisBase):
         if kn <= KN:
             return scipy.stats.hypergeom.cdf(k, N, K, n)
         return scipy.stats.hypergeom.sf(k, N, K, n)
-        # return scipy.stats.hypergeom.pmf(k, N, K, n)
 
     def _compute_p_hypergeom_gamma(self, dei, k, N, K, n):
         K_k = binomial_gamma(K, k)
@@ -1149,5 +1459,3 @@ class LipidEnrichment(AnalysisBase):
         if kn <= KN:
             return scipy.stats.norm.cdf(kn, KN, sigma)
         return scipy.stats.norm.sf(kn, KN, sigma)
-
-        # return scipy.stats.norm.pdf(k/n, K/N, sigma)

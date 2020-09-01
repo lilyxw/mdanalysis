@@ -394,8 +394,11 @@ class DensityAnalysis(AnalysisBase):
                 logger.warning(msg)
             # Generate a copy of smin/smax from coords to later check if the
             # defined box might be too small for the selection
-            smin = np.min(coord, axis=0)
-            smax = np.max(coord, axis=0)
+            if len(coord):
+                smin = np.min(coord, axis=0)
+                smax = np.max(coord, axis=0)
+            else:
+                smin, smax = [0, 0, 0], [0, 0, 0]
             # Overwrite smin/smax with user defined values
             smin, smax = self._set_user_grid(self._gridcenter, self._xdim,
                                              self._ydim, self._zdim, smin,
@@ -408,8 +411,12 @@ class DensityAnalysis(AnalysisBase):
             # ideal solution would use images: implement 'looking across the
             # periodic boundaries' but that gets complicated when the box
             # rotates due to RMS fitting.
-            smin = np.min(coord, axis=0) - self._padding
-            smax = np.max(coord, axis=0) + self._padding
+            if len(coord):
+                smin = np.min(coord, axis=0) - self._padding
+                smax = np.max(coord, axis=0) + self._padding
+            else:
+                smin = - np.array([self._padding, self._padding, self._padding])
+                smax = np.abs(smin)
         BINS = fixedwidth_bins(self._delta, smin, smax)
         arange = np.transpose(np.vstack((BINS['min'], BINS['max'])))
         bins = BINS['Nbins']
@@ -493,7 +500,7 @@ class DensityAnalysis(AnalysisBase):
         # Here we test if coords of selection fall outside of the defined grid
         # if this happens, we warn users they may want to resize their grids
         if any(smin < umin) or any(smax > umax):
-            msg = ("Atom selection does not fit grid --- "
+            msg = (f"Atom selection ({smin} to {smax}) does not fit grid ({umin} to {umax}) ---"
                    "you may want to define a larger box")
             warnings.warn(msg)
             logger.warning(msg)

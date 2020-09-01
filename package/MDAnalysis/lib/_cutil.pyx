@@ -458,3 +458,4 @@ def find_fragments(atoms, bondlist):
         frags.append(np.asarray(this_frag))
 
     return frags
+

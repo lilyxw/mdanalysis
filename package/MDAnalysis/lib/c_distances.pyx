@@ -58,7 +58,7 @@ cdef extern from "calc_distances.h":
     void _ortho_pbc(coordinate* coords, int numcoords, float* box)
     void _triclinic_pbc(coordinate* coords, int numcoords, float* box)
     void minimum_image(double* x, float* box, float* inverse_box)
-    void _unwrap_around(coordinate* coords, int numCoords, float* center, double* box)
+    void _unwrap_around(coordinate* coords, int numCoords, float* center, float* box)
     void _calc_cosine_similarity(coordinate* vec1, int numVec1, coordinate* vec2, int numVec2, double* cosines)
 
 OPENMP_ENABLED = True if USED_OPENMP else False
@@ -229,7 +229,8 @@ def unwrap_around(numpy.ndarray coords, numpy.ndarray center,
     numcoords = coords.shape[0]
 
     _unwrap_around(<coordinate*> coords.data, numcoords,
-                   <float*> center.data, <double*> box.data)
+                   <float*> center.data, <float*> box.data)
+    return coords
 
 def calc_cosine_similarity(numpy.ndarray vectors1, numpy.ndarray vectors2):
     cdef int numVec1 = vectors1.shape[0]
