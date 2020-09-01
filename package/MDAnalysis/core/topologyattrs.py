@@ -195,8 +195,16 @@ class _TopologyAttrMeta(type):
                 dtype = classdict.get("dtype")
                 if dtype is not None:
                     per_obj = classdict.get("per_object", "atom")
-                    selection.gen_selection_class(singular, attrname, dtype,
-                                                  per_obj)
+                    try:
+                        selection.gen_selection_class(singular, attrname, dtype,
+                                                    per_obj)
+                    except ValueError:
+                        msg = ("A selection keyword could not be "
+                               "automatically generated for the "
+                               f"{singular} attribute. If you need a "
+                                "selection keyword, define it manually "
+                                "by subclassing core.selection.Selection")
+                        warnings.warn(msg)
 
 
 class TopologyAttr(object, metaclass=_TopologyAttrMeta):
@@ -347,6 +355,7 @@ class Atomindices(TopologyAttr):
     attrname = 'indices'
     singular = 'index'
     target_classes = [AtomGroup, ResidueGroup, SegmentGroup, Atom]
+    dtype = int
 
     def __init__(self):
         self._guessed = False
@@ -379,6 +388,7 @@ class Resindices(TopologyAttr):
     attrname = 'resindices'
     singular = 'resindex'
     target_classes = [AtomGroup, ResidueGroup, SegmentGroup, Atom, Residue]
+    dtype = int
 
     def __init__(self):
         self._guessed = False
@@ -411,6 +421,7 @@ class Segindices(TopologyAttr):
     """
     attrname = 'segindices'
     singular = 'segindex'
+    dtype = int
     target_classes = [AtomGroup, ResidueGroup, SegmentGroup,
                       Atom, Residue, Segment]
 
