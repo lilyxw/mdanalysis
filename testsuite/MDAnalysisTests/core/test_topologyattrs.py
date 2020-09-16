@@ -504,12 +504,11 @@ def test_static_typing_from_empty():
 
 
 def test_warn_selection_for_strange_dtype():
-    with pytest.warns(UserWarning) as rec:
+    err = "A selection keyword could not be automatically generated"
+
+    with pytest.warns(UserWarning, match=err):
         class Star(tpattrs.TopologyAttr):
             singular = "star"  # turns out test_imports doesn't like emoji 
             attrname = "stars"  # :(
             per_object = "atom"
             dtype = dict
-
-    err = "A selection keyword could not be automatically generated"
-    assert err in rec[0].message.args[0]
