@@ -1,0 +1,20 @@
+[
+  {
+    "version": "1.0.1-dev",
+    "display": "1.0.1-dev",
+    "url": "https://minium.com.au/mdanalysis/1.0.1-dev",
+    "latest": false
+  },
+  {
+    "version": "stable",
+    "display": "stable",
+    "url": "https://minium.com.au/mdanalysis/stable",
+    "latest": false
+  },
+  {
+    "version": "dev",
+    "display": "dev",
+    "url": "https://minium.com.au/mdanalysis/dev",
+    "latest": false
+  }
+]
