@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>8.5.2. Trajectory rotation — MDAnalysis.transformations.rotate &mdash; MDAnalysis 1.0.1-dev documentation</title>
+  <title>8.5.2. Trajectory rotation — MDAnalysis.transformations.rotate &mdash; MDAnalysis 2.0.0-dev0 documentation</title>
   
 
   
@@ -40,7 +40,7 @@
 
     
     <link rel="search" type="application/opensearchdescription+xml"
-          title="Search within MDAnalysis 1.0.1-dev documentation"
+          title="Search within MDAnalysis 2.0.0-dev0 documentation"
           href="../../_static/opensearch.xml"/>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -72,7 +72,7 @@
             
             
               <div class="version">
-                1.0.1-dev
+                2.0.0-dev0
               </div>
             
           
@@ -198,11 +198,11 @@
             
   <span class="target" id="module-MDAnalysis.transformations.rotate"></span><div class="section" id="trajectory-rotation-mdanalysis-transformations-rotate">
 <h1>8.5.2. Trajectory rotation — <a class="reference internal" href="#module-MDAnalysis.transformations.rotate" title="MDAnalysis.transformations.rotate"><code class="xref py py-mod docutils literal notranslate"><span class="pre">MDAnalysis.transformations.rotate</span></code></a><a class="headerlink" href="#trajectory-rotation-mdanalysis-transformations-rotate" title="Permalink to this headline">¶</a></h1>
-<p>Rotates the coordinates by a given angle arround an axis formed by a direction and a
-point</p>
-<dl class="function">
+<p>Rotates the coordinates by a given angle arround an axis formed by a direction
+and a point.</p>
+<dl class="class">
 <dt id="MDAnalysis.transformations.rotate.rotateby">
-<code class="descclassname">MDAnalysis.transformations.rotate.</code><code class="descname">rotateby</code><span class="sig-paren">(</span><em>angle</em>, <em>direction</em>, <em>point=None</em>, <em>ag=None</em>, <em>weights=None</em>, <em>wrap=False</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/MDAnalysis/transformations/rotate.html#rotateby"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#MDAnalysis.transformations.rotate.rotateby" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">MDAnalysis.transformations.rotate.</code><code class="descname">rotateby</code><span class="sig-paren">(</span><em>angle</em>, <em>direction</em>, <em>point=None</em>, <em>ag=None</em>, <em>weights=None</em>, <em>wrap=False</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/MDAnalysis/transformations/rotate.html#rotateby"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#MDAnalysis.transformations.rotate.rotateby" title="Permalink to this definition">¶</a></dt>
 <dd><p>Rotates the trajectory by a given angle on a given axis. The axis is defined by
 the user, combining the direction vector and a point. This point can be the center
 of geometry or the center of mass of a user defined AtomGroup, or an array defining
@@ -210,19 +210,23 @@ custom coordinates.</p>
 <p class="rubric">Examples</p>
 <p>e.g. rotate the coordinates by 90 degrees on a axis formed by the [0,0,1] vector and
 the center of geometry of a given AtomGroup:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ts</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">trajectory</span><span class="o">.</span><span class="n">ts</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">MDAnalysis</span> <span class="kn">import</span> <span class="n">transformations</span>
+
+<span class="n">ts</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">trajectory</span><span class="o">.</span><span class="n">ts</span>
 <span class="n">angle</span> <span class="o">=</span> <span class="mi">90</span>
-<span class="n">ag</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">atoms</span><span class="p">()</span>
+<span class="n">ag</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">atoms</span>
 <span class="n">d</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
-<span class="n">rotated</span> <span class="o">=</span> <span class="n">MDAnalysis</span><span class="o">.</span><span class="n">transformations</span><span class="o">.</span><span class="n">rotate</span><span class="p">(</span><span class="n">angle</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">d</span><span class="p">,</span> <span class="n">ag</span><span class="o">=</span><span class="n">ag</span><span class="p">)(</span><span class="n">ts</span><span class="p">)</span>
+<span class="n">rotated</span> <span class="o">=</span> <span class="n">transformations</span><span class="o">.</span><span class="n">rotate</span><span class="o">.</span><span class="n">rotateby</span><span class="p">(</span><span class="n">angle</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">d</span><span class="p">,</span> <span class="n">ag</span><span class="o">=</span><span class="n">ag</span><span class="p">)(</span><span class="n">ts</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>e.g. rotate the coordinates by a custom axis:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ts</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">trajectory</span><span class="o">.</span><span class="n">ts</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">MDAnalysis</span> <span class="kn">import</span> <span class="n">transformations</span>
+
+<span class="n">ts</span> <span class="o">=</span> <span class="n">u</span><span class="o">.</span><span class="n">trajectory</span><span class="o">.</span><span class="n">ts</span>
 <span class="n">angle</span> <span class="o">=</span> <span class="mi">90</span>
 <span class="n">p</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span>
 <span class="n">d</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
-<span class="n">rotated</span> <span class="o">=</span> <span class="n">MDAnalysis</span><span class="o">.</span><span class="n">transformations</span><span class="o">.</span><span class="n">rotate</span><span class="p">(</span><span class="n">angle</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">d</span><span class="p">,</span> <span class="n">point</span><span class="o">=</span><span class="n">point</span><span class="p">)(</span><span class="n">ts</span><span class="p">)</span>
+<span class="n">rotated</span> <span class="o">=</span> <span class="n">transformations</span><span class="o">.</span><span class="n">rotate</span><span class="o">.</span><span class="n">rotateby</span><span class="p">(</span><span class="n">angle</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">d</span><span class="p">,</span> <span class="n">point</span><span class="o">=</span><span class="n">p</span><span class="p">)(</span><span class="n">ts</span><span class="p">)</span>
 </pre></div>
 </div>
 <table class="docutils field-list" frame="void" rules="none">
@@ -262,6 +266,10 @@ to the atom coordinates are done before calculating the center of the AtomGroup.
 <p class="last">Wrapping/unwrapping the trajectory or performing PBC corrections may not be possible
 after rotating the trajectory.</p>
 </div>
+<div class="versionchanged">
+<p><span class="versionmodified">Changed in version 2.0.0: </span>The transformation was changed from a function/closure to a class
+with <code class="docutils literal notranslate"><span class="pre">__call__</span></code>.</p>
+</div>
 </dd></dl>
 
 </div>
@@ -287,10 +295,18 @@ after rotating the trajectory.</p>
   <div role="contentinfo">
     <p>
         
-        &copy; Copyright 2005-2020, Naveen Michaud-Agrawal, Elizabeth J. Denning, Christian Beckstein (logo), Joshua L. Adelman, Shobhit Agarwal, Irfan Alibay, Anshul Angaria, Luís Pedro Borges Araújo, Balasubramanian, Utkarsh Bansal, Jonathan Barnoud, Tone Bengtsen, Alejandro Bernardin, Ninad Bhat, Mateusz Bieniek, Wouter Boomsma, Jose Borreguero, Cédric Bouysset, Bart Bruininks, Sébastien Buchoux, Sören von Bülow, David Caplan, Yuanyu Chang, Matthieu Chavent, Kathleen Clark, Charlie Cook, Ruggero Cortini, Nicholas Craven, Ramon Crehuet, Davide Cruz, Robert Delgado, John Detlefs, Xavier Deupi, Jan Domanski, David L. Dotson, Ali Ehlen, Shujie Fan, Lennard van der Feltz, Philip Fowler, Guillaume Fraux, William Glass, Joseph Goose, Richard J. Gowers, Lukas Grossar, Abhinav Gupta, Akshay Gupta, Benjamin Hall, Ameya Harmalkar, Ivan Hristov, Eugen Hruska, Kyle J. Huston, Siddharth Jain, Joe Jordan, Jon Kapla, Navya Khare, Andrew William King, Abhishek A. Kognole, Max Linke, Philip Loche, Jinju Lu, Hugo MacDermott-Opeskin, Micaela Matta, Andrew R. McCluskey, Robert McGibbon, Rocco Meli, Manuel Nuno Melo, Dominik &#39;Rathann&#39; Mierzejewski, Henry Mull, Morgan L. Nance, Fiona B. Naughton, Alex Nesterenko, Hai Nguyen, Sang Young Noh, Daniele Padula, Nabarun Pal, Mattia F. Palermo, Danny Parton, Shakul Pathak, Joshua L. Phillips, Kashish Punjani, Michael Quevillon, Vedant Rathore, Tyler Reddy, Pedro Reis, Paul Rigor, Andrea Rizzi, Carlos Yanez S., Utkarsh Saxena, Marcello Sega, Sean L. Seyler, Faraaz Shah, Abhishek Shandilya, Shubham Sharma, Paul Smith, Andy Somogyi, Caio S. Souza, Shantanu Srivastava, Lukas Stelzl, Gorman Stock, Fenil Suchak, Ayush Suhane, Matthijs Tadema, Joao Miguel Correia Teixeira, Xiki Tempula, Matthew W. Thompson, Hao Tian, Matteo Tiberti, Wiep van der Toorn, Isaac Virshup, Lily Wang, Nestor Wendt, Zhiyi Wu, Zhuyi Xue, Juan Eiros Zamora, Johannes Zeman, Yibo Zhang, Yuxuan Zhuang, and Oliver Beckstein
+        &copy; Copyright 2005-2020, Naveen Michaud-Agrawal, Elizabeth J. Denning, Christian Beckstein (logo), Joshua L. Adelman, Shobhit Agarwal, Irfan Alibay, Anshul Angaria, Luís Pedro Borges Araújo, Balasubramanian, Utkarsh Bansal, Jonathan Barnoud, Tone Bengtsen, Alejandro Bernardin, Ninad Bhat, Mateusz Bieniek, Wouter Boomsma, Jose Borreguero, Cédric Bouysset, Bart Bruininks, Sébastien Buchoux, Sören von Bülow, David Caplan, Yuanyu Chang, Matthieu Chavent, Kathleen Clark, Charlie Cook, Ruggero Cortini, Nicholas Craven, Davide Cruz, Robert Delgado, John Detlefs, Xavier Deupi, Jan Domanski, David L. Dotson, Ali Ehlen, Shujie Fan, Lennard van der Feltz, Philip Fowler, Guillaume Fraux, William Glass, Joseph Goose, Richard J. Gowers, Lukas Grossar, Abhinav Gupta, Akshay Gupta, Benjamin Hall, Ameya Harmalkar, Ivan Hristov, Eugen Hruska, Kyle J. Huston, Siddharth Jain, Edis Jakupovic, Joe Jordan, Jon Kapla, Navya Khare, Andrew William King, Abhishek A. Kognole, Max Linke, Philip Loche, Jinju Lu, Hugo MacDermott-Opeskin, Micaela Matta, Andrew R. McCluskey, Robert McGibbon, Rocco Meli, Manuel Nuno Melo, Dominik &#39;Rathann&#39; Mierzejewski, Henry Mull, Morgan L. Nance, Fiona B. Naughton, Alex Nesterenko, Hai Nguyen, Sang Young Noh, Daniele Padula, Nabarun Pal, Mattia F. Palermo, Danny Parton, Shakul Pathak, Joshua L. Phillips, Kashish Punjani, Michael Quevillon, Vedant Rathore, Tyler Reddy, Pedro Reis, Paul Rigor, Andrea Rizzi, Carlos Yanez S., Utkarsh Saxena, Marcello Sega, Sean L. Seyler, Faraaz Shah, Abhishek Shandilya, Shubham Sharma, Paul Smith, Andy Somogyi, Caio S. Souza, Shantanu Srivastava, Lukas Stelzl, Gorman Stock, Fenil Suchak, Ayush Suhane, Matthijs Tadema, Joao Miguel Correia Teixeira, Xiki Tempula, Matthew W. Thompson, Hao Tian, Matteo Tiberti, Wiep van der Toorn, Mieczyslaw Torchala, Isaac Virshup, Lily Wang, Nestor Wendt, Zhiyi Wu, Zhuyi Xue, Juan Eiros Zamora, Johannes Zeman, Yibo Zhang, Yuxuan Zhuang, and Oliver Beckstein
 
     </p>
-  </div> 
+  </div>
+ 
+<div class="footer"><p>Please see
+    our <a href="https://www.mdanalysis.org/pages/privacy/">Privacy Policy</a>
+    to learn how <a href="https://www.mdanalysis.org">MDAnalysis</a> collects data.</p>
+    <script data-goatcounter="https://mdanalysis.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+</div>
+
 
 </footer>
 
@@ -308,7 +324,7 @@ after rotating the trajectory.</p>
      aria-label="versions">
     <span class="rst-current-version" data-toggle="rst-current-version">
       <span class="fa fa-book"></span>
-        1.0.1-dev
+        2.0.0-dev0
       <span class="fa fa-caret-down"></span>
     </span>
 
