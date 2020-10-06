@@ -1274,7 +1274,6 @@ class LipidEnrichment(LeafletAnalysis):
             'Mean fraction near protein': frac.mean(),
             'SD fraction near protein': frac.std(),
             'Mean enrichment': dei.mean(),
-            'Median enrichment': np.median(dei),
             'SD enrichment': dei.std()
         }
         if self.compute_p_value:
@@ -1316,74 +1315,117 @@ class LipidEnrichment(LeafletAnalysis):
 
         """
 
-        summary = {}
+        summary = {"Total # lipids, all": n_all_tot,
+                   "Total # lipids, shell": n_near_tot}
         p_time = data['Fraction near protein']
+        summary['Total # species, shell'] = N = n_near_species.sum()
+        summary['Total # species, all'] = N_sp = n_species.sum()
         if n_near_tot:  # catch zeros
-            p_real = n_near_species.sum() / n_near_tot
+            p_shell = N / n_near_tot
         else:
-            p_real = 0
+            p_shell = 0
         if n_all_tot:
-            p_exp = n_species.sum() / n_all_tot
+            p_null = N_sp / n_all_tot
         else:
-            p_exp = 0
+            p_null = 0
 
         # n events: assume normal
-        summary['Mean near protein'] = n_near_species.mean()
-        summary['SD near protein'] = n_near_species.std()
+        summary['Mean # species, shell'] = n_near_species.mean()
+        summary['SD # species, shell'] = sd = n_near_species.std()
 
         # actually hypergeometric, but binomials are easier
-        # X ~ B(n_near_tot, p_real)
-        summary['Mean fraction near protein'] = p_real
-        s2 = np.mean((p_time - p_real) ** 2)
-        var_frac = ((p_real * (1-p_real)) - s2) * n_near_tot
-        summary['SD fraction near protein'] = (var_frac ** 0.5) / n_near_tot
+        # X ~ B(n_near_tot, p_shell)
+        summary['Mean fraction of species, shell'] = p_shell
+        summary['SD fraction of species, shell'] = sd_frac = sd / n_near.mean()
 
-        # Now compute ratio of binomials
-        # Let X ~ B(n, p_real),  Y ~ B(n, p_exp), T = (X/Y)
-        # log T is approx. normally distributed. T is log-normal distribution
-        # FIRST catch edge cases where this is not suitable
-        if p_exp == 0:  # trivial case
-            summary['Mean enrichment'] = 1  # 0 / 0
+        # # for concat_data
+        # if n_near_tot > 1:
+        #     denom = n_near_tot - 1  # unbiased
+        #     dist_var_frac = n_near_tot * p_shell * (1-p_shell) / denom
+        #     diff = n_near_species - (n_near * p_shell)
+        #     samp_var_frac = (diff ** 2).sum() / denom
+        # else:
+        #     dist_var_frac = samp_var_frac = 0
+
+
+        # summary['Analytical SD fraction of species, shell'] = dist_sd = dist_var_frac ** 0.5
+        # summary['Sample SD fraction of species, shell'] = samp_sd = samp_var_frac ** 0.5
+
+        # if samp_sd > p_shell:
+        #     print("SD > Mean")
+        #     print("Mean:", p_shell, "SD:", samp_sd)
+        #     print("Mean #:",  p_shell*n_near)
+        #     print(n_near_species)
+        #     print("P:", p_shell, (1-p_shell))
+        #     print("diff:", n_near_species - (n_near * p_shell))
+        #     print("")
+        # else:
+        #     print("Mean > SD", samp_sd, p_shell)
+
+        if p_null == 0:
+            summary['Mean enrichment'] = 1
             summary['SD enrichment'] = 0
-            summary['Median enrichment'] = 1
-            if self.compute_p_value:
-                summary['Enrichment p-value'] = 1
-            return summary
+            # summary['Analytical SD enrichment'] = 0
+            # summary['Sample SD enrichment'] = 0
+        
+        else:
+            summary['Mean enrichment'] = p_shell / p_null
+            summary['SD enrichment'] = sd_frac / p_null
+            # summary['Analytical SD enrichment'] = dist_sd / p_null
+            # summary['Sample SD enrichment'] = samp_sd / p_null
 
-        if p_real == 0:  # totally depleted
-            summary['Mean enrichment'] = 0
-            summary['SD enrichment'] = 0
-            summary['Median enrichment'] = 0
-            if self.compute_p_value:
-                # X ~ B(n, p_exp)(0)
-                p = scipy.stats.binom.cdf(0, n_near_tot, p_exp)
-                summary['Enrichment p-value'] = p
-            return summary
 
-        if p_exp == 1:  # totally this thing
-            summary['Mean enrichment'] = 1  # 1 / 1
-            summary['SD enrichment'] = 0
-            summary['Median enrichment'] = 1
-            if self.compute_p_value:
-                summary['Enrichment p-value'] = 1
-            return summary
-
-        mean_logT = np.log(p_real / p_exp)
-        var_logT = ((1/p_real) + (1/p_exp) - 2) / n_near_tot
-        summary['Mean enrichment'] = mean = np.exp(mean_logT) * np.exp(var_logT/2)
-        # summary['Variance enrichment'] = (np.exp(var_logT) - 1) * np.exp(2*mean_logT + var_logT)
-        diff = (data['Enrichment'] - mean) ** 2
-        var_pop = diff.sum() / (self.n_frames - 1)
-        summary['SD enrichment'] = var_pop ** 0.5
-        summary['Median enrichment'] = p_real / p_exp
         if self.compute_p_value:
-            v_logT_ = 2 * (1/p_exp - 1) / n_near_tot
-            s = v_logT_ ** 0.5  # sd
-            avg = summary['Median enrichment']
-            if avg <= 1:
-                summary['Enrichment p-value'] = scipy.stats.lognorm.cdf(avg, s)
-            else:
-                summary['Enrichment p-value'] = scipy.stats.lognorm.sf(avg, s)
+            p = scipy.stats.binom_test(N, n_near_tot, p_null)
+            summary['Enrichment p-value'] = p
+
+
+        # # Now compute ratio of binomials
+        # # Let X ~ B(n, p_shell),  Y ~ B(n, p_null), T = (X/Y)
+        # # log T is approx. normally distributed. T is log-normal distribution
+        # # FIRST catch edge cases where this is not suitable
+        # if p_null == 0:  # trivial case
+        #     summary['Mean enrichment'] = 1  # 0 / 0
+        #     summary['SD enrichment'] = 0
+        #     summary['Median enrichment'] = 1
+        #     if self.compute_p_value:
+        #         summary['Enrichment p-value'] = 1
+        #     return summary
+
+        # if p_shell == 0:  # totally depleted
+        #     summary['Mean enrichment'] = 0
+        #     summary['SD enrichment'] = 0
+        #     summary['Median enrichment'] = 0
+        #     if self.compute_p_value:
+        #         # X ~ B(n, p_null)(0)
+        #         p = scipy.stats.binom.cdf(0, n_near_tot, p_null)
+        #         summary['Enrichment p-value'] = p
+        #     return summary
+
+        # if p_null == 1:  # totally this thing
+        #     summary['Mean enrichment'] = 1  # 1 / 1
+        #     summary['SD enrichment'] = 0
+        #     summary['Median enrichment'] = 1
+        #     if self.compute_p_value:
+        #         summary['Enrichment p-value'] = 1
+        #     return summary
+
+        # mean_logT = np.log(p_shell / p_null)
+        # var_logT = ((1/p_shell) + (1/p_null) - 2) / n_near_tot
+        # summary['Mean enrichment'] = mean = np.exp(mean_logT) * np.exp(var_logT/2)
+        # # summary['Variance enrichment'] = (np.exp(var_logT) - 1) * np.exp(2*mean_logT + var_logT)
+        # diff = (data['Enrichment'] - mean) ** 2
+        # var_pop = diff.sum() / (self.n_frames - 1)
+        # summary['SD enrichment'] = var_pop ** 0.5
+        # summary['Median enrichment'] = p_shell / p_null
+        # if self.compute_p_value:
+        #     v_logT_ = 2 * (1/p_null - 1) / n_near_tot
+        #     s = v_logT_ ** 0.5  # sd
+        #     avg = summary['Median enrichment']
+        #     if avg <= 1:
+        #         summary['Enrichment p-value'] = scipy.stats.lognorm.cdf(avg, s)
+        #     else:
+        #         summary['Enrichment p-value'] = scipy.stats.lognorm.sf(avg, s)
         return summary
 
     def _collate(self, n_near_species: np.ndarray, n_near: np.ndarray,
