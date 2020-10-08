@@ -164,7 +164,7 @@ def _wronglevel_error(attr, group):
 
 
 class _TopologyAttrMeta(type):
-    """Register TopologyAttrs on class creation
+    r"""Register TopologyAttrs on class creation
 
     Each topology attribute is added to the top-level dictionaries
     for various record purposes. The class itself is added to
