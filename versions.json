@@ -96,27 +96,141 @@
     "latest": false
   },
   {
+    "version": "dev",
+    "display": "dev",
+    "url": "https://minium.com.au/mdanalysis/dev",
+    "latest": false
+  },
+  {
+    "version": "dev",
+    "display": "dev",
+    "url": "https://minium.com.au/mdanalysis/dev",
+    "latest": false
+  },
+  {
+    "version": "dev",
+    "display": "dev",
+    "url": "https://minium.com.au/mdanalysis/dev",
+    "latest": false
+  },
+  {
     "version": "stable",
     "display": "stable",
     "url": "https://minium.com.au/mdanalysis/stable",
     "latest": false
   },
   {
-    "version": "dev",
-    "display": "dev",
-    "url": "https://minium.com.au/mdanalysis/dev",
+    "version": "stable",
+    "display": "stable",
+    "url": "https://minium.com.au/mdanalysis/stable",
     "latest": false
   },
   {
-    "version": "dev",
-    "display": "dev",
-    "url": "https://minium.com.au/mdanalysis/dev",
+    "version": "stable",
+    "display": "stable",
+    "url": "https://minium.com.au/mdanalysis/stable",
     "latest": false
   },
   {
-    "version": "dev",
-    "display": "dev",
-    "url": "https://minium.com.au/mdanalysis/dev",
+    "version": "stable",
+    "display": "stable",
+    "url": "https://minium.com.au/mdanalysis/stable",
+    "latest": false
+  },
+  {
+    "version": "stable",
+    "display": "stable",
+    "url": "https://minium.com.au/mdanalysis/stable",
+    "latest": false
+  },
+  {
+    "version": "stable",
+    "display": "stable",
+    "url": "https://minium.com.au/mdanalysis/stable",
+    "latest": false
+  },
+  {
+    "version": "stable",
+    "display": "stable",
+    "url": "https://minium.com.au/mdanalysis/stable",
+    "latest": false
+  },
+  {
+    "version": "stable",
+    "display": "stable",
+    "url": "https://minium.com.au/mdanalysis/stable",
+    "latest": false
+  },
+  {
+    "version": "stable",
+    "display": "stable",
+    "url": "https://minium.com.au/mdanalysis/stable",
+    "latest": false
+  },
+  {
+    "version": "stable",
+    "display": "stable",
+    "url": "https://minium.com.au/mdanalysis/stable",
+    "latest": false
+  },
+  {
+    "version": "stable",
+    "display": "stable",
+    "url": "https://minium.com.au/mdanalysis/stable",
+    "latest": false
+  },
+  {
+    "version": "stable",
+    "display": "stable",
+    "url": "https://minium.com.au/mdanalysis/stable",
+    "latest": false
+  },
+  {
+    "version": "stable",
+    "display": "stable",
+    "url": "https://minium.com.au/mdanalysis/stable",
+    "latest": false
+  },
+  {
+    "version": "stable",
+    "display": "stable",
+    "url": "https://minium.com.au/mdanalysis/stable",
+    "latest": false
+  },
+  {
+    "version": "stable",
+    "display": "stable",
+    "url": "https://minium.com.au/mdanalysis/stable",
+    "latest": false
+  },
+  {
+    "version": "stable",
+    "display": "stable",
+    "url": "https://minium.com.au/mdanalysis/stable",
+    "latest": false
+  },
+  {
+    "version": "stable",
+    "display": "stable",
+    "url": "https://minium.com.au/mdanalysis/stable",
+    "latest": false
+  },
+  {
+    "version": "stable",
+    "display": "stable",
+    "url": "https://minium.com.au/mdanalysis/stable",
+    "latest": false
+  },
+  {
+    "version": "stable",
+    "display": "stable",
+    "url": "https://minium.com.au/mdanalysis/stable",
+    "latest": false
+  },
+  {
+    "version": "stable",
+    "display": "stable",
+    "url": "https://minium.com.au/mdanalysis/stable",
     "latest": false
   }
 ]

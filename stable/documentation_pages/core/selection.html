@@ -210,6 +210,14 @@ an <a class="reference internal" href="groups.html#MDAnalysis.core.groups.AtomGr
 </dd></dl>
 
 <dl class="class">
+<dt id="MDAnalysis.core.selection.AromaticSelection">
+<em class="property">class </em><code class="descclassname">MDAnalysis.core.selection.</code><code class="descname">AromaticSelection</code><span class="sig-paren">(</span><em>parser</em>, <em>tokens</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/MDAnalysis/core/selection.html#AromaticSelection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#MDAnalysis.core.selection.AromaticSelection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Select aromatic atoms.</p>
+<p>Aromaticity is available in the <cite>aromaticities</cite> attribute and is made
+available through RDKit</p>
+</dd></dl>
+
+<dl class="class">
 <dt id="MDAnalysis.core.selection.AroundSelection">
 <em class="property">class </em><code class="descclassname">MDAnalysis.core.selection.</code><code class="descname">AroundSelection</code><span class="sig-paren">(</span><em>parser</em>, <em>tokens</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/MDAnalysis/core/selection.html#AroundSelection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#MDAnalysis.core.selection.AroundSelection" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -239,7 +247,7 @@ an <a class="reference internal" href="groups.html#MDAnalysis.core.groups.AtomGr
 <p>This excludes OT* on C-termini
 (which are included by, eg VMD’s backbone selection).</p>
 <div class="versionchanged">
-<p><span class="versionmodified">Changed in version 1.0.1: </span>bb_atoms changed to set (from numpy array)
+<p><span class="versionmodified">Changed in version 2.0.0: </span>bb_atoms changed to set (from numpy array)
 performance improved by ~100x on larger systems</p>
 </div>
 </dd></dl>
@@ -253,7 +261,7 @@ performance improved by ~100x on larger systems</p>
 <div>‘N9’, ‘N7’, ‘C8’, ‘C5’, ‘C4’, ‘N3’, ‘C2’, ‘N1’, ‘C6’,
 ‘O6’,’N2’,’N6’, ‘O2’,’N4’,’O4’,’C5M’</div></blockquote>
 <div class="versionchanged">
-<p><span class="versionmodified">Changed in version 1.0.1: </span>base_atoms changed to set (from numpy array)
+<p><span class="versionmodified">Changed in version 2.0.0: </span>base_atoms changed to set (from numpy array)
 performance improved by ~100x on larger systems</p>
 </div>
 </dd></dl>
@@ -284,7 +292,7 @@ performance improved by ~100x on larger systems</p>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Returns argument dimensions if system is periodic in all
 three-dimensions, otherwise returns None</td>
 </tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.8)">None</a> or <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.19)">numpy.ndarray</a></td>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.9)">None</a> or <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v1.19)">numpy.ndarray</a></td>
 </tr>
 </tbody>
 </table>
@@ -305,7 +313,7 @@ three-dimensions, otherwise returns None</td>
 <p>These atoms are only recognized if they are in a residue matched
 by the <a class="reference internal" href="#MDAnalysis.core.selection.NucleicSelection" title="MDAnalysis.core.selection.NucleicSelection"><code class="xref py py-class docutils literal notranslate"><span class="pre">NucleicSelection</span></code></a>.</p>
 <div class="versionchanged">
-<p><span class="versionmodified">Changed in version 1.0.1: </span>bb_atoms changed to set (from numpy array)
+<p><span class="versionmodified">Changed in version 2.0.0: </span>bb_atoms changed to set (from numpy array)
 performance improved by ~100x on larger systems</p>
 </div>
 </dd></dl>
@@ -328,7 +336,7 @@ performance improved by ~100x on larger systems</p>
 <p><span class="versionmodified">Changed in version 0.8: </span>additional Gromacs selections</p>
 </div>
 <div class="versionchanged">
-<p><span class="versionmodified">Changed in version 1.0.1: </span>nucl_res changed to set (from numpy array)
+<p><span class="versionmodified">Changed in version 2.0.0: </span>nucl_res changed to set (from numpy array)
 performance improved by ~100x on larger systems</p>
 </div>
 </dd></dl>
@@ -338,7 +346,7 @@ performance improved by ~100x on larger systems</p>
 <em class="property">class </em><code class="descclassname">MDAnalysis.core.selection.</code><code class="descname">NucleicSugarSelection</code><span class="sig-paren">(</span><em>parser</em>, <em>tokens</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/MDAnalysis/core/selection.html#NucleicSugarSelection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#MDAnalysis.core.selection.NucleicSugarSelection" title="Permalink to this definition">¶</a></dt>
 <dd><p>Contains all atoms with name C1’, C2’, C3’, C4’, O2’, O4’, O3’.</p>
 <div class="versionchanged">
-<p><span class="versionmodified">Changed in version 1.0.1: </span>sug_atoms changed to set (from numpy array)
+<p><span class="versionmodified">Changed in version 2.0.0: </span>sug_atoms changed to set (from numpy array)
 performance improved by ~100x on larger systems</p>
 </div>
 </dd></dl>
@@ -380,7 +388,7 @@ prop x&lt;5</p>
 <p class="last"><a class="reference internal" href="../lib/util.html#MDAnalysis.lib.util.convert_aa_code" title="MDAnalysis.lib.util.convert_aa_code"><code class="xref py py-func docutils literal notranslate"><span class="pre">MDAnalysis.lib.util.convert_aa_code()</span></code></a></p>
 </div>
 <div class="versionchanged">
-<p><span class="versionmodified">Changed in version 1.0.1: </span>prot_res changed to set (from numpy array)
+<p><span class="versionmodified">Changed in version 2.0.0: </span>prot_res changed to set (from numpy array)
 performance improved by ~100x on larger systems</p>
 </div>
 </dd></dl>
@@ -458,9 +466,9 @@ expressions into nested Selection tree.</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>selectstr</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.8)"><em>str</em></a>) – The string that describes the selection</li>
+<li><strong>selectstr</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)"><em>str</em></a>) – The string that describes the selection</li>
 <li><strong>selgroups</strong> (<em>AtomGroups</em>) – AtomGroups to be used in <cite>group</cite> selections</li>
-<li><strong>periodic</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.8)"><em>bool</em></a><em>, </em><em>optional</em>) – for distance based selections, whether to consider
+<li><strong>periodic</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)"><em>bool</em></a><em>, </em><em>optional</em>) – for distance based selections, whether to consider
 periodic boundary conditions</li>
 </ul>
 </td>
@@ -479,6 +487,14 @@ periodic boundary conditions</li>
 </table>
 </dd></dl>
 
+</dd></dl>
+
+<dl class="class">
+<dt id="MDAnalysis.core.selection.SmartsSelection">
+<em class="property">class </em><code class="descclassname">MDAnalysis.core.selection.</code><code class="descname">SmartsSelection</code><span class="sig-paren">(</span><em>parser</em>, <em>tokens</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/MDAnalysis/core/selection.html#SmartsSelection"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#MDAnalysis.core.selection.SmartsSelection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Select atoms based on SMARTS queries.</p>
+<p>Uses RDKit to run the query and converts the result to MDAnalysis.
+Supports chirality.</p>
 </dd></dl>
 
 <dl class="class">
@@ -504,7 +520,7 @@ periodic boundary conditions</li>
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>tokens</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.html#collections.deque" title="(in Python v3.8)"><em>collections.deque</em></a>) – deque of strings, some tokens some not</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>tokens</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.html#collections.deque" title="(in Python v3.9)"><em>collections.deque</em></a>) – deque of strings, some tokens some not</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>values</strong> – All non keywords found until a keyword was hit</td>
 </tr>
@@ -571,10 +587,18 @@ without evaluating it</p>
   <div role="contentinfo">
     <p>
         
-        &copy; Copyright 2005-2020, Naveen Michaud-Agrawal, Elizabeth J. Denning, Christian Beckstein (logo), Joshua L. Adelman, Shobhit Agarwal, Irfan Alibay, Anshul Angaria, Luís Pedro Borges Araújo, Balasubramanian, Utkarsh Bansal, Jonathan Barnoud, Tone Bengtsen, Alejandro Bernardin, Ninad Bhat, Mateusz Bieniek, Wouter Boomsma, Jose Borreguero, Cédric Bouysset, Bart Bruininks, Sébastien Buchoux, Sören von Bülow, David Caplan, Yuanyu Chang, Matthieu Chavent, Kathleen Clark, Charlie Cook, Ruggero Cortini, Nicholas Craven, Ramon Crehuet, Davide Cruz, Robert Delgado, John Detlefs, Xavier Deupi, Jan Domanski, David L. Dotson, Ali Ehlen, Shujie Fan, Lennard van der Feltz, Philip Fowler, Guillaume Fraux, William Glass, Joseph Goose, Richard J. Gowers, Lukas Grossar, Abhinav Gupta, Akshay Gupta, Benjamin Hall, Ameya Harmalkar, Ivan Hristov, Eugen Hruska, Kyle J. Huston, Siddharth Jain, Joe Jordan, Jon Kapla, Navya Khare, Andrew William King, Abhishek A. Kognole, Max Linke, Philip Loche, Jinju Lu, Hugo MacDermott-Opeskin, Micaela Matta, Andrew R. McCluskey, Robert McGibbon, Rocco Meli, Manuel Nuno Melo, Dominik &#39;Rathann&#39; Mierzejewski, Henry Mull, Morgan L. Nance, Fiona B. Naughton, Alex Nesterenko, Hai Nguyen, Sang Young Noh, Daniele Padula, Nabarun Pal, Mattia F. Palermo, Danny Parton, Shakul Pathak, Joshua L. Phillips, Kashish Punjani, Michael Quevillon, Vedant Rathore, Tyler Reddy, Pedro Reis, Paul Rigor, Andrea Rizzi, Carlos Yanez S., Utkarsh Saxena, Marcello Sega, Sean L. Seyler, Faraaz Shah, Abhishek Shandilya, Shubham Sharma, Paul Smith, Andy Somogyi, Caio S. Souza, Shantanu Srivastava, Lukas Stelzl, Gorman Stock, Fenil Suchak, Ayush Suhane, Matthijs Tadema, Joao Miguel Correia Teixeira, Xiki Tempula, Matthew W. Thompson, Hao Tian, Matteo Tiberti, Wiep van der Toorn, Isaac Virshup, Lily Wang, Nestor Wendt, Zhiyi Wu, Zhuyi Xue, Juan Eiros Zamora, Johannes Zeman, Yibo Zhang, Yuxuan Zhuang, and Oliver Beckstein
+        &copy; Copyright 2005-2020, Naveen Michaud-Agrawal, Elizabeth J. Denning, Christian Beckstein (logo), Joshua L. Adelman, Shobhit Agarwal, Irfan Alibay, Anshul Angaria, Luís Pedro Borges Araújo, Balasubramanian, Utkarsh Bansal, Jonathan Barnoud, Tone Bengtsen, Alejandro Bernardin, Ninad Bhat, Mateusz Bieniek, Wouter Boomsma, Jose Borreguero, Cédric Bouysset, Bart Bruininks, Sébastien Buchoux, Sören von Bülow, David Caplan, Yuanyu Chang, Matthieu Chavent, Kathleen Clark, Charlie Cook, Ruggero Cortini, Nicholas Craven, Davide Cruz, Robert Delgado, John Detlefs, Xavier Deupi, Jan Domanski, David L. Dotson, Ali Ehlen, Shujie Fan, Lennard van der Feltz, Philip Fowler, Guillaume Fraux, William Glass, Joseph Goose, Richard J. Gowers, Lukas Grossar, Abhinav Gupta, Akshay Gupta, Benjamin Hall, Ameya Harmalkar, Ivan Hristov, Eugen Hruska, Kyle J. Huston, Siddharth Jain, Edis Jakupovic, Joe Jordan, Jon Kapla, Navya Khare, Andrew William King, Abhishek A. Kognole, Max Linke, Philip Loche, Jinju Lu, Hugo MacDermott-Opeskin, Micaela Matta, Andrew R. McCluskey, Robert McGibbon, Rocco Meli, Manuel Nuno Melo, Dominik &#39;Rathann&#39; Mierzejewski, Henry Mull, Morgan L. Nance, Fiona B. Naughton, Alex Nesterenko, Hai Nguyen, Sang Young Noh, Daniele Padula, Nabarun Pal, Mattia F. Palermo, Danny Parton, Shakul Pathak, Joshua L. Phillips, Kashish Punjani, Michael Quevillon, Vedant Rathore, Tyler Reddy, Pedro Reis, Paul Rigor, Andrea Rizzi, Carlos Yanez S., Utkarsh Saxena, Marcello Sega, Sean L. Seyler, Faraaz Shah, Abhishek Shandilya, Shubham Sharma, Paul Smith, Andy Somogyi, Caio S. Souza, Shantanu Srivastava, Lukas Stelzl, Gorman Stock, Fenil Suchak, Ayush Suhane, Matthijs Tadema, Joao Miguel Correia Teixeira, Xiki Tempula, Matthew W. Thompson, Hao Tian, Matteo Tiberti, Wiep van der Toorn, Mieczyslaw Torchala, Isaac Virshup, Lily Wang, Nestor Wendt, Zhiyi Wu, Zhuyi Xue, Juan Eiros Zamora, Johannes Zeman, Yibo Zhang, Yuxuan Zhuang, and Oliver Beckstein
 
     </p>
-  </div> 
+  </div>
+ 
+<div class="footer"><p>Please see
+    our <a href="https://www.mdanalysis.org/pages/privacy/">Privacy Policy</a>
+    to learn how <a href="https://www.mdanalysis.org">MDAnalysis</a> collects data.</p>
+    <script data-goatcounter="https://mdanalysis.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+</div>
+
 
 </footer>
 
@@ -585,7 +609,7 @@ without evaluating it</p>
 
   </div>
   <script>
-    var versions_json_url = 'https://minium.com.au/mdanalysis/versions.json'
+    var versions_json_url = 'https://docs.mdanalysis.org/versions.json'
 </script>
 
 <div class="rst-versions" data-toggle="rst-versions" role="note"
