@@ -16,5 +16,11 @@
     "display": "2.0.0-dev0",
     "url": "https://minium.com.au/mdanalysis/2.0.0-dev0",
     "latest": false
+  },
+  {
+    "version": "dev",
+    "display": "dev",
+    "url": "https://minium.com.au/mdanalysis/dev",
+    "latest": false
   }
 ]
