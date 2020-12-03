@@ -176,7 +176,6 @@ jobs:
 
 
   build_docs:
-    if: "github.repository == 'MDAnalysis/mdanalysis'"
     runs-on: ubuntu-latest
     env:
       CYTHON_TRACE_NOGIL: 1
@@ -211,7 +210,6 @@ jobs:
         cd package && python setup.py build_sphinx -E
 
     - name: deploy_docs
-      if: github.event_name != 'pull_request'
       env:
         GH_USER: github-actions
         GH_EMAIL: "github-action@users.noreply.github.com"
